@@ -1,0 +1,6 @@
+config/.env
+data/*.jsonl
+data/visits.jsonl
+__pycache__/
+*.pyc
+.venv/

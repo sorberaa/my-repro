@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: osint_lab_app
+    restart: unless-stopped
+    env_file:
+      - config/.env
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+    networks:
+      - osint-net
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: osint_lab_tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    env_file:
+      - config/.env
+    networks:
+      - osint-net
+    depends_on:
+      - app
+
+networks:
+  osint-net:
+    driver: bridge
