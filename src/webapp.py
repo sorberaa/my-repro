@@ -121,6 +121,116 @@ async def admin_visits(token: str = "", limit: int = 100):
     return {"count": len(rows), "visits": rows}
 
 
+@app.get("/admin/visits-html")
+async def admin_visits_html(token: str = ""):
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        return HTMLResponse("<h1>❌ Доступ запрещен</h1>", status_code=403)
+    
+    rows = []
+    if VISITS_FILE.exists():
+        for line in VISITS_FILE.read_text(encoding="utf-8").splitlines()[-500:]:
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    rows.reverse()
+    
+    html = """
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin Panel - IP Logs</title>
+        <style>
+            :root { --g: #00ff41; --bg: #050505; --warn: #ff6600; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { background: var(--bg); color: var(--g); font-family: 'Courier New', monospace; min-height: 100vh; padding: 20px; }
+            .container { max-width: 1200px; margin: 0 auto; }
+            .header { border-bottom: 2px solid var(--g); padding-bottom: 16px; margin-bottom: 24px; }
+            h1 { font-size: 28px; letter-spacing: 2px; }
+            .stats { display: flex; gap: 16px; margin-bottom: 20px; }
+            .stat { border: 1px solid var(--g); padding: 12px; background: #080808; min-width: 150px; }
+            .stat-num { font-size: 24px; font-weight: bold; }
+            .stat-label { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+            table { width: 100%; border-collapse: collapse; border: 1px solid var(--g); background: #0a0a0a; }
+            th { background: #031003; padding: 12px; text-align: left; border-bottom: 1px solid var(--g); font-weight: bold; }
+            td { padding: 10px 12px; border-bottom: 1px solid #144; }
+            tr:hover { background: #0f0f0f; }
+            .ip { color: #7dff9a; font-weight: bold; }
+            .time { opacity: 0.7; font-size: 12px; }
+            .country { color: var(--warn); }
+            .warn { color: var(--warn); }
+            .success { color: var(--g); }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🔒 OSINT Lab Admin Panel</h1>
+                <p style="opacity: 0.7; margin-top: 8px;">IP Visitor Logs</p>
+            </div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-num">""" + str(len(rows)) + """</div>
+                    <div class="stat-label">Total Visits</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-num">""" + str(len(set(r.get("ip") for r in rows))) + """</div>
+                    <div class="stat-label">Unique IPs</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-num">""" + str(len(set(r.get("country") for r in rows if r.get("country")))) + """</div>
+                    <div class="stat-label">Countries</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Время 🕐</th>
+                        <th>IP Адрес 📍</th>
+                        <th>Страна 🌍</th>
+                        <th>Путь 🛣️</th>
+                        <th>User-Agent 🖥️</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+    
+    for visit in rows[:50]:  # Show last 50
+        ts = visit.get("ts", "")[:19]  # Format: YYYY-MM-DD HH:MM:SS
+        ip = visit.get("ip", "unknown")
+        country = visit.get("country", "—")
+        path = visit.get("path", "/")
+        ua = visit.get("ua", "—")[:60]
+        
+        html += f"""
+                    <tr>
+                        <td class="time">{ts}</td>
+                        <td class="ip">{ip}</td>
+                        <td class="country">{country if country else "—"}</td>
+                        <td>{path}</td>
+                        <td style="font-size: 11px; opacity: 0.8;">{ua}</td>
+                    </tr>
+        """
+    
+    html += """
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 24px; opacity: 0.6; font-size: 12px;">
+                <p>📌 Это образовательный панель для учебных целей</p>
+                <p>🔐 Доступ защищен ADMIN_TOKEN</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(html)
+
+
 @app.post("/api/lab/sqli")
 async def sqli_sim(request: Request):
     body = await request.json()
