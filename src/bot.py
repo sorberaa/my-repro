@@ -46,7 +46,7 @@ def is_admin(user_id: int) -> bool:
 def get_webapp_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⚡ peace of the island of sor/ber peoples", web_app=WebAppInfo(url=DOMAIN))]
+            [InlineKeyboardButton(text="⚡ Открыть OSINT Панель", web_app=WebAppInfo(url=DOMAIN))]
         ]
     )
 
@@ -58,7 +58,16 @@ async def cmd_start(message: types.Message):
     if is_admin(message.from_user.id):
         admin_text = "\n\n👑 <b>Админ:</b> <code>/users</code> | <code>/adduser</code> | <code>/banuser</code> | <code>/visits</code>"
     text = (
-        "<b>peace of the island of sor/ber peoples</b>"
+        "🏝️ <b>peace of the island of sor/ber peoples</b>\n"
+        "🌐 <i>Платформа OSINT-разведки и поиска цифрового следа.</i>\n\n"
+        "🔍 <b>Возможности:</b>\n"
+        "• <b>Sherlock:</b> Поиск никнейма по 480+ открытым сервисам\n"
+        "• <b>GitHub Recon:</b> Поиск скрытых email в истории коммитов\n"
+        "• <b>Phone:</b> Определение оператора связи, региона и мессенджеров\n"
+        "• <b>Crypto:</b> Анализ криптокошельков (BTC, ETH, TRX, SOL)\n"
+        "• <b>Infra:</b> Поиск субдоменов, SSL и серверов\n"
+        "• <b>Вирты:</b> Атрибуция основы и скрытых связей профилей\n\n"
+        "👇 <i>Нажмите кнопку ниже для запуска веб-панели:</i>"
         f"{admin_text}"
     )
     await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
@@ -186,7 +195,12 @@ async def cmd_visits(message: types.Message):
 
 @dp.message()
 async def fallback_any_message(message: types.Message):
-    await message.answer("<b>peace of the island of sor/ber peoples</b>", reply_markup=get_webapp_keyboard(), parse_mode="HTML")
+    await message.answer(
+        "🏝️ <b>peace of the island of sor/ber peoples</b>\n"
+        "🌐 <i>Платформа OSINT-разведки. Для запуска поиска откройте веб-панель:</i>",
+        reply_markup=get_webapp_keyboard(),
+        parse_mode="HTML"
+    )
 
 
 import sys
