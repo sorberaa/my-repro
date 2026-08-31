@@ -485,9 +485,9 @@ function openToolPage(toolId) {
 
   const input = document.getElementById('tvTargetInput');
   input.value = '';
-  if (selected.scan_type === 'telegram' || selected.id.includes('tg')) {
+  if (selected.scan_type === 'telegram' || selected.id === 'tg_inspector') {
     input.placeholder = `Telegram username или ID (например: durov)`;
-  } else if (selected.input === 'username') {
+  } else if (selected.input === 'username' || selected.scan_type === 'username') {
     input.placeholder = `Никнейм для Sherlock (например: wertag20)`;
   } else if (selected.input === 'domain' || selected.scan_type === 'domain') {
     input.placeholder = `Домен (например: google.com)`;
@@ -659,7 +659,7 @@ async function handlePhotoUpload(input) {
       loader.style.display = 'none';
       outBox.style.display = 'block';
 
-      renderToolSpecificOutput(data, file.name);
+      renderPhotoSpecificCard(data, outBox);
     } catch (err) {
       loader.style.display = 'none';
       outBox.style.display = 'block';
@@ -704,54 +704,63 @@ async function processDirectPhoto(input) {
 
 function renderPhotoSpecificCard(data, container) {
   const exif = data.exif || {};
-  let gpsHtml = '<span style="color:var(--text-muted); font-size:11px;">GPS координаты отсутствуют в EXIF</span>';
+  let gpsHtml = '<span style="color:var(--text-muted); font-size:11px;">Метки отсутствуют</span>';
 
   if (exif.gps) {
     gpsHtml = `
-      <div style="color:var(--primary); font-weight:700; margin-bottom:4px; font-size:12px;">
-        📍 ${exif.gps.latitude}, ${exif.gps.longitude}
-      </div>
-      <button onclick="openExternalUrl('${exif.google_maps_url}')" class="btn btn-primary" style="padding:4px 8px; font-size:10px;">
-        <i class="fa-solid fa-map-location-dot"></i> Google Maps
-      </button>
+      <span style="color:var(--primary); font-weight:700;">📍 ${exif.gps.latitude}, ${exif.gps.longitude}</span>
+      <button onclick="openExternalUrl('${exif.google_maps_url}')" class="btn btn-primary" style="padding:2px 6px; font-size:9px; margin-left:6px;">Google Maps</button>
     `;
   }
 
   let html = `
-    <div style="background:#090d16; border:1px solid #1e293b; border-radius:8px; padding:10px; margin-bottom:10px; font-size:12px;">
-      <div style="font-weight:700; color:#fff; margin-bottom:6px;"><i class="fa-solid fa-microchip"></i> EXIF Метаданные:</div>
-      <div><b>Камера:</b> ${exif.camera_make || '—'} ${exif.camera_model || 'Скрыта'}</div>
-      <div><b>Дата съемки:</b> ${exif.date_time || 'Скрыта'}</div>
-      <div style="margin-top:6px; padding-top:6px; border-top:1px solid #1e293b;">
-        <b>GPS:</b> ${gpsHtml}
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Метаданные снимка (EXIF)</div>
+      <div class="custom-grid">
+        <div class="custom-item">
+          <div class="custom-label">📷 Камера</div>
+          <div class="custom-val">${exif.camera_make || '—'} ${exif.camera_model || ''}</div>
+        </div>
+        <div class="custom-item">
+          <div class="custom-label">🕒 Дата съемки</div>
+          <div class="custom-val">${exif.date_time || 'Скрыта'}</div>
+        </div>
+        <div class="custom-item" style="grid-column: span 2;">
+          <div class="custom-label">📍 GPS Координаты</div>
+          <div class="custom-val">${gpsHtml}</div>
+        </div>
       </div>
     </div>
 
     <div style="margin-bottom:10px;">
       <div class="btn-group">
-        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс</button>
+        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс Картинки</button>
         <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
       </div>
     </div>
-
-    <div class="ai-dossier-card">
-      <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> GeoINT Заключение</div>
-      <div class="ai-dossier-text">${formatMarkdownText(data.vision_ai_report)}</div>
-    </div>
   `;
+
+  if (data.vision_ai_report) {
+    html += `
+      <div class="ai-dossier-card">
+        <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> GeoINT Заключение</div>
+        <div class="ai-dossier-text">${formatMarkdownText(data.vision_ai_report)}</div>
+      </div>
+    `;
+  }
 
   container.innerHTML = html;
 }
 
-// ЗАПУСК СКАНИРОВАНИЯ
+// ЗАПУСК СКАНИРОВАНИЯ С ТОЧНОЙ МАРШРУТИЗАЦИЕЙ
 async function runCurrentToolScan() {
   if (!activeTool) return;
-  const target = document.getElementById('tvTargetInput').value.trim();
+  const rawTarget = document.getElementById('tvTargetInput').value.trim();
   const loader = document.getElementById('tvLoader');
   const loaderText = document.getElementById('tvLoaderText');
   const outBox = document.getElementById('tvOutputBox');
 
-  if (!target) {
+  if (!rawTarget) {
     alert('Введите цель для анализа');
     return;
   }
@@ -760,33 +769,41 @@ async function runCurrentToolScan() {
   outBox.style.display = 'none';
 
   let endpoint = '/api/scan/username';
-  if (activeTool.scan_type === 'telegram' || activeTool.id.includes('tg') || target.startsWith('@')) {
+  let cleanTarget = rawTarget;
+
+  // 1. Точная маршрутизация в зависимости от открытого инструмента
+  if (activeTool.scan_type === 'telegram' || activeTool.id === 'tg_inspector') {
     endpoint = '/api/scan/telegram';
+    cleanTarget = rawTarget.replace(/^@+/, '');
     loaderText.innerText = 'Опрос Telegram Gateway и извлечение профиля...';
-  } else if (activeTool.input === 'domain' || activeTool.scan_type === 'domain' || (target.includes('.') && !target.includes('@'))) {
+  } else if (activeTool.scan_type === 'domain' || activeTool.input === 'domain' || activeTool.id === 'subfinder' || activeTool.id === 'webcheck' || activeTool.id === 'finalrecon') {
     endpoint = '/api/scan/domain';
+    cleanTarget = rawTarget.replace(/^https?:\/\//, '').split('/')[0];
     loaderText.innerText = 'Разведка DNS, SSL, заголовков и поддоменов...';
-  } else if (activeTool.input === 'email' || activeTool.scan_type === 'email' || target.includes('@')) {
+  } else if (activeTool.scan_type === 'email' || activeTool.input === 'email' || activeTool.id === 'ghunt') {
     endpoint = '/api/scan/email';
     loaderText.innerText = 'Проверка MX серверов и Gravatar...';
-  } else if (activeTool.input === 'ip' || activeTool.scan_type === 'ip' || /^(\d{1,3}\.){3}\d{1,3}$/.test(target)) {
+  } else if (activeTool.scan_type === 'ip' || activeTool.input === 'ip' || activeTool.id === 'phoneinfoga') {
     endpoint = '/api/scan/ip';
     loaderText.innerText = 'Определение геопозиции IP и провайдера...';
   } else {
-    loaderText.innerText = 'Опрос баз Sherlock Project и верификация...';
+    // ДЛЯ SHERLOCK, MAIGRET, WHATSMYNAME И ВСЕХ ЮЗЕРНЕЙМ СКАНЕРОВ:
+    endpoint = '/api/scan/username';
+    cleanTarget = rawTarget.replace(/^@+/, ''); // Убираем @ если пользователь ввел @юзернейм
+    loaderText.innerText = 'Опрос официальных баз Sherlock Project...';
   }
 
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target, caller: currentSessionUser })
+      body: JSON.stringify({ target: cleanTarget, caller: currentSessionUser })
     });
     const data = await res.json();
     loader.style.display = 'none';
     outBox.style.display = 'block';
 
-    renderToolSpecificOutput(data, target);
+    renderToolSpecificOutput(data, cleanTarget);
   } catch (err) {
     loader.style.display = 'none';
     outBox.style.display = 'block';
@@ -794,7 +811,7 @@ async function runCurrentToolScan() {
   }
 }
 
-// СПЕЦИАЛИЗИРОВАННЫЙ ВЫВОД ПОД КАЖДЫЙ ТИП ИНСТРУМЕНТА
+// СПЕЦИАЛИЗИРОВАННЫЙ, ЛАКОНИЧНЫЙ ВЫВОД ПОД КАЖДЫЙ ИНСТРУМЕНТ
 function renderToolSpecificOutput(data, target) {
   const outBox = document.getElementById('tvOutputBox');
   const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
@@ -805,7 +822,7 @@ function renderToolSpecificOutput(data, target) {
     const pdata = data.probable_data || {};
     const profiles = data.profiles || [];
     
-    let checkedLines = profiles.map(p => `[${nowStr}] [+] [MATCH] ${p.platform.padEnd(12)} (${p.category}) -> ${p.url}`).join('\n');
+    let checkedLines = profiles.map(p => `[${nowStr}] [+] [MATCH] ${p.platform.padEnd(14)} (${p.category}) -> ${p.url}`).join('\n');
     let cliLog = `[${nowStr}] [CORE] INITIATING SHERLOCK PROJECT ENGINE
 [${nowStr}] [TARGET] RESOLVING IDENTIFIER: "${data.username}"
 [${nowStr}] [PROBE] CROSS-SEARCHING ALL OFFICIAL PLATFORMS...
@@ -828,7 +845,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
 
       <div class="custom-card">
         <div class="custom-card-title">
-          <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сводная дедукция: Наивероятнейшие данные
+          <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сводная дедукция
         </div>
         <div class="custom-grid">
           <div class="custom-item">
@@ -845,20 +862,11 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
           </div>
           <div class="custom-item">
             <div class="custom-label">🔗 Подтвержденных баз</div>
-            <div class="custom-val" style="color:var(--primary);">${data.found_count} из ${data.total_checked}</div>
+            <div class="custom-val" style="color:var(--primary); font-weight:800;">${data.found_count} из ${data.total_checked}</div>
           </div>
         </div>
       </div>
     `;
-
-    if (data.ai_summary) {
-      html += `
-        <div class="ai-dossier-card">
-          <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитический разбор связей</div>
-          <div class="ai-dossier-text">${formatMarkdownText(data.ai_summary)}</div>
-        </div>
-      `;
-    }
 
     if (profiles.length > 0) {
       window._lastProfiles = profiles;
@@ -893,7 +901,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
 
   // 2. ТИП: TELEGRAM (Telegram Inspector)
   } else if (data.type === 'telegram' || data.type === 'telegram_id') {
-    let cliLog = `[${nowStr}] [TG-PROBE] CONNECTING TO TELEGRAM GATEWAY: ${target}...
+    let cliLog = `[${nowStr}] [TG-PROBE] CONNECTING TO TELEGRAM GATEWAY: @${target}...
 [${nowStr}] [+] ENTITY RESOLVED: "${data.title || data.tg_id}"
 [${nowStr}] [+] TYPE: ${data.account_type || 'User ID'}
 [${nowStr}] [✓] TELEGRAM RECON COMPLETED.`;
@@ -920,14 +928,6 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
         </div>
       </div>
     `;
-    if (data.ai_summary) {
-      html += `
-        <div class="ai-dossier-card">
-          <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитика Telegram</div>
-          <div class="ai-dossier-text">${formatMarkdownText(data.ai_summary)}</div>
-        </div>
-      `;
-    }
 
   // 3. ТИП: DOMAIN & SUBFINDER (Subfinder, Web-Check)
   } else if (data.type === 'domain') {
