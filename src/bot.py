@@ -189,9 +189,18 @@ async def fallback_any_message(message: types.Message):
     await message.answer("<b>OSINT CYBER HUB</b>", reply_markup=get_webapp_keyboard(), parse_mode="HTML")
 
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+
 async def main():
     logging.basicConfig(level=logging.INFO)
-    print("🚀 Telegram Bot запущен и слушает команды...")
+    logging.info("Telegram Bot started in WebApp Launcher mode...")
     await dp.start_polling(bot)
 
 
