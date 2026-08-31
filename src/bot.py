@@ -401,6 +401,56 @@ async def cmd_attribution(message: types.Message):
         await status_msg.edit_text(f"❌ Ошибка атрибуции: {str(e)}")
 
 
+@dp.message(Command("phone"))
+@dp.message(Command("num"))
+async def cmd_phone(message: types.Message):
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("⚠️ Формат: <code>/phone +79991234567</code>", parse_mode="HTML")
+        return
+
+    target = args[1].strip()
+    status_msg = await message.answer(f"📱 <i>Разведка по номеру <b>{target}</b>...</i>", parse_mode="HTML")
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(f"{LOCAL_API}/api/scan/phone", json={"target": target, "caller": f"tg_{message.from_user.id}"})
+            data = resp.json()
+
+        if not data.get("ok"):
+            await status_msg.edit_text(f"❌ {data.get('error', 'Ошибка проверки номера')}")
+            return
+
+        m = data.get("messengers", {})
+        d = data.get("dorks", {})
+
+        text = (
+            f"📱 <b>РАЗВЕДКА ПО НОМЕРУ:</b> <code>{data.get('e164')}</code>\n\n"
+            f"🌍 <b>Страна/Регион:</b> {data.get('country')}\n"
+            f"🏢 <b>Оператор:</b> {data.get('carrier')}\n"
+            f"🏷 <b>Тип линии:</b> {data.get('line_type')}\n"
+            f"🕒 <b>Часовой пояс:</b> {', '.join(data.get('timezones', [])) or 'UTC'}\n\n"
+            f"💬 <b>Мессенджеры:</b> <a href='{m.get('whatsapp')}'>WhatsApp</a> | <a href='{m.get('telegram_web')}'>Telegram</a> | <a href='{m.get('viber')}'>Viber</a>\n"
+            f"🔍 <b>Поисковые следы:</b> <a href='{d.get('marketplaces')}'>Авито/Юла</a> | <a href='{d.get('social')}'>Соцсети</a> | <a href='{d.get('yandex_exact')}'>Яндекс</a>\n\n"
+            f"🧠 <b>Сводка:</b>\n{data.get('ai_summary', '')[:800]}"
+        )
+
+        buttons = [
+            [InlineKeyboardButton(text="🟢 Открыть WhatsApp", url=m.get("whatsapp")),
+             InlineKeyboardButton(text="✈️ Открыть Telegram", url=m.get("telegram_web"))],
+            [InlineKeyboardButton(text="⚡ Открыть в WebApp", web_app=WebAppInfo(url=DOMAIN))]
+        ]
+
+        await status_msg.edit_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Ошибка Phone Recon: {str(e)}")
+
+
 @dp.message(Command("ip"))
 async def cmd_ip(message: types.Message):
     args = message.text.split(maxsplit=1)

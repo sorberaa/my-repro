@@ -589,9 +589,31 @@ CATALOG = [
     },
     {
         "id": "email_checks",
-        "title": "📧 Почта и проверка привязок (Email & Phone OSINT)",
-        "desc": "Инструменты проверки валидности email-адресов, MX-записей, привязок и телефонных номеров.",
+        "title": "📧 Почта и Телефонная разведка (Email & Phone OSINT)",
+        "desc": "Инструменты проверки валидности email-адресов, MX-записей, привязок и разведки по номерам телефонов.",
         "tools": [
+            {
+                "id": "phoneinfoga_recon",
+                "name": "📱 PhoneInfoga Recon & Number Inspector",
+                "repo": "https://github.com/sundowndev/phoneinfoga",
+                "web_url": "https://github.com/sundowndev/phoneinfoga",
+                "purpose": "🔍 Комплексная разведка по номеру телефона: определение оператора, региона, типа линии (VoIP/Мобильный), мессенджеры (WA/TG/Viber) и поисковые дорки по доскам объявлений и соцсетям.",
+                "input": "phone",
+                "web_runnable": True,
+                "scan_type": "phone",
+                "install_guide": {
+                    "git": "git clone https://github.com/sundowndev/phoneinfoga.git\ncd phoneinfoga",
+                    "pip_or_pkg": "curl -sSL https://raw.githubusercontent.com/sundowndev/phoneinfoga/master/support/run | bash",
+                    "docker": "docker run -it sundowndev/phoneinfoga scan -n <phone>",
+                    "usage": "./phoneinfoga scan -n +79991234567",
+                    "notes": "Определяет оператора, валидность формата E.164 и генерирует поисковые сканеры."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Проверить телефон в WebApp",
+                    "action": "scan_phone"
+                }
+            },
             {
                 "id": "holehe",
                 "name": "Holehe",

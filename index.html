@@ -955,7 +955,11 @@ async function runCurrentToolScan() {
   } else if (activeTool.scan_type === 'email' || activeTool.input === 'email' || activeTool.id === 'ghunt') {
     endpoint = '/api/scan/email';
     loaderText.innerText = 'Проверка MX серверов и Gravatar...';
-  } else if (activeTool.scan_type === 'ip' || activeTool.input === 'ip' || activeTool.id === 'phoneinfoga') {
+  } else if (activeTool.scan_type === 'phone' || activeTool.id === 'phoneinfoga_recon' || (rawTarget.startsWith('+') && rawTarget.length > 7)) {
+    endpoint = '/api/scan/phone';
+    cleanTarget = rawTarget;
+    loaderText.innerText = 'Определение оператора, региона и генерация дорков...';
+  } else if (activeTool.scan_type === 'ip' || activeTool.input === 'ip') {
     endpoint = '/api/scan/ip';
     loaderText.innerText = 'Определение геопозиции IP и провайдера...';
   } else {
@@ -1261,7 +1265,86 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       </div>
     `;
 
-  // 6. ТИП: PHOTO
+  // 6. ТИП: PHONE (PhoneInfoga & Number Recon)
+  } else if (data.type === 'phone') {
+    const tz = (data.timezones || []).join(', ') || 'UTC';
+    const m = data.messengers || {};
+    const d = data.dorks || {};
+
+    let cliLog = `[${nowStr}] [PHONE] PARSING E.164: ${data.e164} (${data.national})
+[${nowStr}] [GEO] REGION: ${data.country} | CARRIER: ${data.carrier}
+[${nowStr}] [LINE] TYPE: ${data.line_type} | TZ: ${tz}
+[${nowStr}] [MESSENGERS] CHECKING WA / TG / VIBER / SKYPE...
+[${nowStr}] [✓] PHONE RECON COMPLETED.`;
+
+    html += `
+      <div class="hacker-terminal">
+        <div class="term-topbar">
+          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+          <span>PHONE-RECON@STATION:~# ./phoneinfoga scan -n ${data.e164}</span>
+        </div>
+        <div class="term-log-content">${cliLog}</div>
+      </div>
+
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-phone" style="color:var(--primary);"></i> Данные оператора и региона</div>
+        <div class="custom-grid">
+          <div class="custom-item">
+            <div class="custom-label">📞 Номер телефона</div>
+            <div class="custom-val" style="color:var(--primary); font-size:14px;">${data.e164}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🏢 Оператор связи</div>
+            <div class="custom-val">${data.carrier}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🌍 Страна и Регион</div>
+            <div class="custom-val">${data.country}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🏷️ Тип линии</div>
+            <div class="custom-val">${data.line_type}</div>
+          </div>
+          <div class="custom-item" style="grid-column: span 2;">
+            <div class="custom-label">🕒 Часовой пояс</div>
+            <div class="custom-val">${tz}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
+          💬 Проверка профилей в мессенджерах:
+        </div>
+        <div class="btn-group">
+          <button onclick="openExternalUrl('${m.whatsapp}')" class="btn btn-primary" style="background:#25D366; color:#000;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+          <button onclick="openExternalUrl('${m.telegram_web}')" class="btn btn-primary" style="background:#229ED9; color:#fff;"><i class="fa-brands fa-telegram"></i> Telegram</button>
+          <button onclick="openExternalUrl('${m.viber}')" class="btn btn-secondary"><i class="fa-brands fa-viber"></i> Viber</button>
+          <button onclick="openExternalUrl('${m.skype}')" class="btn btn-secondary"><i class="fa-brands fa-skype"></i> Skype</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
+          🔍 Поисковые следы номера в сети (Dorks):
+        </div>
+        <div class="btn-group">
+          <button onclick="openExternalUrl('${d.marketplaces}')" class="btn btn-secondary"><i class="fa-solid fa-cart-shopping"></i> Авито / Юла / OLX</button>
+          <button onclick="openExternalUrl('${d.social}')" class="btn btn-secondary"><i class="fa-solid fa-users"></i> VK / OK / Соцсети</button>
+          <button onclick="openExternalUrl('${d.work}')" class="btn btn-secondary"><i class="fa-solid fa-briefcase"></i> Резюме (HH/SuperJob)</button>
+          <button onclick="openExternalUrl('${d.documents}')" class="btn btn-secondary"><i class="fa-solid fa-file-lines"></i> Документы (PDF/DOC)</button>
+          <button onclick="openExternalUrl('${d.yandex_exact}')" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> Яндекс</button>
+          <button onclick="openExternalUrl('${d.google_exact}')" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> Google</button>
+        </div>
+      </div>
+
+      <div class="ai-dossier-card">
+        <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Сводка разведки по номеру</div>
+        <div class="ai-dossier-text">${formatMarkdownText(data.ai_summary)}</div>
+      </div>
+    `;
+
+  // 7. ТИП: PHOTO
   } else if (data.type === 'photo') {
     renderPhotoSpecificCard(data, outBox);
     return;

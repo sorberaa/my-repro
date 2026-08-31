@@ -13,12 +13,19 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
+import urllib.parse
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from PIL import ExifTags, Image
+
+try:
+    import phonenumbers
+    from phonenumbers import geocoder as phone_geocoder, carrier as phone_carrier, timezone as phone_timezone, number_type as phone_number_type, PhoneNumberType
+except Exception:
+    phonenumbers = None
 
 try:
     from catalog import CATALOG, find_tool, normalize_catalog
@@ -1120,6 +1127,126 @@ async def scan_email(request: Request):
         pass
 
     return {"ok": True, "type": "email", "target": email, "data": res}
+
+
+@app.post("/api/scan/phone")
+async def scan_phone(request: Request):
+    """
+    Глубокая разведка по номеру телефона (Phone OSINT & Recon):
+    - Парсинг международного и национального формата (E.164, RFC3966)
+    - Определение страны, региона/города, сотового оператора и таймзоны
+    - Проверка типа линии (Мобильный, Стационарный, VoIP/Виртуальный номер)
+    - Прямые ссылки на мессенджеры (WhatsApp, Telegram, Viber, Skype)
+    - Генерация точных поисковых дорков (Авито, Юла, соцсети, документы, реестры)
+    - ИИ-анализ и сводка разведки.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    raw_phone = str(body.get("target", "")).strip()
+    caller_user = str(body.get("caller", "guest")).strip()
+    increment_user_scan(caller_user)
+
+    if not raw_phone:
+        return JSONResponse({"ok": False, "error": "Укажите номер телефона (например: +79991234567)"}, status_code=400)
+
+    clean_digits = re.sub(r"[^\d+]", "", raw_phone)
+    if not clean_digits.startswith("+"):
+        if clean_digits.startswith("8") and len(clean_digits) == 11:
+            clean_digits = "+7" + clean_digits[1:]
+        elif clean_digits.startswith("7") and len(clean_digits) == 11:
+            clean_digits = "+" + clean_digits
+        else:
+            clean_digits = "+" + clean_digits
+
+    country_name = "Не определена"
+    carrier_name = "Не определен"
+    tz_list = []
+    line_type_str = "Мобильный / Стационарный"
+    e164 = clean_digits
+    national = clean_digits
+    international = clean_digits
+
+    if phonenumbers:
+        try:
+            parsed = phonenumbers.parse(clean_digits, None)
+            if phonenumbers.is_valid_number(parsed):
+                e164 = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+                national = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.NATIONAL)
+                international = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+                country_name = phone_geocoder.description_for_number(parsed, "ru") or phone_geocoder.description_for_number(parsed, "en") or "Не определена"
+                carrier_name = phone_carrier.name_for_number(parsed, "ru") or phone_carrier.name_for_number(parsed, "en") or "Региональный оператор"
+                tz_list = list(phone_timezone.time_zones_for_number(parsed))
+                ntype = phone_number_type(parsed)
+                type_map = {
+                    PhoneNumberType.MOBILE: "📱 Мобильный",
+                    PhoneNumberType.FIXED_LINE: "☎️ Стационарный (Городской)",
+                    PhoneNumberType.FIXED_LINE_OR_MOBILE: "📱 Мобильный / Городской",
+                    PhoneNumberType.VOIP: "⚠️ VoIP / Виртуальный номер (Вирт)",
+                    PhoneNumberType.TOLL_FREE: "Бесплатный (8-800)",
+                    PhoneNumberType.PREMIUM_RATE: "Платный номер"
+                }
+                line_type_str = type_map.get(ntype, "Мобильный")
+        except Exception:
+            pass
+
+    digits_only = re.sub(r"\D", "", e164)
+    local_digits = digits_only[1:] if digits_only.startswith("7") else digits_only
+    search_formats = [
+        e164,
+        national,
+        international,
+        f"8{local_digits}" if digits_only.startswith("7") else digits_only
+    ]
+
+    messengers = {
+        "whatsapp": f"https://wa.me/{digits_only}",
+        "telegram_link": f"tg://resolve?phone={digits_only}",
+        "telegram_web": f"https://t.me/+{digits_only}",
+        "viber": f"viber://chat?number=+{digits_only}",
+        "skype": f"skype:+{digits_only}?chat"
+    }
+
+    quoted_phone = f'"{e164}" OR "{national}"'
+    dorks = {
+        "marketplaces": f"https://www.google.com/search?q={urllib.parse.quote(quoted_phone + ' site:avito.ru OR site:youla.ru OR site:auto.ru OR site:olx.ua')}",
+        "social": f"https://www.google.com/search?q={urllib.parse.quote(quoted_phone + ' site:vk.com OR site:ok.ru OR site:facebook.com OR site:instagram.com')}",
+        "work": f"https://www.google.com/search?q={urllib.parse.quote(quoted_phone + ' site:hh.ru OR site:superjob.ru OR site:linkedin.com')}",
+        "documents": f"https://www.google.com/search?q={urllib.parse.quote(quoted_phone + ' filetype:pdf OR filetype:doc OR filetype:xlsx')}",
+        "yandex_exact": f"https://yandex.ru/search/?text={urllib.parse.quote(e164)}",
+        "google_exact": f"https://www.google.com/search?q={urllib.parse.quote(e164)}"
+    }
+
+    prompt = f"""Ты — старший OSINT-аналитик по телекоммуникациям.
+Составь краткую сводку по номеру:
+- Номер: {e164} ({national})
+- Страна/Регион: {country_name}
+- Оператор: {carrier_name}
+- Тип линии: {line_type_str}
+- Часовой пояс: {', '.join(tz_list)}
+
+Дай 3 четких практических шага для проверки владельца (мессенджеры, доски объявлений, чекеры).
+"""
+    ai_summary = await run_gemini_prompt(prompt)
+
+    return {
+        "ok": True,
+        "type": "phone",
+        "raw": raw_phone,
+        "e164": e164,
+        "national": national,
+        "international": international,
+        "country": country_name,
+        "carrier": carrier_name,
+        "line_type": line_type_str,
+        "timezones": tz_list,
+        "search_formats": search_formats,
+        "messengers": messengers,
+        "dorks": dorks,
+        "ai_summary": ai_summary or f"Телефон {e164} зарегистрирован в регионе {country_name}, оператор {carrier_name}."
+    }
 
 
 @app.post("/api/scan/ip")
