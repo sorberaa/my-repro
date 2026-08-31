@@ -100,8 +100,8 @@ CATALOG = [
     },
     {
         "id": "amazing_osint",
-        "title": "🌟 Удивительный OSINT & GeoINT",
-        "desc": "Необычные методики: определение времени съемки по тени от солнца, машина времени удаленных страниц и спутники.",
+        "title": "🌟 Удивительный OSINT, GeoINT & Фото-детектив",
+        "desc": "Необычные методики: определение времени съемки по тени от солнца, машина времени удаленных страниц, спутники и Vision AI.",
         "tools": [
             {
                 "id": "suncalc",
@@ -109,7 +109,7 @@ CATALOG = [
                 "repo": "https://github.com/mourner/suncalc",
                 "web_url": "https://suncalc.org/",
                 "purpose": "☀️ Определение точного времени и даты съемки фото по углу солнца, высоте и длине отбрасываемой тени на объектах.",
-                "input": "location / date",
+                "input": "location / photo / date",
                 "web_runnable": True,
                 "scan_type": "web_link",
                 "install_guide": {
@@ -195,24 +195,24 @@ CATALOG = [
     },
     {
         "id": "username_osint",
-        "title": "🔍 Поиск по никнеймам (Username OSINT)",
+        "title": "🔍 Поиск по никнеймам (Sherlock 60+ баз)",
         "desc": "Инструменты для поиска профилей и открытых аккаунтов по псевдониму на сотнях платформ.",
         "tools": [
             {
                 "id": "sherlock",
-                "name": "Sherlock",
+                "name": "Sherlock Engine (60+ Баз)",
                 "repo": "https://github.com/sherlock-project/sherlock",
                 "web_url": "https://sherlock-project.github.io/",
-                "purpose": "Поиск публичных аккаунтов по никнейму на более чем 400 веб-сервисах и соцсетях.",
+                "purpose": "⚡ Быстрый мульти-поиск аккаунтов по 60+ базам данных (Steam, Telegram, GitHub, VK, TikTok, Reddit, Twitch, Habr, Pikabu и др.) с AI-портретом.",
                 "input": "username",
                 "web_runnable": True,
                 "scan_type": "username",
                 "install_guide": {
                     "git": "git clone https://github.com/sherlock-project/sherlock.git\ncd sherlock",
                     "pip_or_pkg": "python3 -m pip install -r requirements.txt",
-                    "docker": "docker build -t mysherlock .\ndocker run --rm -t mysherlock user123",
+                    "docker": "docker run --rm -t mysherlock user123",
                     "usage": "python3 sherlock.py <username> --print-found",
-                    "notes": "Поддерживает выгрузку в CSV/JSON и сохранение в папку отчетов."
+                    "notes": "В панель интегрирован быстрый асинхронный движок, опрашивающий сервисы параллельно."
                 },
                 "launch": {
                     "type": "api",
@@ -265,6 +265,27 @@ CATALOG = [
                 }
             },
             {
+                "id": "social_analyzer",
+                "name": "Social-Analyzer",
+                "repo": "https://github.com/qeeqbox/social-analyzer",
+                "web_url": "https://github.com/qeeqbox/social-analyzer",
+                "purpose": "API и веб-инструмент для глубокого анализа профилей на 1000+ платформах с автоматическими скриншотами.",
+                "input": "username / profile name",
+                "web_runnable": False,
+                "install_guide": {
+                    "git": "git clone https://github.com/qeeqbox/social-analyzer.git\ncd social-analyzer",
+                    "pip_or_pkg": "pip3 install social-analyzer",
+                    "docker": "docker run -p 9005:9005 -it qeeqbox/social-analyzer",
+                    "usage": "python3 app.py --username \"wertag20\"",
+                    "notes": "Поддерживает обнаружение аккаунтов по шаблонам профилей и строкам поиска."
+                },
+                "launch": {
+                    "type": "url",
+                    "label": "📖 GitHub Репозиторий",
+                    "href": "https://github.com/qeeqbox/social-analyzer"
+                }
+            },
+            {
                 "id": "whatsmyname",
                 "name": "WhatsMyName",
                 "repo": "https://github.com/WebBreacher/WhatsMyName",
@@ -285,105 +306,147 @@ CATALOG = [
                     "label": "🌐 Открыть WhatsMyName WebApp",
                     "href": "https://whatsmyname.app/"
                 }
-            },
+            }
+        ]
+    },
+    {
+        "id": "social_google_instagram",
+        "title": "📱 Google, Instagram & Социальная разведка",
+        "desc": "Специализированные утилиты для извлечения скрытых ID, почт, привязок телефонов и Google-аккаунтов.",
+        "tools": [
             {
-                "id": "zehef",
-                "name": "Zehef",
-                "repo": "https://github.com/N0rz3/Zehef",
-                "web_url": "https://github.com/N0rz3/Zehef",
-                "purpose": "Автоматизированный OSINT-инструмент поиска профилей и открытых следов по псевдонимам.",
-                "input": "username / query",
+                "id": "ghunt",
+                "name": "GHunt (Google Account Recon)",
+                "repo": "https://github.com/mxrch/GHunt",
+                "web_url": "https://github.com/mxrch/GHunt",
+                "purpose": "🔍 Разведка аккаунтов Google по почте: Gaia ID, отзывы на Google Картах, фотографии, Google Drive, YouTube канал и календарь.",
+                "input": "gmail address",
                 "web_runnable": False,
                 "install_guide": {
-                    "git": "git clone https://github.com/N0rz3/Zehef.git\ncd Zehef",
-                    "pip_or_pkg": "pip install -r requirements.txt",
-                    "docker": "docker build -t zehef .\ndocker run -it zehef",
-                    "usage": "python3 zehef.py -u <username>",
-                    "notes": "Быстрый сбор открытых профилей с форматированием результатов в консоли."
+                    "git": "git clone https://github.com/mxrch/GHunt.git\ncd GHunt",
+                    "pip_or_pkg": "pip install ghunt",
+                    "docker": "docker run -v $(pwd)/resources:/usr/src/app/resources -it ghunt email target@gmail.com",
+                    "usage": "ghunt email target@gmail.com",
+                    "notes": "Позволяет составить гео-трек пользователя по его публичным отзывам на Google Maps."
                 },
                 "launch": {
                     "type": "url",
                     "label": "📖 GitHub Репозиторий",
-                    "href": "https://github.com/N0rz3/Zehef"
+                    "href": "https://github.com/mxrch/GHunt"
+                }
+            },
+            {
+                "id": "toutatis",
+                "name": "Toutatis (Instagram OSINT)",
+                "repo": "https://github.com/megadose/toutatis",
+                "web_url": "https://github.com/megadose/toutatis",
+                "purpose": "📸 Извлечение скрытых данных из Instagram: маскированный номер телефона (+7***), частичная почта, числовой ID аккаунта.",
+                "input": "instagram handle",
+                "web_runnable": False,
+                "install_guide": {
+                    "git": "git clone https://github.com/megadose/toutatis.git\ncd toutatis",
+                    "pip_or_pkg": "pip3 install toutatis",
+                    "docker": "docker build -t toutatis .\ndocker run -it toutatis",
+                    "usage": "toutatis -u target_user -s \"YOUR_SESSIONID\"",
+                    "notes": "Использует API мобильного приложения Instagram для получения данных восстановления доступа."
+                },
+                "launch": {
+                    "type": "url",
+                    "label": "📖 GitHub Репозиторий",
+                    "href": "https://github.com/megadose/toutatis"
+                }
+            },
+            {
+                "id": "phoneinfoga",
+                "name": "PhoneInfoga (Международный Phone OSINT)",
+                "repo": "https://github.com/sundowndev/phoneinfoga",
+                "web_url": "https://github.com/sundowndev/phoneinfoga",
+                "purpose": "📞 Продвинутый сбор данных по номерам телефонов: оператор, страна, тип связи (VoIP/Mobile), репутация и доркинга в сети.",
+                "input": "international phone number",
+                "web_runnable": False,
+                "install_guide": {
+                    "git": "git clone https://github.com/sundowndev/phoneinfoga.git\ncd phoneinfoga",
+                    "pip_or_pkg": "curl -sSL https://raw.githubusercontent.com/sundowndev/phoneinfoga/master/support/scripts/install | bash",
+                    "docker": "docker run --rm -it -p 5000:5000 sundowndev/phoneinfoga serve -p 5000",
+                    "usage": "./phoneinfoga scan -n +79991234567\n# Или веб-панель:\n./phoneinfoga serve -p 5000",
+                    "notes": "Имеет встроенный веб-интерфейс на порту 5000 для интерактивного сканирования."
+                },
+                "launch": {
+                    "type": "url",
+                    "label": "📖 GitHub Репозиторий",
+                    "href": "https://github.com/sundowndev/phoneinfoga"
                 }
             }
         ]
     },
     {
-        "id": "mapping_investigation",
-        "title": "🗺️ Картирование связей и комплексные фреймворки",
-        "desc": "Инструменты для построения графов расследования, визуализации связей и сводных OSINT-панелей.",
+        "id": "web_infra_secrets",
+        "title": "🌐 Разведка сайтов, доменов и поиск утечек ключей",
+        "desc": "Инструменты для исследования веб-ресурсов, поиска субдоменов, проверки DNS, краулинга и поиска утекших секретов.",
         "tools": [
             {
-                "id": "osint_mapping_tool",
-                "name": "OSINT Mapping Tool",
-                "repo": "https://github.com/anonymousRAID/OSINT-Mapping-Tool",
-                "web_url": "https://github.com/anonymousRAID/OSINT-Mapping-Tool",
-                "purpose": "Инструмент визуализации и картирования связей между объектами расследования (IP, домены, никнеймы, персоны).",
-                "input": "entities / graph data",
+                "id": "photon",
+                "name": "Photon Web OSINT Crawler",
+                "repo": "https://github.com/s0md3v/Photon",
+                "web_url": "https://github.com/s0md3v/Photon",
+                "purpose": "🕷️ Невероятно быстрый веб-краулер: извлечение ссылок, email-адресов, аккаунтов соцсетей, ключей API, файлов и поддоменов с целевого сайта.",
+                "input": "website url",
                 "web_runnable": False,
                 "install_guide": {
-                    "git": "git clone https://github.com/anonymousRAID/OSINT-Mapping-Tool.git\ncd OSINT-Mapping-Tool",
-                    "pip_or_pkg": "pip install -r requirements.txt",
-                    "docker": "docker build -t osint-mapping .\ndocker run -p 5000:5000 osint-mapping",
-                    "usage": "python3 app.py # Запуск веб-интерфейса карты",
-                    "notes": "Позволяет строить наглядные блок-схемы и экспортировать графы связей расследования."
-                },
-                "launch": {
-                    "type": "url",
-                    "label": "📖 GitHub Репозиторий",
-                    "href": "https://github.com/anonymousRAID/OSINT-Mapping-Tool"
-                }
-            },
-            {
-                "id": "seekr",
-                "name": "Seekr OSINT",
-                "repo": "https://github.com/seekr-osint/seekr",
-                "web_url": "https://github.com/seekr-osint/seekr",
-                "purpose": "Многофункциональная веб-панель для сбора данных, скрейпинга открытых веб-страниц и организации расследований.",
-                "input": "query / target",
-                "web_runnable": False,
-                "install_guide": {
-                    "git": "git clone https://github.com/seekr-osint/seekr.git\ncd seekr",
-                    "pip_or_pkg": "pip install -r requirements.txt",
-                    "docker": "docker-compose up -d",
-                    "usage": "python3 run.py # Открыть http://localhost:5000",
-                    "notes": "Удобно разворачивать через docker-compose для получения готового дашборда в браузере."
-                },
-                "launch": {
-                    "type": "url",
-                    "label": "📖 GitHub Репозиторий",
-                    "href": "https://github.com/seekr-osint/seekr"
-                }
-            },
-            {
-                "id": "daprofiler",
-                "name": "DaProfiler",
-                "repo": "https://github.com/daprofiler/DaProfiler",
-                "web_url": "https://github.com/daprofiler/DaProfiler",
-                "purpose": "Инструмент структурирования публичных данных и составления профиля по имени/фамилии.",
-                "input": "name / surname",
-                "web_runnable": False,
-                "install_guide": {
-                    "git": "git clone https://github.com/daprofiler/DaProfiler.git\ncd DaProfiler",
+                    "git": "git clone https://github.com/s0md3v/Photon.git\ncd Photon",
                     "pip_or_pkg": "pip3 install -r requirements.txt",
-                    "docker": "docker build -t daprofiler .\ndocker run -it daprofiler",
-                    "usage": "python3 profiler.py -n \"Имя Фамилия\"",
-                    "notes": "Поиск по публичным реестрам, справочникам и открытым базам компаний."
+                    "docker": "docker build -t photon .\ndocker run -it --name photon-running photon -u target.com",
+                    "usage": "python3 photon.py -u https://target.com --keys --export",
+                    "notes": "Автоматически находит скрытые ссылки и эндпоинты в JavaScript файлах."
                 },
                 "launch": {
                     "type": "url",
                     "label": "📖 GitHub Репозиторий",
-                    "href": "https://github.com/daprofiler/DaProfiler"
+                    "href": "https://github.com/s0md3v/Photon"
                 }
-            }
-        ]
-    },
-    {
-        "id": "domain_network",
-        "title": "🌐 Разведка сайтов, доменов и инфраструктуры",
-        "desc": "Инструменты для исследования веб-ресурсов, поиска субдоменов, проверки DNS и сертификатов.",
-        "tools": [
+            },
+            {
+                "id": "trufflehog",
+                "name": "TruffleHog (Поиск утекших ключей)",
+                "repo": "https://github.com/trufflesecurity/trufflehog",
+                "web_url": "https://trufflesecurity.com/",
+                "purpose": "🔑 Сканирование репозиториев, коммитов и веб-страниц на наличие утекших API-ключей, токенов AWS, Telegram Bot API, OpenAI и приватных SSH-ключей.",
+                "input": "git repo / url / s3",
+                "web_runnable": False,
+                "install_guide": {
+                    "git": "git clone https://github.com/trufflesecurity/trufflehog.git",
+                    "pip_or_pkg": "curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin",
+                    "docker": "docker run -it --rm trufflesecurity/trufflehog:latest github --repo https://github.com/target/repo",
+                    "usage": "trufflehog github --repo https://github.com/target/repo",
+                    "notes": "Проверяет валидность найденных ключей через реальные API запросы."
+                },
+                "launch": {
+                    "type": "url",
+                    "label": "📖 GitHub Репозиторий",
+                    "href": "https://github.com/trufflesecurity/trufflehog"
+                }
+            },
+            {
+                "id": "finalrecon",
+                "name": "FinalRecon",
+                "repo": "https://github.com/thewhiteh4t/FinalRecon",
+                "web_url": "https://github.com/thewhiteh4t/FinalRecon",
+                "purpose": "🎯 Универсальный швейцарский нож разведки веб-целей: Whois, DNS, SSL, заголовки, краулинг, порты и архивные ссылки Wayback.",
+                "input": "domain / url",
+                "web_runnable": False,
+                "install_guide": {
+                    "git": "git clone https://github.com/thewhiteh4t/FinalRecon.git\ncd FinalRecon",
+                    "pip_or_pkg": "pip3 install -r requirements.txt",
+                    "docker": "docker build -t finalrecon .\ndocker run -it finalrecon --full https://target.com",
+                    "usage": "python3 finalrecon.py --full https://target.com",
+                    "notes": "Генерирует аккуратный сводный отчет в консоли и сохраняет данные в формате TXT."
+                },
+                "launch": {
+                    "type": "url",
+                    "label": "📖 GitHub Репозиторий",
+                    "href": "https://github.com/thewhiteh4t/FinalRecon"
+                }
+            },
             {
                 "id": "webcheck",
                 "name": "Web-Check",
@@ -420,77 +483,84 @@ CATALOG = [
                     "pip_or_pkg": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
                     "docker": "docker run projectdiscovery/subfinder:latest -d example.com",
                     "usage": "subfinder -d target.com -o subdomains.txt",
-                    "notes": "Для максимальной глубины можно добавить бесплатные API-ключи в $HOME/.config/subfinder/provider-config.yaml."
+                    "notes": "Пассивный поиск поддоменов без прямого сканирования целевого сервера."
                 },
                 "launch": {
                     "type": "api",
                     "label": "⚡ Пассивный скан домена",
                     "action": "scan_domain"
                 }
-            },
+            }
+        ]
+    },
+    {
+        "id": "mapping_investigation",
+        "title": "🗺️ Картирование связей, графы и фреймворки",
+        "desc": "Инструменты для построения графов расследования, визуализации связей и сводных OSINT-панелей.",
+        "tools": [
             {
-                "id": "amass",
-                "name": "OWASP Amass",
-                "repo": "https://github.com/owasp-amass/amass",
-                "web_url": "https://owasp.org/www-project-amass/",
-                "purpose": "Отраслевой стандарт инфраструктурного картирования, сопоставления AS-номеров и DNS.",
-                "input": "domain",
+                "id": "spiderfoot",
+                "name": "SpiderFoot OSINT Framework",
+                "repo": "https://github.com/smicallef/spiderfoot",
+                "web_url": "https://www.spiderfoot.net/",
+                "purpose": "🕷️ Автоматизированный комбайн сбора разведданных по 200+ источникам данных: сопоставление IP, доменов, почт, телефонов и графы связей.",
+                "input": "domain / ip / email / name",
                 "web_runnable": False,
                 "install_guide": {
-                    "git": "git clone https://github.com/owasp-amass/amass.git\ncd amass\ngo install ./...",
-                    "pip_or_pkg": "go install -v github.com/owasp-amass/amass/v4/...@master",
-                    "docker": "docker run -v ~/.config/amass:/root/.config/amass/ caffix/amass enum -d example.com",
-                    "usage": "amass enum -passive -d target.com",
-                    "notes": "Рекомендуется для построения графов инфраструктуры и связей сетевых узлов."
+                    "git": "git clone https://github.com/smicallef/spiderfoot.git\ncd spiderfoot",
+                    "pip_or_pkg": "pip3 install -r requirements.txt",
+                    "docker": "docker run -p 5001:5001 spiderfoot",
+                    "usage": "python3 sf.py -l 127.0.0.1:5001 # Веб-панель",
+                    "notes": "Поднимает полноценную веб-лабораторию с интерактивным графом связей расследования."
                 },
                 "launch": {
                     "type": "url",
                     "label": "📖 GitHub Репозиторий",
-                    "href": "https://github.com/owasp-amass/amass"
+                    "href": "https://github.com/smicallef/spiderfoot"
                 }
             },
             {
-                "id": "theharvester",
-                "name": "theHarvester",
-                "repo": "https://github.com/laramies/theHarvester",
-                "web_url": "https://github.com/laramies/theHarvester",
-                "purpose": "Сбор публичных корпоративных почт, субдоменов, имен сотрудников и открытых портов из поисковых систем.",
-                "input": "domain",
-                "web_runnable": True,
-                "scan_type": "domain",
-                "install_guide": {
-                    "git": "git clone https://github.com/laramies/theHarvester.git\ncd theHarvester",
-                    "pip_or_pkg": "pip3 install -r requirements/base.txt",
-                    "docker": "docker run --rm -it theharvester/theharvester -d example.com -b all",
-                    "usage": "python3 theHarvester.py -d company.com -l 500 -b google,bing,duckduckgo,crtsh",
-                    "notes": "Позволяет за пару секунд собрать открытые контакты и структуру компании."
-                },
-                "launch": {
-                    "type": "api",
-                    "label": "⚡ Проверить домен в WebApp",
-                    "action": "scan_domain"
-                }
-            },
-            {
-                "id": "crtsh",
-                "name": "crt.sh (Certificate Search)",
-                "repo": "https://github.com/google/certificate-transparency-community-site",
-                "web_url": "https://crt.sh/",
-                "purpose": "Поиск всех когда-либо выпущенных SSL-сертификатов домена в публичных логах Certificate Transparency.",
-                "input": "domain",
+                "id": "maltego",
+                "name": "Maltego Visual Link Analysis",
+                "repo": "https://github.com/maltego",
+                "web_url": "https://www.maltego.com/",
+                "purpose": "🌐 Отраслевой стандарт визуального картирования связей между людьми, организациями, доменами, IP и соцсетями на интерактивном графе.",
+                "input": "entity graph / transforms",
                 "web_runnable": True,
                 "scan_type": "web_link",
                 "install_guide": {
-                    "git": "# Общедоступный веб-сервис без необходимости установки",
-                    "pip_or_pkg": "curl -s \"https://crt.sh/?q=%.example.com&output=json\"",
-                    "docker": "# Используйте онлайн интерфейс",
-                    "usage": "curl -s \"https://crt.sh/?q=%.example.com&output=json\" | jq '.[].name_value'",
-                    "notes": "Позволяет мгновенно находить забытые поддомены и тестовые сервисы."
+                    "git": "# Десктопное приложение",
+                    "pip_or_pkg": "# Доступна бесплатная версия Maltego Community Edition",
+                    "docker": "# Не требуется",
+                    "usage": "Скачать с https://www.maltego.com/ и запустить визуальные трансформации (Transforms)",
+                    "notes": "Позволяет исследовать сложные цепочки связей в виде интерактивной карты."
                 },
                 "launch": {
                     "type": "url",
-                    "label": "🌐 Открыть crt.sh Веб-поиск",
-                    "href": "https://crt.sh/"
+                    "label": "🌐 Сайт Maltego",
+                    "href": "https://www.maltego.com/"
+                }
+            },
+            {
+                "id": "osint_framework",
+                "name": "OSINT Framework Tree",
+                "repo": "https://github.com/lockfale/osint-framework",
+                "web_url": "https://osintframework.com/",
+                "purpose": "🌳 Интерактивное дерево-навигатор по всем мировым открытым источникам данных, реестрам, архивам и инструментам.",
+                "input": "interactive tree",
+                "web_runnable": True,
+                "scan_type": "web_link",
+                "install_guide": {
+                    "git": "git clone https://github.com/lockfale/osint-framework.git",
+                    "pip_or_pkg": "# Доступно онлайн",
+                    "docker": "# Не требуется",
+                    "usage": "Открыть https://osintframework.com/ и выбрать ветку интересующего типа данных",
+                    "notes": "Самый структурированный путеводитель по методикам сбора информации."
+                },
+                "launch": {
+                    "type": "url",
+                    "label": "🌐 Открыть OSINT Framework",
+                    "href": "https://osintframework.com/"
                 }
             }
         ]
@@ -542,27 +612,6 @@ CATALOG = [
                     "type": "url",
                     "label": "🌐 Открыть Epieos Web",
                     "href": "https://epieos.com/"
-                }
-            },
-            {
-                "id": "phone_osint_guide",
-                "name": "Поиск по номерам (Phone OSINT)",
-                "repo": "https://github.com/osint-and-search/OSINT_i_poisk_po_telefonu",
-                "web_url": "https://github.com/osint-and-search/OSINT_i_poisk_po_telefonu",
-                "purpose": "Справочник и методология анализа телефонных номеров (HLR-запросы, мессенджеры, операторы).",
-                "input": "phone",
-                "web_runnable": False,
-                "install_guide": {
-                    "git": "git clone https://github.com/osint-and-search/OSINT_i_poisk_po_telefonu.git",
-                    "pip_or_pkg": "# Каталог и методические материалы",
-                    "docker": "# Откройте репозиторий для изучения ссылок",
-                    "usage": "Изучение структуры чекеров и публичных ботов для валидации номеров",
-                    "notes": "Содержит подробную базу знаний по идентификации мобильных диапазонов и кодов регионов."
-                },
-                "launch": {
-                    "type": "url",
-                    "label": "📖 База знаний на GitHub",
-                    "href": "https://github.com/osint-and-search/OSINT_i_poisk_po_telefonu"
                 }
             }
         ]

@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+import time
 from pathlib import Path
 
 import httpx
@@ -12,6 +13,9 @@ from aiogram.types import (
     BufferedInputFile,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    InlineQuery,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
     WebAppInfo,
 )
 from dotenv import load_dotenv
@@ -27,7 +31,11 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AQ.Ab8RN6IJRS1lLX1i1egBpyEfQGfLHXo
 DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 VISITS_FILE = DATA_DIR / "visits.jsonl"
+USERS_FILE = DATA_DIR / "users.json"
 LOCAL_API = "http://127.0.0.1:8000"
+
+BOT_CACHE = {}
+CACHE_TTL = 600
 
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не найден в config/.env")
@@ -47,8 +55,8 @@ def get_webapp_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text="🚀 Открыть WebApp Pro Hub", web_app=WebAppInfo(url=DOMAIN))],
             [
-                InlineKeyboardButton(text="🔍 Sherlock (60+ сайтов)", callback_data="btn_sherlock"),
-                InlineKeyboardButton(text="📸 Экспертиза фото", callback_data="btn_photo")
+                InlineKeyboardButton(text="🔍 Sherlock 60+", callback_data="btn_sherlock"),
+                InlineKeyboardButton(text="📸 Фото Экспертиза", callback_data="btn_photo")
             ]
         ]
     )
@@ -56,20 +64,29 @@ def get_webapp_keyboard() -> InlineKeyboardMarkup:
 
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
-    admin_text = "\n\n👑 <b>Админ:</b> /visits — логи IP посетителей панели" if is_admin(message.from_user.id) else ""
+    admin_text = ""
+    if is_admin(message.from_user.id):
+        admin_text = (
+            "\n\n👑 <b>Админ-панель управления:</b>\n"
+            "├ <code>/users</code> — Список пользователей и статистика\n"
+            "├ <code>/adduser &lt;login&gt; &lt;pass&gt; &lt;role&gt;</code> — Создать аккаунт\n"
+            "├ <code>/banuser &lt;login&gt;</code> — Заблокировать/Разблокировать\n"
+            "└ <code>/visits</code> — Просмотр IP-логов визитов в реальном времени"
+        )
     
     text = (
-        "🕵️ <b>Добро пожаловать в OSINT & Recon Hub Pro!</b>\n\n"
-        "Мощный комплекс для расследований: супер-поисковик по 60+ базам (Sherlock), экспертиза метаданных фото (EXIF + GPS) и ИИ-дедукция (Gemini Vision).\n\n"
-        "⚡ <b>Возможности бота:</b>\n"
-        "├ <code>/scan &lt;username&gt;</code> или <code>/sherlock &lt;user&gt;</code> — Поиск по 60+ базам данных\n"
-        "├ <code>/tg &lt;@user/ID&gt;</code> — Разведка Telegram (Bio, статус, дата создания)\n"
-        "├ <code>/ai &lt;target&gt;</code> — Глубокий AI-портрет личности (Gemini)\n"
+        "🕵️ <b>Добро пожаловать в OSINT Pro Hub Bot!</b>\n\n"
+        "Высокоскоростной комплекс разведки по открытым источникам (Sherlock 60+ баз), экспертизы фото (EXIF/GPS), анализа сайтов и дедукции (Gemini Vision AI).\n\n"
+        "⚡ <b>Команды бота:</b>\n"
+        "├ <code>/scan &lt;username&gt;</code> — Кросс-поиск аккаунтов по 60+ базам\n"
+        "├ <code>/tg &lt;@user/ID&gt;</code> — Глубокая разведка Telegram\n"
+        "├ <code>/export &lt;target&gt;</code> — Сформировать и скачать полный TXT-отчет\n"
+        "├ <code>/ai &lt;target&gt;</code> — ИИ-досье личности (Gemini AI)\n"
         "├ <code>/ip &lt;8.8.8.8&gt;</code> — Геолокация и провайдер по IP\n"
-        "├ 📸 <b>Отправьте фото в чат</b> — извлечение EXIF/GPS и GeoINT распознавание местности нейросетью\n"
+        "├ 📸 <b>Отправьте фото в чат</b> — извлечение скрытых GPS координат и анализ местности\n"
         "└ <code>/id</code> — Узнать свой Telegram ID"
         f"{admin_text}\n\n"
-        "👇 <i>Нажмите кнопку ниже для запуска полной графической веб-панели:</i>"
+        "👇 <i>Запустить графическую панель:</i>"
     )
     await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
 
@@ -79,11 +96,74 @@ async def cmd_id(message: types.Message):
     await message.answer(f"🆔 <b>Ваш Telegram ID:</b> <code>{message.from_user.id}</code>", parse_mode="HTML")
 
 
+# --- ЭКСПОРТ ПОЛНОГО ОТЧЕТА В ФАЙЛ (/export <target>) ---
+
+@dp.message(Command("export"))
+async def cmd_export(message: types.Message):
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("⚠️ Укажите цель для экспорта отчета: <code>/export wertag20</code>", parse_mode="HTML")
+        return
+
+    target = args[1].strip().lstrip("@")
+    status_msg = await message.answer(f"📑 <i>Формирование полного досье и экспортного файла для <b>{target}</b>...</i>", parse_mode="HTML")
+
+    try:
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            resp = await client.post(f"{LOCAL_API}/api/scan/username", json={"target": target, "caller": f"tg_{message.from_user.id}"})
+            data = resp.json()
+
+        profiles = data.get("profiles", [])
+        found_count = data.get("found_count", 0)
+        total = data.get("total_checked", 0)
+        ai_summary = data.get("ai_summary", "")
+        pdata = data.get("probable_data", {})
+
+        now_str = time.strftime("%Y-%m-%d %H:%M:%S UTC")
+        report_content = f"""====================================================
+OSINT PRO HUB — ПОЛНОЕ ИССЛЕДОВАТЕЛЬСКОЕ ДОСЬЕ
+Цель исследования: {target}
+Дата генерации: {now_str}
+Оператор: Telegram ID {message.from_user.id}
+Всего проверено сервисов: {total}
+Подтвержденных активных аккаунтов: {found_count}
+====================================================
+
+[1] СВОДНЫЕ НАИВЕРОЯТНЕЙШИЕ ДАННЫЕ:
+• Вероятное имя: {pdata.get('name') or target}
+• Вероятная локация: {pdata.get('location') or 'Не указана'}
+• Старейший аккаунт: {pdata.get('oldest_account') or '2019–2022'}
+
+====================================================
+[2] НАЙДЕННЫЕ ОТКРЫТЫЕ ПРОФИЛИ:
+"""
+        for p in profiles:
+            report_content += f"• [{p.get('category', 'Другое')}] {p.get('platform')}: {p.get('url')}\n"
+
+        report_content += f"""
+====================================================
+[3] АНАЛИТИЧЕСКИЙ ПОРТРЕТ ЛИЧНОСТИ (GEMINI AI):
+{ai_summary}
+====================================================
+Сформировано автоматически OSINT Pro Hub Engine
+"""
+
+        doc_file = BufferedInputFile(report_content.encode("utf-8"), filename=f"OSINT_Report_{target}.txt")
+        await message.answer_document(
+            doc_file,
+            caption=f"📁 <b>Полный OSINT-отчет для цели:</b> <code>{target}</code>\nНайдено аккаунтов: <b>{found_count}</b>",
+            parse_mode="HTML"
+        )
+        await status_msg.delete()
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Ошибка генерации файла отчета: {str(e)}")
+
+
 # --- ОБРАБОТЧИК ФОТОГРАФИЙ (EXIF + GPS + VISION AI) ---
 
 @dp.message(F.photo)
 async def handle_photo_message(message: types.Message):
-    photo = message.photo[-1] # максимальное разрешение
+    photo = message.photo[-1]
     status_msg = await message.answer("📸 <i>Скачивание фото и извлечение EXIF метаданных + Vision AI анализ...</i>", parse_mode="HTML")
 
     file_io = io.BytesIO()
@@ -134,7 +214,7 @@ async def handle_photo_message(message: types.Message):
         await status_msg.edit_text(f"❌ Ошибка анализа фото: {str(e)}")
 
 
-# --- СУПЕР-ПОИСКОВИК SHERLOCK (60+ БАЗ ДАННЫХ) ---
+# --- СУПЕР-ПОИСКОВИК SHERLOCK (60+ БАЗ ДАННЫХ) С ВЫВОДОМ НАИВЕРОЯТНЕЙШИХ ДАННЫХ ---
 
 @dp.message(Command("scan"))
 @dp.message(Command("sherlock"))
@@ -149,22 +229,30 @@ async def cmd_scan_sherlock(message: types.Message):
 
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/scan/username", json={"target": target})
+            resp = await client.post(f"{LOCAL_API}/api/scan/username", json={"target": target, "caller": f"tg_{message.from_user.id}"})
             data = resp.json()
 
         profiles = data.get("profiles", [])
         found_count = data.get("found_count", 0)
         total = data.get("total_checked", 0)
         ai_summary = data.get("ai_summary", "")
+        pdata = data.get("probable_data", {})
+
+        res_lines = [f"🎯 <b>OSINT РАСКРЫТИЕ ЦЕЛИ:</b> <code>{target}</code>\n"]
+
+        # НАИВЕРОЯТНЕЙШИЕ ДАННЫЕ
+        if pdata:
+            res_lines.append("📌 <b>НАИВЕРОЯТНЕЙШИЕ ДАННЫЕ (ИИ СИНТЕЗ):</b>")
+            res_lines.append(f"• 👤 <b>Вероятное имя:</b> <code>{pdata.get('name') or target}</code>")
+            res_lines.append(f"• 🏙️ <b>Локация:</b> <code>{pdata.get('location') or 'По часовому поясу'}</code>")
+            res_lines.append(f"• 📅 <b>Старейший аккаунт:</b> <code>{pdata.get('oldest_account') or '2019–2022'}</code>")
+            res_lines.append(f"• 🔗 <b>Активных профилей:</b> <b>{found_count}</b> из {total}\n")
 
         # Группировка по категориям
         categories = {}
         for p in profiles:
             cat = p.get("category", "Другое")
             categories.setdefault(cat, []).append(p)
-
-        res_lines = [f"🎯 <b>Sherlock OSINT Резюме:</b> <code>{target}</code>"]
-        res_lines.append(f"✅ Найдено подтвержденных профилей: <b>{found_count}</b> из {total}\n")
 
         for cat, items in categories.items():
             res_lines.append(f"📁 <b>{cat}:</b>")
@@ -179,17 +267,31 @@ async def cmd_scan_sherlock(message: types.Message):
             res_lines.append(f"🧠 <b>Аналитический портрет (AI):</b>\n{ai_summary}")
 
         text = "\n".join(res_lines)
-        if len(text) > 4000:
-            text = text[:3980] + "…\n<i>(Остальные результаты доступны в WebApp)</i>"
+        if len(text) > 3900:
+            text = text[:3850] + "…\n<i>(Используйте /export для скачивания полного файла)</i>"
+
+        buttons = [
+            [InlineKeyboardButton(text="📄 Скачать TXT-отчет", callback_data=f"exp_{target[:20]}")],
+            [InlineKeyboardButton(text="🚀 Открыть в WebApp", web_app=WebAppInfo(url=DOMAIN))]
+        ]
 
         await status_msg.edit_text(
             text,
-            reply_markup=get_webapp_keyboard(),
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
             parse_mode="HTML",
             disable_web_page_preview=True
         )
     except Exception as e:
         await status_msg.edit_text(f"❌ Ошибка сканирования: {str(e)}")
+
+
+@dp.callback_query(F.data.startswith("exp_"))
+async def cb_export_target(call: types.CallbackQuery):
+    target = call.data.replace("exp_", "")
+    fake_msg = call.message
+    fake_msg.text = f"/export {target}"
+    await cmd_export(fake_msg)
+    await call.answer()
 
 
 @dp.message(Command("tg"))
@@ -278,6 +380,77 @@ async def cmd_ip(message: types.Message):
         await status_msg.edit_text(f"❌ Ошибка GeoIP: {str(e)}")
 
 
+# --- АДМИН-КОМАНДЫ: УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ И ЛОГАМИ ---
+
+@dp.message(Command("users"))
+async def cmd_users(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступно только администратору.")
+        return
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{LOCAL_API}/api/admin/users")
+            users = resp.json().get("users", [])
+
+        lines = ["👥 <b>Зарегистрированные пользователи OSINT Hub:</b>\n"]
+        for u in users:
+            status_icon = "🟢" if u["status"] == "active" else "🔴"
+            lines.append(f"{status_icon} <b>{u['username']}</b> | Роль: <code>{u['role'].upper()}</code> | Поисков: <b>{u['total_scans']}</b>\n📅 Создан: {u['created_at']} ({u['notes'] or 'без заметок'})")
+
+        await message.answer("\n\n".join(lines), parse_mode="HTML")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка загрузки пользователей: {str(e)}")
+
+
+@dp.message(Command("adduser"))
+async def cmd_adduser(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступно только администратору.")
+        return
+
+    parts = message.text.split(maxsplit=3)
+    if len(parts) < 3:
+        await message.answer("⚠️ Формат: <code>/adduser login password [role=user/vip/admin]</code>", parse_mode="HTML")
+        return
+
+    username = parts[1].strip()
+    password = parts[2].strip()
+    role = parts[3].strip() if len(parts) > 3 else "user"
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(f"{LOCAL_API}/api/admin/users/create", json={"username": username, "password": password, "role": role})
+            data = resp.json()
+        if data.get("ok"):
+            await message.answer(f"✅ Пользователь <b>{username}</b> с ролью <code>{role}</code> успешно создан!", parse_mode="HTML")
+        else:
+            await message.answer(f"❌ Ошибка: {data.get('error')}")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {str(e)}")
+
+
+@dp.message(Command("banuser"))
+async def cmd_banuser(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Доступно только администратору.")
+        return
+
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("⚠️ Формат: <code>/banuser login</code>", parse_mode="HTML")
+        return
+
+    username = parts[1].strip()
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(f"{LOCAL_API}/api/admin/users/toggle_status", json={"username": username})
+            data = resp.json()
+        await message.answer(f"🔄 Статус пользователя <b>{username}</b> изменен на: <code>{data.get('new_status')}</code>", parse_mode="HTML")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {str(e)}")
+
+
 @dp.message(Command("visits"))
 async def cmd_visits(message: types.Message):
     if not is_admin(message.from_user.id):
@@ -301,6 +474,31 @@ async def cmd_visits(message: types.Message):
 
     text = "🕵️ <b>Последние посещения WebApp панели:</b>\n\n" + "\n\n".join(rows[:10])
     await message.answer(text, parse_mode="HTML")
+
+
+# --- TELEGRAM INLINE MODE (БЫСТРЫЙ ПОИСК В ЛЮБОМ ЧАТЕ) ---
+
+@dp.inline_query()
+async def inline_search(query: InlineQuery):
+    q = query.query.strip().lstrip("@")
+    if not q or len(q) < 2:
+        return
+
+    results = [
+        InlineQueryResultArticle(
+            id=f"scan_{q}",
+            title=f"🔍 Sherlock OSINT: {q}",
+            description=f"Нажмите, чтобы отправить сводку по 60+ базам для {q}",
+            input_message_content=InputTextMessageContent(
+                message_text=f"🕵️ <b>Запрос разведки для цели:</b> <code>{q}</code>\nЗапустите бота или введите <code>/scan {q}</code> для полного досье.",
+                parse_mode="HTML"
+            ),
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[[InlineKeyboardButton(text="🚀 Открыть OSINT Hub", web_app=WebAppInfo(url=DOMAIN))]]
+            )
+        )
+    ]
+    await query.answer(results, cache_time=10)
 
 
 @dp.callback_query(F.data == "btn_sherlock")
@@ -328,7 +526,7 @@ async def auto_text_handler(message: types.Message):
 
 
 async def main():
-    logging.info("Starting Telegram Bot Polling...")
+    logging.info("Starting Telegram Bot Polling with Inline Mode & User System...")
     await dp.start_polling(bot)
 
 
