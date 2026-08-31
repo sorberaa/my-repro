@@ -1,6 +1,33 @@
+# Секреты и токены
+.env
 config/.env
-data/*.jsonl
-data/visits.jsonl
+*.env
+
+# Данные и логи визитов
+data/
+*.jsonl
+*.db
+*.log
+logs/
+
+# Python и кэш
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 .venv/
+venv/
+osint_env/
+.cache/
+.local/
+.vscode/
+.idea/
+
+# Большие архивы и пакеты
+*.zip
+*.rar
+*.deb
+*.tar.gz
+*.exe
+tools/
+snap/
+
