@@ -387,8 +387,31 @@ async def api_auth_login(request: Request):
     return JSONResponse({"ok": False, "error": "Неверный логин или пароль"}, status_code=401)
 
 
+def is_admin_request(request: Request) -> bool:
+    uid = request.headers.get("x-telegram-user-id", "").strip()
+    adm_token = request.headers.get("x-admin-token", "").strip()
+    if ADMIN_TOKEN and adm_token == ADMIN_TOKEN:
+        return True
+    if ADMIN_CHAT_ID and uid == str(ADMIN_CHAT_ID):
+        return True
+    return False
+
+
+@app.get("/api/auth/me")
+async def api_auth_me(request: Request):
+    uid = request.headers.get("x-telegram-user-id", "").strip()
+    is_adm = (uid == str(ADMIN_CHAT_ID)) if (ADMIN_CHAT_ID and uid) else False
+    return {
+        "ok": True,
+        "is_admin": is_adm,
+        "user_id": uid
+    }
+
+
 @app.get("/api/admin/users")
-async def api_admin_get_users():
+async def api_admin_get_users(request: Request):
+    if not is_admin_request(request):
+        return JSONResponse({"ok": False, "error": "Доступ запрещен. Только для администратора."}, status_code=403)
     users = load_users()
     user_list = []
     for u in users.values():
@@ -405,6 +428,8 @@ async def api_admin_get_users():
 
 @app.post("/api/admin/users/create")
 async def api_admin_create_user(request: Request):
+    if not is_admin_request(request):
+        return JSONResponse({"ok": False, "error": "Доступ запрещен. Только для администратора."}, status_code=403)
     body = await request.json()
     username = str(body.get("username", "")).strip().lower()
     password = str(body.get("password", "")).strip()
@@ -433,6 +458,8 @@ async def api_admin_create_user(request: Request):
 
 @app.post("/api/admin/users/toggle_status")
 async def api_admin_toggle_user(request: Request):
+    if not is_admin_request(request):
+        return JSONResponse({"ok": False, "error": "Доступ запрещен. Только для администратора."}, status_code=403)
     body = await request.json()
     username = str(body.get("username", "")).strip()
 
@@ -448,6 +475,8 @@ async def api_admin_toggle_user(request: Request):
 
 @app.post("/api/admin/users/delete")
 async def api_admin_delete_user(request: Request):
+    if not is_admin_request(request):
+        return JSONResponse({"ok": False, "error": "Доступ запрещен. Только для администратора."}, status_code=403)
     body = await request.json()
     username = str(body.get("username", "")).strip()
 
@@ -489,7 +518,9 @@ async def api_catalog(q: Optional[str] = None, cat: Optional[str] = None):
 
 
 @app.get("/api/admin/visitors")
-async def get_admin_visitors(limit: int = 50):
+async def get_admin_visitors(request: Request, limit: int = 50):
+    if not is_admin_request(request):
+        return JSONResponse({"ok": False, "error": "Доступ запрещен. Только для администратора."}, status_code=403)
     rows = []
     if VISITS_FILE.exists():
         for line in VISITS_FILE.read_text(encoding="utf-8").splitlines()[-max(1, min(limit, 200)):]:

@@ -161,8 +161,8 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       <i class="fa-solid fa-terminal"></i> OSINT Cyber Hub
     </div>
     <div class="nav-actions">
-      <div class="user-badge" id="currentUserBadge" onclick="showView('usersAdminView')">
-        <i class="fa-solid fa-user-shield"></i> <span id="currentUsernameSpan">admin</span>
+      <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="openAdminPanel()">
+        <i class="fa-solid fa-user-shield"></i> <span id="currentUsernameSpan">Админ</span>
       </div>
       <button class="btn btn-purple" onclick="showView('attributionView')"><i class="fa-solid fa-user-secret"></i> Детектор виртов</button>
       <button class="btn btn-secondary" onclick="showView('photoView')"><i class="fa-solid fa-camera"></i> Фото</button>
@@ -375,12 +375,42 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 let FULL_CATALOG = [];
 let currentCategory = 'all';
 let activeTool = null;
-let currentSessionUser = 'admin';
+let currentSessionUser = 'guest';
+let tgUserId = '';
+let isUserAdmin = false;
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.expand();
   tg.ready();
+  if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    tgUserId = String(tg.initDataUnsafe.user.id);
+    currentSessionUser = tg.initDataUnsafe.user.username || ('tg_' + tgUserId);
+  }
+}
+
+// ПРОВЕРКА ПРАВ АДМИНИСТРАТОРА (ДОСТУПНО ТОЛЬКО ВЛАДЕЛЬЦУ)
+async function checkAdminAuth() {
+  try {
+    const res = await fetch('/api/auth/me', {
+      headers: { 'X-Telegram-User-Id': tgUserId }
+    });
+    const data = await res.json();
+    if (data.is_admin) {
+      isUserAdmin = true;
+      document.getElementById('currentUserBadge').style.display = 'inline-flex';
+    } else {
+      isUserAdmin = false;
+      document.getElementById('currentUserBadge').style.display = 'none';
+    }
+  } catch (e) {
+    document.getElementById('currentUserBadge').style.display = 'none';
+  }
+}
+
+function openAdminPanel() {
+  if (!isUserAdmin) return;
+  showView('usersAdminView');
 }
 
 // УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ВНЕШНИХ ССЫЛОК (TELEGRAM WEBAPP + BROWSER)
@@ -396,6 +426,9 @@ function openExternalUrl(url) {
 }
 
 function showView(viewId) {
+  if (viewId === 'usersAdminView' && !isUserAdmin) {
+    return;
+  }
   document.querySelectorAll('.view-page').forEach(el => el.classList.remove('active'));
   document.getElementById(viewId).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -682,11 +715,14 @@ function toggleAddUserModal() {
 }
 
 async function loadAdminUsers() {
+  if (!isUserAdmin) return;
   const tbody = document.getElementById('usersTableBody');
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
 
   try {
-    const res = await fetch('/api/admin/users');
+    const res = await fetch('/api/admin/users', {
+      headers: { 'X-Telegram-User-Id': tgUserId }
+    });
     const data = await res.json();
     const users = data.users || [];
 
@@ -716,6 +752,7 @@ async function loadAdminUsers() {
 }
 
 async function submitCreateUser() {
+  if (!isUserAdmin) return;
   const username = document.getElementById('newUsername').value.trim();
   const password = document.getElementById('newPassword').value.trim();
   const role = document.getElementById('newRole').value;
@@ -729,7 +766,10 @@ async function submitCreateUser() {
   try {
     const res = await fetch('/api/admin/users/create', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-User-Id': tgUserId
+      },
       body: JSON.stringify({ username, password, role, notes })
     });
     const data = await res.json();
@@ -747,10 +787,14 @@ async function submitCreateUser() {
 }
 
 async function toggleUserStatus(username) {
+  if (!isUserAdmin) return;
   try {
     await fetch('/api/admin/users/toggle_status', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-User-Id': tgUserId
+      },
       body: JSON.stringify({ username })
     });
     loadAdminUsers();
@@ -758,11 +802,15 @@ async function toggleUserStatus(username) {
 }
 
 async function deleteUser(username) {
+  if (!isUserAdmin) return;
   if (!confirm(`Удалить аккаунт ${username}?`)) return;
   try {
     await fetch('/api/admin/users/delete', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-User-Id': tgUserId
+      },
       body: JSON.stringify({ username })
     });
     loadAdminUsers();
@@ -770,11 +818,14 @@ async function deleteUser(username) {
 }
 
 async function loadAdminVisitors() {
+  if (!isUserAdmin) return;
   const tbody = document.getElementById('visitorsTableBody');
   tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
 
   try {
-    const res = await fetch('/api/admin/visitors?limit=50');
+    const res = await fetch('/api/admin/visitors?limit=50', {
+      headers: { 'X-Telegram-User-Id': tgUserId }
+    });
     const data = await res.json();
     const rows = data.visitors || [];
 
@@ -1398,6 +1449,7 @@ function filterResultProfiles(cat, btn) {
 }
 
 loadCatalog();
+checkAdminAuth();
 </script>
 </body>
 </html>
