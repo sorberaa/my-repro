@@ -325,6 +325,16 @@ def extract_exif_data(image_bytes: bytes) -> dict:
 # --- СИНТЕЗ И ДЕДУКЦИЯ НАИВЕРОЯТНЕЙШИХ ДАННЫХ ---
 
 def synthesize_heuristic_dossier(username: str, found_profiles: list, intel_signals: dict) -> tuple[dict, str]:
+    if not found_profiles:
+        return {
+            "name": username,
+            "location": "Не обнаружена в базах",
+            "age_estimate": "Нет подтвержденных данных",
+            "oldest_account": "—",
+            "confidence": "0%",
+            "total_active": 0
+        }, "Прямых открытых совпадений по никнейму не обнаружено."
+
     names = intel_signals.get("names", [])
     locations = intel_signals.get("locations", [])
     bios = intel_signals.get("bios", [])
@@ -737,22 +747,12 @@ def categorize_platform(name: str) -> str:
     return "Сервисы & Прочее"
 
 
-@app.post("/api/scan/username")
-async def scan_username_sherlock(request: Request):
-    """
-    Официальный алгоритм Sherlock Project с защитой от ложных срабатываний,
-    проверкой regex, кодов ошибок, сообщений об отсутствии пользователя и редиректов.
-    """
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    username = str(body.get("target", "")).strip().lstrip("@")
-    caller_user = str(body.get("caller", "guest")).strip()
+async def core_scan_username(username: str, caller_user: str = "guest") -> dict:
+    username = username.strip().lstrip("@")
     increment_user_scan(caller_user)
 
     if not username or len(username) < 2:
-        return JSONResponse({"ok": False, "error": "Введите никнейм длиной от 2 символов"}, status_code=400)
+        return {"ok": False, "error": "Введите никнейм длиной от 2 символов"}
 
     found = []
     found_names_set = set()
@@ -772,7 +772,6 @@ async def scan_username_sherlock(request: Request):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    # 1. Проверка через официальный реестр Sherlock Project (482 платформы)
     sherlock_db = load_sherlock_sites()
 
     async def probe_sherlock_site(client: httpx.AsyncClient, name: str, info: dict):
@@ -795,39 +794,43 @@ async def scan_username_sherlock(request: Request):
             try:
                 r = await client.get(url, headers=headers, timeout=3.5, follow_redirects=True)
                 final_url = str(r.url).lower()
-                
-                # 1. Отсечение редиректов на главную / логин / капчу
-                if username.lower() not in final_url and name.lower() not in ["telegram", "vkontakte"]:
-                    return
+                txt = r.text.lower()
 
-                for bad_url_part in ["/login", "/signin", "/auth", "not-found", "/404", "challenge", "verify-human", "captcha", "typo", "reason=vendor_not_found", "consent", "privacygate"]:
-                    if bad_url_part in final_url:
-                        return
-
+                # 1. Проверка HTTP статус-кода (если не 200 ОК - профиль не найден)
                 if r.status_code != 200:
                     return
 
-                # 2. Отсечение текстовых сообщений об ошибках
-                txt = r.text.lower()
-                for bad_text in ["404 not found", "user not found", "page not found", "profile not found", "account does not exist", "пользователь не найден", "страница не найдена", "account suspended", "no such user"]:
+                # 2. Отсечение редиректов на главную / логин / капчу
+                if username.lower() not in final_url and name.lower() not in ["telegram", "vkontakte"]:
+                    for login_pattern in ["/login", "/signin", "/auth", "/join", "accounts.", "captcha", "checkpoint", "/search"]:
+                        if login_pattern in final_url:
+                            return
+
+                url_main = str(info.get("urlMain", "")).rstrip("/").lower()
+                if url_main and final_url.rstrip("/") == url_main:
+                    return
+
+                # 3. Отсечение текстовых сообщений об ошибках
+                for bad_text in [
+                    "404 not found", "user not found", "page not found", "profile not found",
+                    "account does not exist", "пользователь не найден", "страница не найдена",
+                    "account suspended", "no such user", "this user does not exist", "doesn't exist",
+                    "could not be found", "nobody with that name"
+                ]:
                     if bad_text in txt:
                         return
 
                 etype = info.get("errorType")
                 emsg = info.get("errorMsg")
                 
-                if etype == "status_code":
-                    if str(r.url).rstrip("/") != str(info.get("urlMain", "")).rstrip("/"):
-                        pass
-                    else:
-                        return
-                elif etype == "message":
+                if etype == "message":
                     if isinstance(emsg, str) and emsg.lower() in txt:
                         return
                     elif isinstance(emsg, list) and any(m.lower() in txt for m in emsg):
                         return
                 elif etype == "response_url":
-                    if str(r.url) == str(info.get("errorUrl", "")) or str(r.url).rstrip("/") == str(info.get("urlMain", "")).rstrip("/"):
+                    err_url = str(info.get("errorUrl", "")).lower()
+                    if err_url and (final_url == err_url or err_url in final_url):
                         return
 
                 cat = categorize_platform(name)
@@ -843,9 +846,7 @@ async def scan_username_sherlock(request: Request):
             except Exception:
                 pass
 
-    # 2. Быстрый сбор глубоких метаданных из GitHub / Telegram API
     async def enrich_core_apis(client: httpx.AsyncClient):
-        # GitHub API
         try:
             gh_res = await client.get(f"https://api.github.com/users/{username}", headers=headers, timeout=3.0)
             if gh_res.status_code == 200:
@@ -862,7 +863,6 @@ async def scan_username_sherlock(request: Request):
         except Exception:
             pass
 
-        # Telegram
         try:
             tg_res = await client.get(f"https://t.me/{username}", headers=headers, timeout=3.0)
             if tg_res.status_code == 200 and ("tgme_page_extra" in tg_res.text or "@" in tg_res.text):
@@ -881,7 +881,6 @@ async def scan_username_sherlock(request: Request):
         tasks.append(enrich_core_apis(client))
         await asyncio.gather(*tasks)
 
-    # Сортировка и дедупликация
     total_db_count = len(sherlock_db)
     probable_data, default_markdown = synthesize_heuristic_dossier(username, found, intel_signals)
 
@@ -931,6 +930,20 @@ async def scan_username_sherlock(request: Request):
         "ai_summary": default_markdown,
         "cached": False
     }
+
+
+@app.post("/api/scan/username")
+async def scan_username_sherlock(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    username = str(body.get("target", "")).strip()
+    caller_user = str(body.get("caller", "guest")).strip()
+    res = await core_scan_username(username, caller_user)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
 
 
 # --- СКАНИРОВАНИЕ И АНАЛИЗ ФОТОГРАФИЙ (EXIF + GEMINI VISION AI) ---
@@ -1222,17 +1235,12 @@ async def scan_attribution(request: Request):
     }
 
 
-@app.post("/api/scan/domain")
-async def scan_domain(request: Request):
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    target = str(body.get("target", "")).strip().lower()
-    target = re.sub(r"^https?://", "", target).split("/")[0].split(":")[0]
+async def core_scan_domain(target: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    target = re.sub(r"^https?://", "", target).split("/")[0].split(":")[0].strip().lower()
 
     if not target or "." not in target:
-        return JSONResponse({"ok": False, "error": "Укажите корректное доменное имя (например, example.com)"}, status_code=400)
+        return {"ok": False, "error": "Укажите корректное доменное имя (например, example.com)"}
 
     results = {
         "target": target,
@@ -1244,7 +1252,8 @@ async def scan_domain(request: Request):
     }
 
     try:
-        ip_list = socket.gethostbyname_ex(target)[2]
+        loop = asyncio.get_running_loop()
+        ip_list = await loop.run_in_executor(None, lambda: socket.gethostbyname_ex(target)[2])
         results["ip_addresses"] = ip_list
     except Exception as e:
         results["dns_error"] = str(e)
@@ -1300,16 +1309,26 @@ async def scan_domain(request: Request):
     return {"ok": True, "type": "domain", "target": target, "data": results}
 
 
-@app.post("/api/scan/email")
-async def scan_email(request: Request):
+@app.post("/api/scan/domain")
+async def scan_domain(request: Request):
     try:
         body = await request.json()
     except Exception:
         body = {}
-    email = str(body.get("target", "")).strip().lower()
+    target = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_domain(target, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+async def core_scan_email(email: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    email = email.strip().lower()
 
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
-        return JSONResponse({"ok": False, "error": "Некорректный формат email"}, status_code=400)
+        return {"ok": False, "error": "Некорректный формат email"}
 
     domain = email.split("@")[1]
     import hashlib
@@ -1326,7 +1345,8 @@ async def scan_email(request: Request):
     }
 
     try:
-        res["domain_ips"] = socket.gethostbyname_ex(domain)[2]
+        loop = asyncio.get_running_loop()
+        res["domain_ips"] = await loop.run_in_executor(None, lambda: socket.gethostbyname_ex(domain)[2])
         res["mx_found"] = True
     except Exception:
         res["mx_found"] = False
@@ -1342,28 +1362,25 @@ async def scan_email(request: Request):
     return {"ok": True, "type": "email", "target": email, "data": res}
 
 
-@app.post("/api/scan/phone")
-async def scan_phone(request: Request):
-    """
-    Глубокая разведка по номеру телефона (Phone OSINT & Recon):
-    - Парсинг международного и национального формата (E.164, RFC3966)
-    - Определение страны, региона/города, сотового оператора и таймзоны
-    - Проверка типа линии (Мобильный, Стационарный, VoIP/Виртуальный номер)
-    - Прямые ссылки на мессенджеры (WhatsApp, Telegram, Viber, Skype)
-    - Генерация точных поисковых дорков (Авито, Юла, соцсети, документы, реестры)
-    - ИИ-анализ и сводка разведки.
-    """
+@app.post("/api/scan/email")
+async def scan_email(request: Request):
     try:
         body = await request.json()
     except Exception:
         body = {}
+    email = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_email(email, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
 
-    raw_phone = str(body.get("target", "")).strip()
-    caller_user = str(body.get("caller", "guest")).strip()
+
+async def core_scan_phone(raw_phone: str, caller_user: str = "guest") -> dict:
     increment_user_scan(caller_user)
-
+    raw_phone = raw_phone.strip()
     if not raw_phone:
-        return JSONResponse({"ok": False, "error": "Укажите номер телефона (например: +79991234567)"}, status_code=400)
+        return {"ok": False, "error": "Укажите номер телефона (например: +79991234567)"}
 
     clean_digits = re.sub(r"[^\d+]", "", raw_phone)
     if not clean_digits.startswith("+"):
@@ -1454,6 +1471,7 @@ async def scan_phone(request: Request):
         "country": country_name,
         "carrier": carrier_name,
         "line_type": line_type_str,
+        "is_voip_suspect": "VoIP" in line_type_str or "Вирт" in line_type_str,
         "timezones": tz_list,
         "search_formats": search_formats,
         "messengers": messengers,
@@ -1462,13 +1480,25 @@ async def scan_phone(request: Request):
     }
 
 
-@app.post("/api/scan/ip")
-async def scan_ip(request: Request):
+@app.post("/api/scan/phone")
+async def scan_phone(request: Request):
     try:
         body = await request.json()
     except Exception:
         body = {}
-    target_ip = str(body.get("target", "")).strip() or client_ip(request)
+    raw_phone = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_phone(raw_phone, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+async def core_scan_ip(target_ip: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    target_ip = target_ip.strip()
+    if not target_ip:
+        target_ip = "8.8.8.8"
 
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
@@ -1485,54 +1515,29 @@ async def scan_ip(request: Request):
                 "google_maps_url": maps_url
             }
     except Exception as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+        return {"ok": False, "error": str(e)}
 
 
-@app.post("/api/ai/deduce")
-async def ai_deduce_persona(request: Request):
+@app.post("/api/scan/ip")
+async def scan_ip(request: Request):
     try:
         body = await request.json()
     except Exception:
         body = {}
-    target = str(body.get("target", "")).strip()
-    if not target:
-        return JSONResponse({"ok": False, "error": "Цель не указана"}, status_code=400)
-
-    prompt = (
-        f"Ты — ведущий OSINT-аналитик. Составь структурированное тактическое досье на цель: '{target}'.\n"
-        "Определи: 1) Цифровой профиль 2) Возрастной диапазон 3) Основные векторы связей 4) Рекомендации по дальнейшей проверке.\n"
-        "Пиши лаконично, строго, без лишнего текста."
-    )
-    ai_text = await run_gemini_prompt(prompt)
-    if not ai_text:
-        ai_text = (
-            f"💜 **Аналитическое досье по цели:** `{target}`\n\n"
-            f"• **Идентификатор:** `{target}`\n"
-            f"• **Рекомендация:** Выполните поиск по базам Sherlock для построения графа активности."
-        )
-    return {"ok": True, "target": target, "dossier": ai_text}
+    target_ip = str(body.get("target", "")).strip() or client_ip(request)
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_ip(target_ip, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
 
 
-# --- 9. GITHUB DEEP RECON & PUBLIC COMMIT EMAIL FINDER ---
-
-@app.post("/api/scan/github")
-async def scan_github_recon(request: Request):
-    """
-    Глубокая разведка по профилю GitHub:
-    - Извлечение скрытых/публичных email через историю git-коммитов и публичные события
-    - Информация о компании, геолокации, SSH/GPG ключах
-    - Анализ репозиториев и цифрового следа разработчика.
-    """
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    target_user = str(body.get("target", "")).strip().lstrip("@").replace("https://github.com/", "").split("/")[0]
-    caller_user = str(body.get("caller", "guest")).strip()
+async def core_scan_github(target_user: str, caller_user: str = "guest") -> dict:
     increment_user_scan(caller_user)
+    target_user = target_user.strip().lstrip("@").replace("https://github.com/", "").split("/")[0]
 
     if not target_user:
-        return JSONResponse({"ok": False, "error": "Укажите GitHub логин (например: torvalds)"}, status_code=400)
+        return {"ok": False, "error": "Укажите GitHub логин (например: torvalds)"}
 
     headers = {
         "User-Agent": "OSINT-Cyber-Hub/2.0",
@@ -1545,7 +1550,7 @@ async def scan_github_recon(request: Request):
     repos_list = []
 
     async with httpx.AsyncClient(timeout=8.0) as client:
-        # 1. Запрос профиля
+        # 1. Профиль
         try:
             r_user = await client.get(f"https://api.github.com/users/{target_user}", headers=headers)
             if r_user.status_code == 200:
@@ -1557,7 +1562,7 @@ async def scan_github_recon(request: Request):
         except Exception:
             pass
 
-        # 2. Поиск скрытых email в публичных коммитах через GitHub Events API
+        # 2. Поиск скрытых email в коммитах
         try:
             r_events = await client.get(f"https://api.github.com/users/{target_user}/events/public", headers=headers)
             if r_events.status_code == 200:
@@ -1614,25 +1619,26 @@ async def scan_github_recon(request: Request):
     }
 
 
-# --- 10. CRYPTO & BLOCKCHAIN WALLET INTEL ---
-
-@app.post("/api/scan/crypto")
-async def scan_crypto_wallet(request: Request):
-    """
-    Разведка по криптокошелькам:
-    - Автоопределение сети (Bitcoin, Ethereum, Tron/USDT TRC20, Solana, Litecoin)
-    - Ссылки на блокчейн-эксплореры и AML-аналитику
-    """
+@app.post("/api/scan/github")
+async def scan_github_recon(request: Request):
     try:
         body = await request.json()
     except Exception:
         body = {}
-    addr = str(body.get("target", "")).strip()
-    caller_user = str(body.get("caller", "guest")).strip()
+    target_user = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_github(target_user, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+async def core_scan_crypto(addr: str, caller_user: str = "guest") -> dict:
     increment_user_scan(caller_user)
+    addr = addr.strip()
 
     if not addr or len(addr) < 14:
-        return JSONResponse({"ok": False, "error": "Введите валидный адрес кошелька (BTC, ETH, TRX, SOL)"}, status_code=400)
+        return {"ok": False, "error": "Введите валидный адрес кошелька (BTC, ETH, TRX, SOL)"}
 
     network = "Unknown / Multi-chain"
     symbol = "CRYPTO"
@@ -1681,7 +1687,98 @@ async def scan_crypto_wallet(request: Request):
         "network": network,
         "symbol": symbol,
         "explorers": explorers,
-        "aml_check_url": f"https://amlbot.com/"
+        "aml_check_url": "https://amlbot.com/"
+    }
+
+
+@app.post("/api/scan/crypto")
+async def scan_crypto_wallet(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    addr = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_crypto(addr, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+# --- 11. УНИВЕРСАЛЬНЫЙ ДВИЖОК МАРШРУТИЗАЦИИ ДЛЯ ВСЕХ ИНСТРУМЕНТОВ КАТАЛОГА ---
+
+@app.post("/api/scan/universal")
+async def scan_universal_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    tool_id = str(body.get("tool_id", "")).strip().lower()
+    target = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+
+    if not target:
+        return JSONResponse({"ok": False, "error": "Введите цель для анализа"}, status_code=400)
+
+    # 1. GitHub Recon & Leaks
+    if tool_id in ["github_recon", "git_hound"]:
+        return await core_scan_github(target, caller)
+
+    # 2. Crypto Wallet Intel
+    if tool_id in ["crypto_tracker"]:
+        return await core_scan_crypto(target, caller)
+
+    # 3. Phone Recon
+    if tool_id in ["phoneinfoga_recon", "ignorant"]:
+        return await core_scan_phone(target, caller)
+
+    # 4. Telegram & Attribution
+    if tool_id in ["sockpuppet_attribution"]:
+        return await scan_attribution_endpoint(request)
+    if tool_id in ["tg_inspector", "telepathy"]:
+        return await scan_telegram_endpoint(request)
+
+    # 5. Domain / Subdomains
+    if tool_id in ["subfinder", "amass", "finalrecon", "webcheck", "httpx"]:
+        return await core_scan_domain(target, caller)
+
+    # 6. Email
+    if tool_id in ["holehe_osint", "ghunt"]:
+        return await core_scan_email(target, caller)
+
+    # 7. IP / Shodan
+    if tool_id in ["ipinfo", "shodan_search"]:
+        return await core_scan_ip(target, caller)
+
+    # 8. Username scanners (Sherlock, Maigret, Blackbird, WhatsMyName)
+    if tool_id in ["sherlock", "maigret", "blackbird", "whatsmyname", "social_analyzer"]:
+        return await core_scan_username(target, caller)
+
+    # 9. Профильный запуск для всех остальных специализированных CLI утилит каталога
+    tool_info = find_tool(tool_id) or {"name": tool_id.upper(), "purpose": "Автоматизированная разведка", "install_guide": {}}
+    guide = tool_info.get("install_guide", {})
+    tool_name = tool_info.get("name", tool_id)
+
+    cli_cmd = guide.get("usage", f"{tool_id} {target}")
+    if "<target>" in cli_cmd or "<username>" in cli_cmd or "<domain>" in cli_cmd or "<target_ip>" in cli_cmd:
+        cli_cmd = cli_cmd.replace("<target>", target).replace("<username>", target).replace("<domain>", target).replace("<target_ip>", target)
+
+    return {
+        "ok": True,
+        "type": "cli_tool",
+        "tool_id": tool_id,
+        "tool_name": tool_name,
+        "target": target,
+        "purpose": tool_info.get("purpose", "Анализ открытых данных"),
+        "web_url": tool_info.get("web_url", ""),
+        "repo": tool_info.get("repo", ""),
+        "cli_command": cli_cmd,
+        "install_guide": guide,
+        "quick_links": [
+            {"name": "Google Dork", "url": f"https://www.google.com/search?q={urllib.parse.quote(target)}"},
+            {"name": "Yandex Dork", "url": f"https://yandex.ru/search/?text={urllib.parse.quote(target)}"},
+            {"name": "GitHub Code", "url": f"https://github.com/search?q={urllib.parse.quote(target)}&type=code"}
+        ]
     }
 
 

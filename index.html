@@ -1654,51 +1654,13 @@ async function runCurrentToolScan() {
 
   loader.style.display = 'block';
   outBox.style.display = 'none';
-
-  let endpoint = '/api/scan/username';
-  let cleanTarget = rawTarget;
-
-  if (activeTool.scan_type === 'github' || activeTool.id === 'github_recon') {
-    endpoint = '/api/scan/github';
-    cleanTarget = rawTarget.replace(/^@+/, '').replace('https://github.com/', '');
-    loaderText.innerText = 'Поиск скрытых email в коммитах и анализ профиля GitHub...';
-  } else if (activeTool.scan_type === 'crypto' || activeTool.id === 'crypto_tracker') {
-    endpoint = '/api/scan/crypto';
-    cleanTarget = rawTarget;
-    loaderText.innerText = 'Определение блокчейна, эксплореров и AML статуса...';
-  } else if (activeTool.scan_type === 'attribution' || activeTool.id === 'sockpuppet_attribution') {
-    endpoint = '/api/scan/attribution';
-    cleanTarget = rawTarget.replace(/^@+/, '');
-    loaderText.innerText = 'Корреляция мутаций псевдонимов и поиск основы...';
-  } else if (activeTool.scan_type === 'telegram' || activeTool.id === 'tg_inspector') {
-    endpoint = '/api/scan/telegram';
-    cleanTarget = rawTarget.replace(/^@+/, '');
-    loaderText.innerText = 'Опрос Telegram Gateway и извлечение профиля...';
-  } else if (activeTool.scan_type === 'domain' || activeTool.input === 'domain' || activeTool.id === 'subfinder' || activeTool.id === 'webcheck' || activeTool.id === 'finalrecon') {
-    endpoint = '/api/scan/domain';
-    cleanTarget = rawTarget.replace(/^https?:\/\//, '').split('/')[0];
-    loaderText.innerText = 'Разведка DNS, SSL, заголовков и поддоменов...';
-  } else if (activeTool.scan_type === 'email' || activeTool.input === 'email' || activeTool.id === 'ghunt' || activeTool.id === 'holehe_osint') {
-    endpoint = '/api/scan/email';
-    loaderText.innerText = 'Проверка MX серверов, Gravatar и сервисов...';
-  } else if (activeTool.scan_type === 'phone' || activeTool.id === 'phoneinfoga_recon' || (rawTarget.startsWith('+') && rawTarget.length > 7)) {
-    endpoint = '/api/scan/phone';
-    cleanTarget = rawTarget;
-    loaderText.innerText = 'Определение оператора, региона и генерация дорков...';
-  } else if (activeTool.scan_type === 'ip' || activeTool.input === 'ip') {
-    endpoint = '/api/scan/ip';
-    loaderText.innerText = 'Определение геопозиции IP и провайдера...';
-  } else {
-    endpoint = '/api/scan/username';
-    cleanTarget = rawTarget.replace(/^@+/, '');
-    loaderText.innerText = 'Опрос официальных баз Sherlock Project...';
-  }
+  loaderText.innerText = `Запуск модуля ${activeTool.name}...`;
 
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch('/api/scan/universal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
-      body: JSON.stringify({ target: cleanTarget, caller: currentSessionUser || 'user' })
+      body: JSON.stringify({ tool_id: activeTool.id, target: rawTarget, caller: currentSessionUser || 'user' })
     });
     const data = await res.json();
     loader.style.display = 'none';
@@ -1707,7 +1669,7 @@ async function runCurrentToolScan() {
     if (data.type === 'attribution') {
       renderAttributionOutput(data, outBox);
     } else {
-      renderToolSpecificOutput(data, cleanTarget);
+      renderToolSpecificOutput(data, rawTarget);
     }
   } catch (err) {
     loader.style.display = 'none';
@@ -1716,7 +1678,7 @@ async function runCurrentToolScan() {
   }
 }
 
-// ВЫВОД РЕЗУЛЬТАТОВ РАЗВЕДКИ (GITHUB, CRYPTO, SHERLOCK, PHONE, DOMAIN, IP)
+// ВЫВОД РЕЗУЛЬТАТОВ РАЗВЕДКИ (GITHUB, CRYPTO, SHERLOCK, PHONE, DOMAIN, IP, CLI)
 function renderToolSpecificOutput(data, target) {
   const outBox = document.getElementById('tvOutputBox');
   const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
@@ -1858,44 +1820,37 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
         </div>
         <div class="term-log-content">${cliLog}</div>
       </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title">
-          <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сводная дедукция по цели "${target}"
-        </div>
-        <div class="custom-grid">
-          <div class="custom-item">
-            <div class="custom-label">👤 Вероятное имя</div>
-            <div class="custom-val">${pdata.name || target}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🏙️ Локация</div>
-            <div class="custom-val">${pdata.location || 'По часовому поясу'}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🎂 Возраст</div>
-            <div class="custom-val">${pdata.age_estimate || '20–30 лет'}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🔗 Подтвержденных баз</div>
-            <div class="custom-val" style="color:var(--primary); font-weight:800;">${data.found_count} из ${data.total_checked}</div>
-          </div>
-        </div>
-      </div>
     `;
 
     if (profiles.length > 0) {
-      window._lastProfiles = profiles;
-      const categories = ['Все', ...new Set(profiles.map(p => p.category))];
-      let catButtons = categories.map((c, i) => `
-        <button class="chip ${i === 0 ? 'active' : ''}" style="padding:4px 9px; font-size:10px;" onclick="filterResultProfiles('${c}', this)">${c} (${c === 'Все' ? profiles.length : profiles.filter(p => p.category === c).length})</button>
-      `).join('');
-
       html += `
+        <div class="custom-card">
+          <div class="custom-card-title">
+            <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сводная дедукция по цели "${target}"
+          </div>
+          <div class="custom-grid">
+            <div class="custom-item">
+              <div class="custom-label">👤 Вероятное имя</div>
+              <div class="custom-val">${pdata.name || target}</div>
+            </div>
+            <div class="custom-item">
+              <div class="custom-label">🏙️ Локация</div>
+              <div class="custom-val">${pdata.location || 'По часовому поясу'}</div>
+            </div>
+            <div class="custom-item">
+              <div class="custom-label">🎂 Возраст</div>
+              <div class="custom-val">${pdata.age_estimate || '20–30 лет'}</div>
+            </div>
+            <div class="custom-item">
+              <div class="custom-label">🔗 Подтвержденных баз</div>
+              <div class="custom-val" style="color:var(--primary); font-weight:800;">${data.found_count} из ${data.total_checked}</div>
+            </div>
+          </div>
+        </div>
+
         <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
           Подтвержденные профили (${data.found_count}):
         </div>
-        <div class="filter-chips" style="margin-bottom:8px;">${catButtons}</div>
         <div class="profiles-grid" id="scanProfilesGrid">
       `;
       profiles.forEach(p => {
@@ -1915,8 +1870,8 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       html += '</div>';
     } else {
       html += `
-        <div class="info-banner" style="text-align:center; padding:14px;">
-          ❌ Прямых открытых совпадений по никнейму <b>${target}</b> не найдено.
+        <div class="info-banner" style="text-align:center; padding:16px; margin-top:10px;">
+          ❌ Прямых открытых совпадений по никнейму <b>${target}</b> в 480+ базах не найдено.
         </div>
       `;
     }
@@ -2051,6 +2006,45 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
             <div class="custom-label">🕒 Часовой пояс</div>
             <div class="custom-val">${d.timezone || '—'}</div>
           </div>
+        </div>
+      </div>
+    `;
+
+  // 7. CLI TOOL DIRECT RUNNER
+  } else if (data.type === 'cli_tool') {
+    let cliLog = `[${nowStr}] [MODULE] INITIALIZING: ${data.tool_name}
+[${nowStr}] [TARGET] "${data.target}"
+[${nowStr}] [COMMAND] ${data.cli_command}
+[${nowStr}] [STATUS] READY TO EXECUTE`;
+
+    html += `
+      <div class="hacker-terminal">
+        <div class="term-topbar">
+          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+          <span>${data.tool_id.toUpperCase()}@STATION:~# ${data.cli_command}</span>
+        </div>
+        <div class="term-log-content">${cliLog}</div>
+      </div>
+
+      <div class="custom-card" style="border-color:var(--cyan);">
+        <div class="custom-card-title"><i class="fa-solid fa-cube" style="color:var(--primary);"></i> ${data.tool_name}</div>
+        <div style="font-size:12px; color:#cbd5e1; margin-bottom:12px; line-height:1.45;">${data.purpose}</div>
+        
+        <div class="custom-item" style="margin-bottom:10px;">
+          <div class="custom-label">⚡ Сгенерированная команда CLI</div>
+          <div class="code-wrap" style="font-size:12px; color:var(--primary);">${data.cli_command}</div>
+        </div>
+
+        <div class="btn-group" style="margin-bottom:8px;">
+          ${data.web_url ? `<button onclick="openExternalUrl('${data.web_url}')" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Открыть сервис</button>` : ''}
+          ${data.repo ? `<button onclick="openExternalUrl('${data.repo}')" class="btn btn-secondary"><i class="fa-brands fa-github"></i> GitHub</button>` : ''}
+        </div>
+      </div>
+
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);"></i> Быстрый поиск по доркам для цели "${target}"</div>
+        <div class="btn-group">
+          ${(data.quick_links || []).map(q => `<button onclick="openExternalUrl('${q.url}')" class="btn btn-secondary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${q.name}</button>`).join('')}
         </div>
       </div>
     `;
