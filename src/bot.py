@@ -34,9 +34,6 @@ VISITS_FILE = DATA_DIR / "visits.jsonl"
 USERS_FILE = DATA_DIR / "users.json"
 LOCAL_API = "http://127.0.0.1:8000"
 
-BOT_CACHE = {}
-CACHE_TTL = 600
-
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не найден в config/.env")
 
@@ -55,7 +52,7 @@ def get_webapp_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text="⚡ Открыть Cyber WebApp", web_app=WebAppInfo(url=DOMAIN))],
             [
-                InlineKeyboardButton(text="🔍 Поиск 750+", callback_data="btn_sherlock"),
+                InlineKeyboardButton(text="🔍 Поиск Sherlock", callback_data="btn_sherlock"),
                 InlineKeyboardButton(text="📸 Фото Экспертиза", callback_data="btn_photo")
             ]
         ]
@@ -75,10 +72,10 @@ async def cmd_start(message: types.Message):
         )
     
     text = (
-        "🕵️ <b>OSINT Cyber Hub</b>\n\n"
-        "Автоматизированный комплекс разведки по открытым источникам (Sherlock 750+ баз), экспертизы фото (EXIF/GPS) и сопоставления связей.\n\n"
-        "⚡ <b>Команды:</b>\n"
-        "├ <code>/scan &lt;username&gt;</code> — Кросс-поиск по 750+ базам\n"
+        "🕵️ <b>Sherlock OSINT Bot & Cyber Hub</b>\n\n"
+        "Официальный алгоритм проверки открытых цифровых следов (Sherlock Project), экспертизы изображений (EXIF/GPS) и разведки Telegram.\n\n"
+        "⚡ <b>Команды бота:</b>\n"
+        "├ <code>/scan &lt;username&gt;</code> — Поиск по базам Sherlock Project\n"
         "├ <code>/tg &lt;@user/ID&gt;</code> — Разведка Telegram\n"
         "├ <code>/export &lt;target&gt;</code> — Скачать полный TXT-отчет\n"
         "├ <code>/ip &lt;8.8.8.8&gt;</code> — Геолокация IP\n"
@@ -106,7 +103,7 @@ async def cmd_export(message: types.Message):
     status_msg = await message.answer(f"📑 <i>Формирование отчета для <b>{target}</b>...</i>", parse_mode="HTML")
 
     try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(f"{LOCAL_API}/api/scan/username", json={"target": target, "caller": f"tg_{message.from_user.id}"})
             data = resp.json()
 
@@ -118,12 +115,12 @@ async def cmd_export(message: types.Message):
 
         now_str = time.strftime("%Y-%m-%d %H:%M:%S UTC")
         report_content = f"""====================================================
-OSINT CYBER HUB — ДОСЬЕ РАССЛЕДОВАНИЯ
+SHERLOCK OSINT ENGINE — ДОСЬЕ РАССЛЕДОВАНИЯ
 Цель: {target}
 Дата: {now_str}
 Оператор ID: {message.from_user.id}
 Всего проверено баз: {total}
-Подтверждено аккаунтов: {found_count}
+Подтверждено профилей: {found_count}
 ====================================================
 
 [1] СВОДНЫЕ ДАННЫЕ:
@@ -145,10 +142,10 @@ OSINT CYBER HUB — ДОСЬЕ РАССЛЕДОВАНИЯ
 ====================================================
 """
 
-        doc_file = BufferedInputFile(report_content.encode("utf-8"), filename=f"OSINT_{target}.txt")
+        doc_file = BufferedInputFile(report_content.encode("utf-8"), filename=f"Sherlock_{target}.txt")
         await message.answer_document(
             doc_file,
-            caption=f"📁 <b>Отчет по цели:</b> <code>{target}</code> | Найдено профилей: <b>{found_count}</b>",
+            caption=f"📁 <b>Отчет Sherlock по цели:</b> <code>{target}</code> | Найдено профилей: <b>{found_count}</b>",
             parse_mode="HTML"
         )
         await status_msg.delete()
@@ -210,7 +207,7 @@ async def handle_photo_message(message: types.Message):
         await status_msg.edit_text(f"❌ Ошибка анализа фото: {str(e)}")
 
 
-# --- СУПЕР-ПОИСКОВИК SHERLOCK & WHATSMYNAME (750+ БАЗ) ---
+# --- ОСНОВНОЙ ПОИСКОВИК SHERLOCK BOT С ПРАВДИВЫМИ ДАННЫМИ ---
 
 @dp.message(Command("scan"))
 @dp.message(Command("sherlock"))
@@ -221,10 +218,10 @@ async def cmd_scan_sherlock(message: types.Message):
         return
 
     target = args[1].strip().lstrip("@")
-    status_msg = await message.answer(f"🔍 <i>Опрос 750+ мировых и СНГ баз данных для <b>{target}</b>...</i>", parse_mode="HTML")
+    status_msg = await message.answer(f"🔍 <i>Опрос баз Sherlock Project для <b>{target}</b>...</i>", parse_mode="HTML")
 
     try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(f"{LOCAL_API}/api/scan/username", json={"target": target, "caller": f"tg_{message.from_user.id}"})
             data = resp.json()
 
@@ -233,16 +230,16 @@ async def cmd_scan_sherlock(message: types.Message):
         total = data.get("total_checked", 0)
         pdata = data.get("probable_data", {})
 
-        res_lines = [f"🎯 <b>Цель:</b> <code>{target}</code> | Найдено: <b>{found_count} из {total}</b>\n"]
+        res_lines = [f"🎯 <b>Цель:</b> <code>{target}</code> | Найдено профилей: <b>{found_count}</b> (из {total})\n"]
 
         if pdata:
-            res_lines.append("📌 <b>СВОДНАЯ ДЕДУКЦИЯ:</b>")
+            res_lines.append("📌 <b>СВОДНЫЕ ДАННЫЕ:</b>")
             res_lines.append(f"• 👤 <b>Имя:</b> <code>{pdata.get('name') or target}</code>")
             res_lines.append(f"• 🏙️ <b>Локация:</b> <code>{pdata.get('location') or 'По часовому поясу'}</code>")
             res_lines.append(f"• 🎂 <b>Возраст:</b> <code>{pdata.get('age_estimate') or '20–30 лет'}</code>")
             res_lines.append(f"• 📊 <b>Confidence:</b> <code>{pdata.get('confidence') or '85%'}</code>\n")
 
-        # Группировка
+        # Группировка по категориям
         categories = {}
         for p in profiles:
             cat = p.get("category", "Прочее")
@@ -251,13 +248,13 @@ async def cmd_scan_sherlock(message: types.Message):
         for cat, items in categories.items():
             res_lines.append(f"📁 <b>{cat}:</b>")
             for p in items[:8]:
-                res_lines.append(f"  • {p['platform']}: <a href='{p['url']}'>Открыть</a>")
+                res_lines.append(f"  • {p['platform']}: <a href='{p['url']}'>Открыть профиль</a>")
             if len(items) > 8:
-                res_lines.append(f"  <i>...и еще {len(items)-8} аккаунтов</i>")
+                res_lines.append(f"  <i>...и еще {len(items)-8} сервисов</i>")
             res_lines.append("")
 
         if not profiles:
-            res_lines.append("❌ Прямых совпадений не обнаружено.")
+            res_lines.append("❌ Подтвержденных открытых совпадений не обнаружено.")
 
         text = "\n".join(res_lines)
         if len(text) > 3800:
@@ -455,9 +452,9 @@ async def inline_search(query: InlineQuery):
         InlineQueryResultArticle(
             id=f"scan_{q}",
             title=f"🔍 Sherlock OSINT: {q}",
-            description=f"Отправить сводку по 750+ базам для {q}",
+            description=f"Отправить сводку Sherlock для {q}",
             input_message_content=InputTextMessageContent(
-                message_text=f"🕵️ <b>OSINT Резюме для цели:</b> <code>{q}</code>\nДля полного досье введите <code>/scan {q}</code>",
+                message_text=f"🕵️ <b>Sherlock Резюме для цели:</b> <code>{q}</code>\nДля полного досье введите <code>/scan {q}</code>",
                 parse_mode="HTML"
             ),
             reply_markup=InlineKeyboardMarkup(

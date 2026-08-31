@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OSINT Cyber Hub · Deep Recon & Sherlock 750+</title>
+<title>OSINT Cyber Hub · Sherlock Project Engine</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
@@ -161,11 +161,11 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
   <div class="view-page active" id="catalogView">
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="searchInput" placeholder="Поиск по 750+ базам, никнеймам, Telegram, доменам..." oninput="renderCatalog()">
+      <input type="text" id="searchInput" placeholder="Поиск по базам Sherlock, никнеймам, Telegram, доменам..." oninput="renderCatalog()">
     </div>
 
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)">Все базы (750+)</div>
+      <div class="chip active" onclick="setFilter('all', this)">Все базы (Sherlock Engine)</div>
       <div class="chip" onclick="setFilter('username_osint', this)">🔍 Sherlock Engine</div>
       <div class="chip" onclick="setFilter('telegram_osint', this)">✈️ Telegram Разведка</div>
       <div class="chip" onclick="setFilter('social_google_instagram', this)">📱 Google & Instagram</div>
@@ -331,7 +331,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
   </div>
 
   <div class="footer-info">
-    OSINT Cyber Hub · Sherlock 750+ · Live Terminal · Mobile Optimized
+    OSINT Cyber Hub · Official Sherlock Engine · Direct Links · Mobile Optimized
   </div>
 </div>
 
@@ -345,6 +345,18 @@ const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.expand();
   tg.ready();
+}
+
+// УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ВНЕШНИХ ССЫЛОК (ДЛЯ РАБОТЫ В TELEGRAM WEBAPP И БРАУЗЕРЕ)
+function openExternalUrl(url) {
+  if (!url) return;
+  try {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+      window.Telegram.WebApp.openLink(url);
+      return;
+    }
+  } catch (e) {}
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function showView(viewId) {
@@ -455,10 +467,10 @@ function openToolPage(toolId) {
   btnGroup.innerHTML = '';
 
   if (selected.web_url) {
-    btnGroup.innerHTML += `<a href="${selected.web_url}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Web</a>`;
+    btnGroup.innerHTML += `<button onclick="openExternalUrl('${selected.web_url}')" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Web</button>`;
   }
   if (selected.repo) {
-    btnGroup.innerHTML += `<a href="${selected.repo}" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fa-brands fa-github"></i> GitHub</a>`;
+    btnGroup.innerHTML += `<button onclick="openExternalUrl('${selected.repo}')" class="btn btn-secondary"><i class="fa-brands fa-github"></i> GitHub</button>`;
   }
 
   const isPhotoTool = selected.id.includes('suncalc') || selected.id.includes('meta') || (selected.input||'').includes('photo');
@@ -476,7 +488,7 @@ function openToolPage(toolId) {
   if (selected.scan_type === 'telegram' || selected.id.includes('tg')) {
     input.placeholder = `Telegram username или ID (например: durov)`;
   } else if (selected.input === 'username') {
-    input.placeholder = `Никнейм для 750+ баз (например: wertag20)`;
+    input.placeholder = `Никнейм для Sherlock (например: wertag20)`;
   } else if (selected.input === 'domain' || selected.scan_type === 'domain') {
     input.placeholder = `Домен (например: google.com)`;
   } else if (selected.input === 'email' || selected.scan_type === 'email') {
@@ -699,9 +711,9 @@ function renderPhotoSpecificCard(data, container) {
       <div style="color:var(--primary); font-weight:700; margin-bottom:4px; font-size:12px;">
         📍 ${exif.gps.latitude}, ${exif.gps.longitude}
       </div>
-      <a href="${exif.google_maps_url}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:4px 8px; font-size:10px;">
+      <button onclick="openExternalUrl('${exif.google_maps_url}')" class="btn btn-primary" style="padding:4px 8px; font-size:10px;">
         <i class="fa-solid fa-map-location-dot"></i> Google Maps
-      </a>
+      </button>
     `;
   }
 
@@ -717,8 +729,8 @@ function renderPhotoSpecificCard(data, container) {
 
     <div style="margin-bottom:10px;">
       <div class="btn-group">
-        <a href="https://yandex.ru/images/search?rpt=imageview" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс</a>
-        <a href="https://lens.google.com/" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</a>
+        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс</button>
+        <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
       </div>
     </div>
 
@@ -761,7 +773,7 @@ async function runCurrentToolScan() {
     endpoint = '/api/scan/ip';
     loaderText.innerText = 'Определение геопозиции IP и провайдера...';
   } else {
-    loaderText.innerText = 'Опрос 750+ баз данных и кросс-анализ...';
+    loaderText.innerText = 'Опрос баз Sherlock Project и верификация...';
   }
 
   try {
@@ -788,15 +800,15 @@ function renderToolSpecificOutput(data, target) {
   const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
   let html = '';
 
-  // 1. ТИП: USERNAME (Sherlock, Maigret, WhatsMyName, Blackbird)
+  // 1. ТИП: USERNAME (Sherlock Engine)
   if (data.type === 'username') {
     const pdata = data.probable_data || {};
     const profiles = data.profiles || [];
     
     let checkedLines = profiles.map(p => `[${nowStr}] [+] [MATCH] ${p.platform.padEnd(12)} (${p.category}) -> ${p.url}`).join('\n');
-    let cliLog = `[${nowStr}] [CORE] INITIATING OSINT ENGINE // SOCKET POOL: 45
+    let cliLog = `[${nowStr}] [CORE] INITIATING SHERLOCK PROJECT ENGINE
 [${nowStr}] [TARGET] RESOLVING IDENTIFIER: "${data.username}"
-[${nowStr}] [PROBE] CROSS-SEARCHING 750+ GLOBAL & CIS DATABASES...
+[${nowStr}] [PROBE] CROSS-SEARCHING ALL OFFICIAL PLATFORMS...
 ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
 [${nowStr}] [✓] COMPLETED: ${data.found_count} OF ${data.total_checked} NODES VERIFIED.`;
 
@@ -808,7 +820,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
             <span class="term-dot term-dot-yellow"></span>
             <span class="term-dot term-dot-green"></span>
           </div>
-          <span>ROOT@OSINT-STATION:~# ./recon-engine --deep</span>
+          <span>SHERLOCK@STATION:~# ./sherlock ${data.username}</span>
           <span style="font-size:10px; color:var(--cyan);"><i class="fa-solid fa-circle" style="font-size:7px; color:var(--primary);"></i> LIVE</span>
         </div>
         <div class="term-log-content">${cliLog}</div>
@@ -832,7 +844,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
             <div class="custom-val">${pdata.age_estimate || '20–30 лет'}</div>
           </div>
           <div class="custom-item">
-            <div class="custom-label">🔗 Активных баз</div>
+            <div class="custom-label">🔗 Подтвержденных баз</div>
             <div class="custom-val" style="color:var(--primary);">${data.found_count} из ${data.total_checked}</div>
           </div>
         </div>
@@ -857,24 +869,22 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
 
       html += `
         <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
-          Обнаруженные профили (${data.found_count}):
+          Подтвержденные профили (${data.found_count}):
         </div>
         <div class="filter-chips" style="margin-bottom:8px;">${catButtons}</div>
         <div class="profiles-grid" id="scanProfilesGrid">
       `;
       profiles.forEach(p => {
-        const metaStr = p.meta?.name ? `<div style="font-size:9px; color:#cbd5e1;">Имя: ${p.meta.name}</div>` : '';
         html += `
           <div class="profile-card" data-cat="${p.category}">
             <div class="profile-left">
-              <i class="fa-brands ${p.icon || 'fa-globe'} profile-icon"></i>
+              <i class="fa-solid fa-arrow-up-right-from-square profile-icon"></i>
               <div>
                 <div class="profile-name">${p.platform}</div>
                 <span class="profile-tag">✅ ${p.category}</span>
-                ${metaStr}
               </div>
             </div>
-            <a href="${p.url}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">🔗</a>
+            <button onclick="openExternalUrl('${p.url}')" class="btn btn-secondary" style="padding:4px 8px; font-size:10px;">🔗 Открыть</button>
           </div>
         `;
       });
@@ -906,7 +916,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
           </div>
           <div style="color:var(--cyan); font-size:12px; margin-top:2px;">@${data.username || target}</div>
           <div style="color:var(--text-muted); font-size:11px; margin-top:4px; line-height:1.4;">${data.description || data.estimated_year || ''}</div>
-          ${data.url ? `<a href="${data.url}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:4px 10px; font-size:10px; margin-top:8px;">✈️ Открыть в Telegram</a>` : ''}
+          ${data.url ? `<button onclick="openExternalUrl('${data.url}')" class="btn btn-primary" style="padding:4px 10px; font-size:10px; margin-top:8px;">✈️ Открыть в Telegram</button>` : ''}
         </div>
       </div>
     `;
@@ -919,7 +929,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       `;
     }
 
-  // 3. ТИП: DOMAIN & SUBFINDER (Subfinder, Web-Check, FinalRecon)
+  // 3. ТИП: DOMAIN & SUBFINDER (Subfinder, Web-Check)
   } else if (data.type === 'domain') {
     const d = data.data || {};
     const ssl = d.ssl || {};
@@ -977,14 +987,14 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
               <div class="profile-name" style="font-size:11px;">${s.subdomain}</div>
               <div style="font-size:9px; color:var(--cyan); font-family:monospace;">${s.ip}</div>
             </div>
-            <a href="https://${s.subdomain}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:2px 6px; font-size:9px;">🔗</a>
+            <button onclick="openExternalUrl('https://${s.subdomain}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">🔗 Открыть</button>
           </div>
         `;
       });
       html += '</div>';
     }
 
-  // 4. ТИП: EMAIL (GHunt, Email Checker)
+  // 4. ТИП: EMAIL
   } else if (data.type === 'email') {
     const d = data.data || {};
     let cliLog = `[${nowStr}] [EMAIL] VALIDATING SYNTAX: ${d.email} -> VALID
@@ -1023,7 +1033,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       </div>
     `;
 
-  // 5. ТИП: IP & GEOINT (GeoIP, Shodan)
+  // 5. ТИП: IP & GEOINT
   } else if (data.type === 'ip') {
     const d = data.data || {};
     let cliLog = `[${nowStr}] [GEOIP] QUERYING IP: ${target}
@@ -1061,9 +1071,9 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
         </div>
         ${data.google_maps_url ? `
           <div style="margin-top:10px;">
-            <a href="${data.google_maps_url}" target="_blank" rel="noopener" class="btn btn-primary">
+            <button onclick="openExternalUrl('${data.google_maps_url}')" class="btn btn-primary">
               <i class="fa-solid fa-map-pin"></i> Открыть координаты на Google Maps (${d.lat}, ${d.lon})
-            </a>
+            </button>
           </div>
         ` : ''}
       </div>
@@ -1096,7 +1106,7 @@ async function runAiDossierDirect() {
     const res = await fetch('/api/ai/deduce', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target: target, tool: 'Deep Recon AI' })
+      body: JSON.stringify({ target: target, tool: 'Sherlock OSINT' })
     });
     const data = await res.json();
     loader.style.display = 'none';

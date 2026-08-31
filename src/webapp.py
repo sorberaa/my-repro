@@ -38,9 +38,10 @@ DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 VISITS_FILE = DATA_DIR / "visits.jsonl"
 USERS_FILE = DATA_DIR / "users.json"
+SHERLOCK_FILE = DATA_DIR / "sherlock_data.json"
 WMN_FILE = DATA_DIR / "wmn_sites.json"
 
-app = FastAPI(title="OSINT Cyber Hub: 750+ Global & CIS Reconnaissance Engine")
+app = FastAPI(title="OSINT Cyber Hub: Official Sherlock Engine & Truthful Recon")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -171,104 +172,27 @@ async def run_gemini_prompt(prompt: str, image_bytes: Optional[bytes] = None, mi
     return ""
 
 
-# --- ОСНОВНЫЕ ПЛАТФОРМЫ С ГЛУБОКИМ ИЗВЛЕЧЕНИЕМ МЕТАДАННЫХ ---
+# --- БАЗА ДАННЫХ SHERLOCK PROJECT ---
 
-CORE_ENRICHED_SITES = [
-    # Соцсети & Мессенджеры СНГ и Мира
-    {"name": "Telegram", "cat": "Социальные сети", "icon": "fa-telegram", "url": "https://t.me/{u}", "check": "https://t.me/{u}", "type": "tg"},
-    {"name": "VKontakte", "cat": "Социальные сети", "icon": "fa-vk", "url": "https://vk.com/{u}", "check": "https://vk.com/{u}", "type": "status"},
-    {"name": "Odnoklassniki", "cat": "Социальные сети", "icon": "fa-odnoklassniki", "url": "https://ok.ru/{u}", "check": "https://ok.ru/{u}", "type": "status"},
-    {"name": "TikTok", "cat": "Социальные сети", "icon": "fa-tiktok", "url": "https://www.tiktok.com/@{u}", "check": "https://www.tiktok.com/@{u}", "type": "status"},
-    {"name": "Pinterest", "cat": "Социальные сети", "icon": "fa-pinterest", "url": "https://www.pinterest.com/{u}/", "check": "https://www.pinterest.com/{u}/", "type": "status"},
-    {"name": "Reddit", "cat": "Социальные сети", "icon": "fa-reddit", "url": "https://www.reddit.com/user/{u}", "check": "https://www.reddit.com/user/{u}/about.json", "type": "reddit_api"},
-    {"name": "Twitter / X", "cat": "Социальные сети", "icon": "fa-x-twitter", "url": "https://x.com/{u}", "check": "https://x.com/{u}", "type": "status"},
-    {"name": "Snapchat", "cat": "Социальные сети", "icon": "fa-snapchat", "url": "https://www.snapchat.com/add/{u}", "check": "https://www.snapchat.com/add/{u}", "type": "status"},
-    {"name": "Mastodon", "cat": "Социальные сети", "icon": "fa-mastodon", "url": "https://mastodon.social/@{u}", "check": "https://mastodon.social/@{u}", "type": "status"},
-    {"name": "Bluesky", "cat": "Социальные сети", "icon": "fa-cloud", "url": "https://bsky.app/profile/{u}.bsky.social", "check": "https://bsky.app/profile/{u}.bsky.social", "type": "status"},
-    {"name": "TenChat", "cat": "Социальные сети", "icon": "fa-briefcase", "url": "https://tenchat.ru/{u}", "check": "https://tenchat.ru/{u}", "type": "status"},
-    {"name": "Tumblr", "cat": "Социальные сети", "icon": "fa-tumblr", "url": "https://{u}.tumblr.com", "check": "https://{u}.tumblr.com", "type": "status"},
-
-    # IT, Разработка, Репозитории
-    {"name": "GitHub", "cat": "IT & Разработка", "icon": "fa-github", "url": "https://github.com/{u}", "check": "https://api.github.com/users/{u}", "type": "github_api"},
-    {"name": "GitLab", "cat": "IT & Разработка", "icon": "fa-gitlab", "url": "https://gitlab.com/{u}", "check": "https://gitlab.com/api/v4/users?username={u}", "type": "gitlab_api"},
-    {"name": "Bitbucket", "cat": "IT & Разработка", "icon": "fa-bitbucket", "url": "https://bitbucket.org/{u}/", "check": "https://bitbucket.org/{u}/", "type": "status"},
-    {"name": "DockerHub", "cat": "IT & Разработка", "icon": "fa-docker", "url": "https://hub.docker.com/u/{u}", "check": "https://hub.docker.com/v2/users/{u}", "type": "status"},
-    {"name": "Dev.to", "cat": "IT & Разработка", "icon": "fa-dev", "url": "https://dev.to/{u}", "check": "https://dev.to/api/users/by_username?url={u}", "type": "devto_api"},
-    {"name": "Habr", "cat": "IT & Разработка", "icon": "fa-code", "url": "https://habr.com/ru/users/{u}/", "check": "https://habr.com/ru/users/{u}/", "type": "status"},
-    {"name": "Medium", "cat": "IT & Разработка", "icon": "fa-medium", "url": "https://medium.com/@{u}", "check": "https://medium.com/@{u}", "type": "status"},
-    {"name": "Kaggle", "cat": "IT & Разработка", "icon": "fa-brain", "url": "https://www.kaggle.com/{u}", "check": "https://www.kaggle.com/{u}", "type": "status"},
-    {"name": "LeetCode", "cat": "IT & Разработка", "icon": "fa-terminal", "url": "https://leetcode.com/{u}", "check": "https://leetcode.com/{u}", "type": "status"},
-    {"name": "Codeforces", "cat": "IT & Разработка", "icon": "fa-laptop-code", "url": "https://codeforces.com/profile/{u}", "check": "https://codeforces.com/profile/{u}", "type": "status"},
-    {"name": "Replit", "cat": "IT & Разработка", "icon": "fa-code-branch", "url": "https://replit.com/@{u}", "check": "https://replit.com/@{u}", "type": "status"},
-    {"name": "NPM", "cat": "IT & Разработка", "icon": "fa-npm", "url": "https://www.npmjs.com/~{u}", "check": "https://www.npmjs.com/~{u}", "type": "status"},
-    {"name": "PyPI", "cat": "IT & Разработка", "icon": "fa-python", "url": "https://pypi.org/user/{u}/", "check": "https://pypi.org/user/{u}/", "type": "status"},
-    {"name": "Behance", "cat": "IT & Разработка", "icon": "fa-behance", "url": "https://www.behance.net/{u}", "check": "https://www.behance.net/{u}", "type": "status"},
-    {"name": "Dribbble", "cat": "IT & Разработка", "icon": "fa-dribbble", "url": "https://dribbble.com/{u}", "check": "https://dribbble.com/{u}", "type": "status"},
-    {"name": "ArtStation", "cat": "IT & Разработка", "icon": "fa-palette", "url": "https://www.artstation.com/{u}", "check": "https://www.artstation.com/{u}", "type": "status"},
-
-    # Гейминг & Киберспорт
-    {"name": "Steam", "cat": "Гейминг", "icon": "fa-steam", "url": "https://steamcommunity.com/id/{u}", "check": "https://steamcommunity.com/id/{u}", "type": "steam_page"},
-    {"name": "Roblox", "cat": "Гейминг", "icon": "fa-gamepad", "url": "https://www.roblox.com/user.aspx?username={u}", "check": "https://www.roblox.com/user.aspx?username={u}", "type": "status"},
-    {"name": "Twitch", "cat": "Гейминг", "icon": "fa-twitch", "url": "https://www.twitch.tv/{u}", "check": "https://www.twitch.tv/{u}", "type": "status"},
-    {"name": "Chess.com", "cat": "Гейминг", "icon": "fa-chess", "url": "https://www.chess.com/member/{u}", "check": "https://api.chess.com/pub/player/{u}", "type": "chess_api"},
-    {"name": "Lichess", "cat": "Гейминг", "icon": "fa-chess-knight", "url": "https://lichess.org/@/{u}", "check": "https://lichess.org/api/user/{u}", "type": "status"},
-    {"name": "NameMC (Minecraft)", "cat": "Гейминг", "icon": "fa-cube", "url": "https://namemc.com/profile/{u}", "check": "https://namemc.com/profile/{u}", "type": "status"},
-    {"name": "Osu!", "cat": "Гейминг", "icon": "fa-circle-dot", "url": "https://osu.ppy.sh/users/{u}", "check": "https://osu.ppy.sh/users/{u}", "type": "status"},
-    {"name": "Faceit", "cat": "Гейминг", "icon": "fa-crosshairs", "url": "https://www.faceit.com/en/players/{u}", "check": "https://www.faceit.com/en/players/{u}", "type": "status"},
-    {"name": "Speedrun.com", "cat": "Гейминг", "icon": "fa-stopwatch", "url": "https://www.speedrun.com/user/{u}", "check": "https://www.speedrun.com/user/{u}", "type": "status"},
-    {"name": "Tracker.gg", "cat": "Гейминг", "icon": "fa-chart-simple", "url": "https://tracker.gg/profile/{u}", "check": "https://tracker.gg/profile/{u}", "type": "status"},
-
-    # Медиа & Стриминг
-    {"name": "YouTube", "cat": "Медиа & Музыка", "icon": "fa-youtube", "url": "https://www.youtube.com/@{u}", "check": "https://www.youtube.com/@{u}", "type": "status"},
-    {"name": "Rutube", "cat": "Медиа & Музыка", "icon": "fa-play", "url": "https://rutube.ru/channel/{u}/", "check": "https://rutube.ru/channel/{u}/", "type": "status"},
-    {"name": "Spotify", "cat": "Медиа & Музыка", "icon": "fa-spotify", "url": "https://open.spotify.com/user/{u}", "check": "https://open.spotify.com/user/{u}", "type": "status"},
-    {"name": "SoundCloud", "cat": "Медиа & Музыка", "icon": "fa-soundcloud", "url": "https://soundcloud.com/{u}", "check": "https://soundcloud.com/{u}", "type": "status"},
-    {"name": "Bandcamp", "cat": "Медиа & Музыка", "icon": "fa-music", "url": "https://{u}.bandcamp.com", "check": "https://{u}.bandcamp.com", "type": "status"},
-    {"name": "Last.fm", "cat": "Медиа & Музыка", "icon": "fa-lastfm", "url": "https://www.last.fm/user/{u}", "check": "https://www.last.fm/user/{u}", "type": "status"},
-    {"name": "Vimeo", "cat": "Медиа & Музыка", "icon": "fa-vimeo", "url": "https://vimeo.com/{u}", "check": "https://vimeo.com/{u}", "type": "status"},
-
-    # Блоги & Форумы
-    {"name": "Pikabu", "cat": "Блоги & Форумы", "icon": "fa-comments", "url": "https://pikabu.ru/@{u}", "check": "https://pikabu.ru/@{u}", "type": "status"},
-    {"name": "DTF.ru", "cat": "Блоги & Форумы", "icon": "fa-gamepad", "url": "https://dtf.ru/u/{u}", "check": "https://dtf.ru/u/{u}", "type": "status"},
-    {"name": "VC.ru", "cat": "Блоги & Форумы", "icon": "fa-chart-line", "url": "https://vc.ru/u/{u}", "check": "https://vc.ru/u/{u}", "type": "status"},
-    {"name": "4PDA", "cat": "Блоги & Форумы", "icon": "fa-mobile-screen", "url": "https://4pda.to/forum/index.php?showuser={u}", "check": "https://4pda.to/forum/index.php?showuser={u}", "type": "status"},
-    {"name": "LiveJournal", "cat": "Блоги & Форумы", "icon": "fa-pen-nib", "url": "https://{u}.livejournal.com", "check": "https://{u}.livejournal.com", "type": "status"},
-    {"name": "Pastebin", "cat": "Блоги & Форумы", "icon": "fa-file-lines", "url": "https://pastebin.com/u/{u}", "check": "https://pastebin.com/u/{u}", "type": "status"},
-    {"name": "Wattpad", "cat": "Блоги & Форумы", "icon": "fa-book-open", "url": "https://www.wattpad.com/user/{u}", "check": "https://www.wattpad.com/user/{u}", "type": "status"},
-    {"name": "Letterboxd", "cat": "Блоги & Форумы", "icon": "fa-film", "url": "https://letterboxd.com/{u}", "check": "https://letterboxd.com/{u}", "type": "status"},
-    {"name": "MyAnimeList", "cat": "Блоги & Форумы", "icon": "fa-tv", "url": "https://myanimelist.net/profile/{u}", "check": "https://myanimelist.net/profile/{u}", "type": "status"},
-    {"name": "Duolingo", "cat": "Блоги & Форумы", "icon": "fa-language", "url": "https://www.duolingo.com/profile/{u}", "check": "https://www.duolingo.com/profile/{u}", "type": "status"},
-
-    # Донаты, Контакты & Фриланс
-    {"name": "Boosty", "cat": "Контакты & Донаты", "icon": "fa-bolt", "url": "https://boosty.to/{u}", "check": "https://boosty.to/{u}", "type": "status"},
-    {"name": "Patreon", "cat": "Контакты & Донаты", "icon": "fa-patreon", "url": "https://www.patreon.com/{u}", "check": "https://www.patreon.com/{u}", "type": "status"},
-    {"name": "Linktree", "cat": "Контакты & Донаты", "icon": "fa-link", "url": "https://linktr.ee/{u}", "check": "https://linktr.ee/{u}", "type": "status"},
-    {"name": "BuyMeACoffee", "cat": "Контакты & Донаты", "icon": "fa-mug-hot", "url": "https://www.buymeacoffee.com/{u}", "check": "https://www.buymeacoffee.com/{u}", "type": "status"},
-    {"name": "Kwork", "cat": "Контакты & Донаты", "icon": "fa-briefcase", "url": "https://kwork.ru/user/{u}", "check": "https://kwork.ru/user/{u}", "type": "status"},
-    {"name": "FL.ru", "cat": "Контакты & Донаты", "icon": "fa-laptop", "url": "https://www.fl.ru/users/{u}", "check": "https://www.fl.ru/users/{u}", "type": "status"},
-    {"name": "Freelance.ru", "cat": "Контакты & Донаты", "icon": "fa-user-tie", "url": "https://freelance.ru/{u}", "check": "https://freelance.ru/{u}", "type": "status"},
-]
-
-
-def load_wmn_sites() -> list:
-    """Загружает базу WhatsMyName (716+ платформ) из локального кэша или GitHub."""
-    if WMN_FILE.exists():
+def load_sherlock_sites() -> dict:
+    if SHERLOCK_FILE.exists():
         try:
-            return json.loads(WMN_FILE.read_text(encoding="utf-8"))
+            data = json.loads(SHERLOCK_FILE.read_text(encoding="utf-8"))
+            if "$schema" in data: del data["$schema"]
+            return data
         except Exception:
             pass
     try:
         import urllib.request
-        url = "https://raw.githubusercontent.com/WebBreacher/WhatsMyName/main/wmn-data.json"
+        url = "https://raw.githubusercontent.com/sherlock-project/sherlock/master/sherlock_project/resources/data.json"
         with urllib.request.urlopen(url, timeout=6.0) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            sites = data.get("sites", [])
-            if sites:
-                WMN_FILE.write_text(json.dumps(sites, ensure_ascii=False, indent=2), encoding="utf-8")
-                return sites
+            if "$schema" in data: del data["$schema"]
+            SHERLOCK_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            return data
     except Exception:
         pass
-    return []
+    return {}
 
 
 # --- ИЗВЛЕЧЕНИЕ EXIF МЕТАДАННЫХ ИЗ ФОТО ---
@@ -407,7 +331,7 @@ def synthesize_heuristic_dossier(username: str, found_profiles: list, intel_sign
 ---
 
 ### 🧠 ГЛУБОКИЙ АНАЛИТИЧЕСКИЙ РАЗБОР СВЯЗЕЙ:
-1. **Пересечение аккаунтов**: Идентификатор `{username}` подтвержден на {len(found_profiles)} платформах (категории: {', '.join(set(cats))}).
+1. **Пересечение аккаунтов**: Идентификатор `{username}` подтвержден на {len(found_profiles)} платформах.
 2. **Цифровой след**: {'Обнаружены совпадающие профили, гео-метки и метаданные.' if bios or names else 'Никнейм уникален и имеет высокую плотность совпадений в базах.'}
 3. **Рекомендованные следующие шаги**:
    - Выполнить `/tg @{username}` для углубленного анализа Telegram.
@@ -557,10 +481,31 @@ async def get_admin_visitors(limit: int = 50):
     }
 
 
-# --- ГЛОБАЛЬНЫЙ КРОСС-ПОИСК SHERLOCK + WHATSMYNAME (750+ БАЗ ДАННЫХ) ---
+# --- ОФИЦИАЛЬНЫЙ ДВИЖОК SHERLOCK PROJECT С ПРОВЕРКОЙ ПОДЛИННОСТИ ---
+
+def categorize_platform(name: str) -> str:
+    name_l = name.lower()
+    if any(k in name_l for k in ["git", "code", "dev", "npm", "pypi", "docker", "replit", "stack", "kaggle", "bitbucket"]):
+        return "IT & Разработка"
+    if any(k in name_l for k in ["steam", "chess", "lichess", "roblox", "twitch", "game", "speedrun", "faceit", "osu", "craft"]):
+        return "Гейминг"
+    if any(k in name_l for k in ["music", "sound", "spotify", "band", "tube", "vimeo", "last.fm", "radio"]):
+        return "Медиа & Музыка"
+    if any(k in name_l for k in ["telegram", "vk", "ok", "reddit", "twitter", "tiktok", "insta", "threads", "snap", "social", "mastodon", "blue"]):
+        return "Социальные сети"
+    if any(k in name_l for k in ["habr", "pikabu", "forum", "blog", "medium", "paste", "wattpad", "4pda", "dtf", "vc"]):
+        return "Блоги & Форумы"
+    if any(k in name_l for k in ["freelance", "fl", "kwork", "patreon", "boosty", "coffee", "link"]):
+        return "Контакты & Фриланс"
+    return "Сервисы & Прочее"
+
 
 @app.post("/api/scan/username")
 async def scan_username_sherlock(request: Request):
+    """
+    Официальный алгоритм Sherlock Project с защитой от ложных срабатываний,
+    проверкой regex, кодов ошибок, сообщений об отсутствии пользователя и редиректов.
+    """
     try:
         body = await request.json()
     except Exception:
@@ -585,147 +530,130 @@ async def scan_username_sherlock(request: Request):
         "interests": []
     }
     
-    sem = asyncio.Semaphore(45)
+    sem = asyncio.Semaphore(50)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    # 1. Проверка основных обогащенных сервисов (GitHub, Telegram, Steam, Chess, Reddit, VK, Habr...)
-    async def check_core_site(client: httpx.AsyncClient, site: dict):
-        target_url = site["check"].format(u=username)
-        profile_url = site["url"].format(u=username)
-        stype = site.get("type", "status")
+    # 1. Проверка через официальный реестр Sherlock Project (482 платформы)
+    sherlock_db = load_sherlock_sites()
+
+    async def probe_sherlock_site(client: httpx.AsyncClient, name: str, info: dict):
+        if not isinstance(info, dict):
+            return
+
+        url = info.get("urlProbe") or info.get("url", "")
+        url = url.replace("{}", username)
+        profile_url = info.get("url", "").replace("{}", username)
+
+        reg = info.get("regexCheck")
+        if reg:
+            try:
+                if not re.match(reg, username):
+                    return
+            except Exception:
+                pass
 
         async with sem:
             try:
-                r = await client.get(target_url, headers=headers, timeout=3.5, follow_redirects=True)
-                if r.status_code == 200:
-                    extra_meta = {}
+                r = await client.get(url, headers=headers, timeout=3.5, follow_redirects=True)
+                final_url = str(r.url).lower()
+                
+                # 1. Отсечение редиректов на главную / логин / капчу
+                if username.lower() not in final_url and name.lower() not in ["telegram", "vkontakte"]:
+                    return
 
-                    # GitHub API
-                    if stype == "github_api":
-                        js = r.json()
-                        if js.get("id"):
-                            real_name = js.get("name")
-                            loc = js.get("location")
-                            bio = js.get("bio")
-                            created = js.get("created_at", "")[:4]
-                            if real_name: intel_signals["names"].append(f"{real_name} (GitHub)")
-                            if loc: intel_signals["locations"].append(f"{loc} (GitHub)")
-                            if bio: intel_signals["bios"].append(f"{bio} (GitHub)")
-                            if created: intel_signals["reg_years"].append(f"{created} г. (GitHub)")
-                            extra_meta = {"name": real_name, "location": loc, "bio": bio}
+                for bad_url_part in ["/login", "/signin", "/auth", "not-found", "/404", "challenge", "verify-human", "captcha", "typo", "reason=vendor_not_found", "consent", "privacygate"]:
+                    if bad_url_part in final_url:
+                        return
 
-                    # Telegram Web
-                    elif stype == "tg":
-                        if "tgme_page_extra" not in r.text and "@" not in r.text:
-                            return
-                        soup = BeautifulSoup(r.text, "html.parser")
-                        t_elem = soup.find("div", class_="tgme_page_title")
-                        d_elem = soup.find("div", class_="tgme_page_description")
-                        t_name = t_elem.get_text(strip=True) if t_elem else ""
-                        d_bio = d_elem.get_text(strip=True) if d_elem else ""
-                        if t_name and t_name != username: intel_signals["names"].append(f"{t_name} (Telegram)")
-                        if d_bio and "If you have Telegram" not in d_bio: intel_signals["bios"].append(f"{d_bio} (Telegram)")
-                        extra_meta = {"name": t_name, "bio": d_bio}
+                if r.status_code != 200:
+                    return
 
-                    # Chess.com API
-                    elif stype == "chess_api":
-                        js = r.json()
-                        c_name = js.get("name")
-                        c_country = js.get("country", "").split("/")[-1] if js.get("country") else ""
-                        if c_name: intel_signals["names"].append(f"{c_name} (Chess.com)")
-                        if c_country: intel_signals["locations"].append(f"Страна: {c_country} (Chess.com)")
-                        extra_meta = {"name": c_name, "country": c_country}
+                # 2. Отсечение текстовых сообщений об ошибках
+                txt = r.text.lower()
+                for bad_text in ["404 not found", "user not found", "page not found", "profile not found", "account does not exist", "пользователь не найден", "страница не найдена", "account suspended", "no such user"]:
+                    if bad_text in txt:
+                        return
 
-                    # Dev.to API
-                    elif stype == "devto_api":
-                        js = r.json()
-                        d_name = js.get("name")
-                        d_loc = js.get("location")
-                        d_summary = js.get("summary")
-                        if d_name: intel_signals["names"].append(f"{d_name} (Dev.to)")
-                        if d_loc: intel_signals["locations"].append(f"{d_loc} (Dev.to)")
-                        if d_summary: intel_signals["bios"].append(f"{d_summary} (Dev.to)")
-                        extra_meta = {"name": d_name, "location": d_loc}
-
-                    # Reddit API
-                    elif stype == "reddit_api":
-                        js = r.json()
-                        sub = js.get("data", {}).get("subreddit", {})
-                        r_title = sub.get("title")
-                        if r_title and r_title != username: intel_signals["names"].append(f"{r_title} (Reddit)")
-
+                etype = info.get("errorType")
+                emsg = info.get("errorMsg")
+                
+                if etype == "status_code":
+                    if str(r.url).rstrip("/") != str(info.get("urlMain", "")).rstrip("/"):
+                        pass
                     else:
-                        if "user not found" in r.text.lower() or "страница не найдена" in r.text.lower() or "404 not found" in r.text.lower():
-                            return
+                        return
+                elif etype == "message":
+                    if isinstance(emsg, str) and emsg.lower() in txt:
+                        return
+                    elif isinstance(emsg, list) and any(m.lower() in txt for m in emsg):
+                        return
+                elif etype == "response_url":
+                    if str(r.url) == str(info.get("errorUrl", "")) or str(r.url).rstrip("/") == str(info.get("urlMain", "")).rstrip("/"):
+                        return
 
-                    found.append({
-                        "platform": site["name"],
-                        "category": site["cat"],
-                        "icon": site["icon"],
-                        "url": profile_url,
-                        "status": "Активен",
-                        "meta": extra_meta
-                    })
-                    found_names_set.add(site["name"].lower())
+                cat = categorize_platform(name)
+                found.append({
+                    "platform": name,
+                    "category": cat,
+                    "icon": "fa-globe",
+                    "url": profile_url,
+                    "status": "Подтвержден",
+                    "meta": {}
+                })
+                found_names_set.add(name.lower())
             except Exception:
                 pass
 
-    # 2. Проверка WhatsMyName Registry (716+ платформ)
-    wmn_sites = load_wmn_sites()
+    # 2. Быстрый сбор глубоких метаданных из GitHub / Telegram API
+    async def enrich_core_apis(client: httpx.AsyncClient):
+        # GitHub API
+        try:
+            gh_res = await client.get(f"https://api.github.com/users/{username}", headers=headers, timeout=3.0)
+            if gh_res.status_code == 200:
+                js = gh_res.json()
+                if js.get("id"):
+                    rn = js.get("name")
+                    loc = js.get("location")
+                    bio = js.get("bio")
+                    cr = js.get("created_at", "")[:4]
+                    if rn: intel_signals["names"].append(f"{rn} (GitHub)")
+                    if loc: intel_signals["locations"].append(f"{loc} (GitHub)")
+                    if bio: intel_signals["bios"].append(f"{bio} (GitHub)")
+                    if cr: intel_signals["reg_years"].append(f"{cr} г. (GitHub)")
+        except Exception:
+            pass
 
-    async def check_wmn_site(client: httpx.AsyncClient, site: dict):
-        sname = site.get("name", "")
-        if sname.lower() in found_names_set:
-            return
-
-        check_url = site.get("uri_check", "").replace("{account}", username)
-        if not check_url or not check_url.startswith("http"):
-            return
-
-        e_code = site.get("e_code", 200)
-        m_str = (site.get("m_string") or "").lower()
-        e_str = (site.get("e_string") or "").lower()
-        cat = site.get("cat", "Прочее").capitalize()
-
-        async with sem:
-            try:
-                r = await client.get(check_url, headers=headers, timeout=2.8, follow_redirects=True)
-                if r.status_code == e_code:
-                    txt = r.text.lower()
-                    if m_str and m_str in txt:
-                        return
-                    if e_str and e_str not in txt:
-                        return
-                    
-                    found.append({
-                        "platform": sname,
-                        "category": cat,
-                        "icon": "fa-globe",
-                        "url": check_url,
-                        "status": "Активен",
-                        "meta": {}
-                    })
-            except Exception:
-                pass
+        # Telegram
+        try:
+            tg_res = await client.get(f"https://t.me/{username}", headers=headers, timeout=3.0)
+            if tg_res.status_code == 200 and ("tgme_page_extra" in tg_res.text or "@" in tg_res.text):
+                soup = BeautifulSoup(tg_res.text, "html.parser")
+                t_elem = soup.find("div", class_="tgme_page_title")
+                d_elem = soup.find("div", class_="tgme_page_description")
+                t_name = t_elem.get_text(strip=True) if t_elem else ""
+                d_bio = d_elem.get_text(strip=True) if d_elem else ""
+                if t_name and t_name != username: intel_signals["names"].append(f"{t_name} (Telegram)")
+                if d_bio and "If you have Telegram" not in d_bio: intel_signals["bios"].append(f"{d_bio} (Telegram)")
+        except Exception:
+            pass
 
     async with httpx.AsyncClient() as client:
-        core_tasks = [check_core_site(client, s) for s in CORE_ENRICHED_SITES]
-        await asyncio.gather(*core_tasks)
+        tasks = [probe_sherlock_site(client, k, v) for k, v in sherlock_db.items()]
+        tasks.append(enrich_core_apis(client))
+        await asyncio.gather(*tasks)
 
-        wmn_tasks = [check_wmn_site(client, s) for s in wmn_sites]
-        await asyncio.gather(*wmn_tasks)
-
-    total_db_count = len(CORE_ENRICHED_SITES) + len(wmn_sites)
+    # Сортировка и дедупликация
+    total_db_count = len(sherlock_db)
     probable_data, default_markdown = synthesize_heuristic_dossier(username, found, intel_signals)
 
-    if GEMINI_API_KEY:
+    if GEMINI_API_KEY and found:
         categories_found = list(set(p["category"] for p in found))
-        platforms_str = ", ".join([p["platform"] for p in found[:30]])
+        platforms_str = ", ".join([p["platform"] for p in found[:25]])
 
         prompt = f"""Ты — главный аналитик расследований OSINT.
-Проведен автоматизированный сбор по 750+ базам данных для цели: '{username}'.
+Проведен автоматизированный сбор по официальной базе Sherlock Project ({total_db_count} баз) для цели: '{username}'.
 
 СОБРАННЫЕ ДАННЫЕ И СИГНАЛЫ:
 - Найденные платформы ({len(found)} шт.): {platforms_str}
@@ -742,7 +670,7 @@ async def scan_username_sherlock(request: Request):
 ### 🎯 НАИВЕРОЯТНЕЙШИЕ ДАННЫЕ (СВОДНЫЙ ВЫВОД):
 - 👤 **Вероятное реальное имя / ФИО**: (укажи самое вероятное имя и из каких источников оно подтверждено)
 - 🎂 **Вероятный возраст / Год рождения**: (сопоставь даты старейших регистраций, цифры в никнейме, сленг в bio и дай четкую оценку возраста)
-- 🏙️ **Вероятный город / Страна**: (сопоставь геолокации из GitHub/Steam/Chess/часовых поясов)
+- 🏙️ **Вероятный город / Страна**: (сопоставь геолокации из профилей/часовых поясов)
 - 📊 **Индекс совпадения личности (Confidence)**: (например: 94% — высокая точность совпадения)
 
 ---
@@ -832,7 +760,7 @@ async def scan_photo_endpoint(request: Request, file: Optional[UploadFile] = Fil
     }
 
 
-# --- TELEGRAM, DOMAIN, EMAIL, IP СКАНЕРЫ (ИНДИВИДУАЛЬНЫЕ ПРОФИЛИРОВАННЫЕ ВЫВОДЫ) ---
+# --- TELEGRAM, DOMAIN, EMAIL, IP СКАНЕРЫ ---
 
 def estimate_telegram_creation_date(tg_id: int) -> str:
     if tg_id < 50_000_000:
@@ -931,7 +859,6 @@ async def scan_telegram(request: Request):
 
 @app.post("/api/scan/domain")
 async def scan_domain(request: Request):
-    """Глубокая разведка домена: DNS A, SSL, Заголовки, и пассивный поиск субдоменов."""
     try:
         body = await request.json()
     except Exception:
@@ -1010,7 +937,6 @@ async def scan_domain(request: Request):
 
 @app.post("/api/scan/email")
 async def scan_email(request: Request):
-    """Разведка почтового адреса: MX-сервера, валидность, статус домена и Gravatar."""
     try:
         body = await request.json()
     except Exception:
@@ -1040,7 +966,6 @@ async def scan_email(request: Request):
     except Exception:
         res["mx_found"] = False
 
-    # Gravatar check
     try:
         async with httpx.AsyncClient(timeout=2.5) as client:
             g_resp = await client.get(gravatar_url)
@@ -1054,7 +979,6 @@ async def scan_email(request: Request):
 
 @app.post("/api/scan/ip")
 async def scan_ip(request: Request):
-    """GeoIP разведка IP-адреса: координаты, провайдер, AS, город, таймзона."""
     try:
         body = await request.json()
     except Exception:
@@ -1099,7 +1023,7 @@ async def ai_deduce_persona(request: Request):
         ai_text = (
             f"💜 **Аналитическое досье по цели:** `{target}`\n\n"
             f"• **Идентификатор:** `{target}`\n"
-            f"• **Рекомендация:** Выполните поиск по 750+ базам через вкладку Sherlock Engine для построения графа активности."
+            f"• **Рекомендация:** Выполните поиск по базам Sherlock для построения графа активности."
         )
     return {"ok": True, "target": target, "dossier": ai_text}
 
