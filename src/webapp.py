@@ -580,13 +580,6 @@ async def scan_username_sherlock(request: Request):
     if not username or len(username) < 2:
         return JSONResponse({"ok": False, "error": "Введите никнейм длиной от 2 символов"}, status_code=400)
 
-    cache_key = f"user_{username.lower()}"
-    now_ts = time.time()
-    if cache_key in SCAN_CACHE:
-        cached_data, cached_time = SCAN_CACHE[cache_key]
-        if now_ts - cached_time < CACHE_TTL:
-            return {**cached_data, "cached": True}
-
     found = []
     found_names_set = set()
 

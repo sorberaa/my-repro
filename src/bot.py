@@ -210,7 +210,7 @@ async def handle_photo_message(message: types.Message):
         await status_msg.edit_text(f"❌ Ошибка анализа фото: {str(e)}")
 
 
-# --- СУПЕР-ПОИСКОВИК SHERLOCK (75+ БАЗ) ---
+# --- СУПЕР-ПОИСКОВИК SHERLOCK & WHATSMYNAME (750+ БАЗ) ---
 
 @dp.message(Command("scan"))
 @dp.message(Command("sherlock"))
@@ -455,7 +455,7 @@ async def inline_search(query: InlineQuery):
         InlineQueryResultArticle(
             id=f"scan_{q}",
             title=f"🔍 Sherlock OSINT: {q}",
-            description=f"Отправить сводку по 75+ базам для {q}",
+            description=f"Отправить сводку по 750+ базам для {q}",
             input_message_content=InputTextMessageContent(
                 message_text=f"🕵️ <b>OSINT Резюме для цели:</b> <code>{q}</code>\nДля полного досье введите <code>/scan {q}</code>",
                 parse_mode="HTML"

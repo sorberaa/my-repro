@@ -195,15 +195,15 @@ CATALOG = [
     },
     {
         "id": "username_osint",
-        "title": "🔍 Поиск по никнеймам (Sherlock 60+ баз)",
+        "title": "🔍 Поиск по никнеймам (Sherlock & WhatsMyName 750+ баз)",
         "desc": "Инструменты для поиска профилей и открытых аккаунтов по псевдониму на сотнях платформ.",
         "tools": [
             {
                 "id": "sherlock",
-                "name": "Sherlock Engine (60+ Баз)",
+                "name": "Sherlock & WhatsMyName Engine (750+ Баз)",
                 "repo": "https://github.com/sherlock-project/sherlock",
                 "web_url": "https://sherlock-project.github.io/",
-                "purpose": "⚡ Быстрый мульти-поиск аккаунтов по 60+ базам данных (Steam, Telegram, GitHub, VK, TikTok, Reddit, Twitch, Habr, Pikabu и др.) с AI-портретом.",
+                "purpose": "⚡ Глобальный мульти-поиск аккаунтов по 750+ базам данных (Steam, Telegram, GitHub, VK, TikTok, Reddit, Twitch, Habr, Pikabu, WhatsMyName и др.) с дедукцией данных.",
                 "input": "username",
                 "web_runnable": True,
                 "scan_type": "username",

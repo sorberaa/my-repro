@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OSINT Cyber Hub · Deep Recon & Sherlock 75+</title>
+<title>OSINT Cyber Hub · Deep Recon & Sherlock 750+</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
@@ -161,11 +161,11 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
   <div class="view-page active" id="catalogView">
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="searchInput" placeholder="Поиск по 75+ базам, никнеймам, Telegram, доменам..." oninput="renderCatalog()">
+      <input type="text" id="searchInput" placeholder="Поиск по 750+ базам, никнеймам, Telegram, доменам..." oninput="renderCatalog()">
     </div>
 
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)">Все базы (75+)</div>
+      <div class="chip active" onclick="setFilter('all', this)">Все базы (750+)</div>
       <div class="chip" onclick="setFilter('username_osint', this)">🔍 Sherlock Engine</div>
       <div class="chip" onclick="setFilter('telegram_osint', this)">✈️ Telegram Разведка</div>
       <div class="chip" onclick="setFilter('social_google_instagram', this)">📱 Google & Instagram</div>
@@ -210,7 +210,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
       <div class="loader" id="tvLoader">
         <div class="spinner"></div>
-        <span style="font-size:11px; color:var(--cyan);">Опрос 75+ баз данных и кросс-анализ...</span>
+        <span style="font-size:11px; color:var(--cyan);">Опрос 750+ баз данных и кросс-анализ...</span>
       </div>
 
       <div id="tvOutputBox" style="display:none; margin-top:10px;"></div>
@@ -331,7 +331,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
   </div>
 
   <div class="footer-info">
-    OSINT Cyber Hub · Sherlock 75+ · Live Terminal · Mobile Optimized
+    OSINT Cyber Hub · Sherlock 750+ · Live Terminal · Mobile Optimized
   </div>
 </div>
 
@@ -476,7 +476,7 @@ function openToolPage(toolId) {
   if (selected.scan_type === 'telegram' || selected.id.includes('tg')) {
     input.placeholder = `Telegram username или ID (например: durov)`;
   } else if (selected.input === 'username') {
-    input.placeholder = `Никнейм для 75+ баз (например: wertag20)`;
+    input.placeholder = `Никнейм для 750+ баз (например: wertag20)`;
   } else if (selected.input === 'domain') {
     input.placeholder = `Домен (например: google.com)`;
   } else if (selected.input === 'email') {
@@ -788,7 +788,7 @@ function renderToolSpecificOutput(data, target) {
     let checkedLines = profiles.map(p => `[${nowStr}] [+] [MATCH] ${p.platform.padEnd(12)} (${p.category}) -> ${p.url}`).join('\n');
     let cliLog = `[${nowStr}] [CORE] INITIATING OSINT ENGINE // SOCKET THREADS: 25
 [${nowStr}] [TARGET] RESOLVING IDENTIFIER: "${data.username}"
-[${nowStr}] [PROBE] CROSS-SEARCHING 75+ GLOBAL & CIS DATABASES...
+[${nowStr}] [PROBE] CROSS-SEARCHING 750+ GLOBAL & CIS DATABASES...
 ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
 [${nowStr}] [✓] COMPLETED: ${data.found_count} OF ${data.total_checked} NODES VERIFIED.`;
 
