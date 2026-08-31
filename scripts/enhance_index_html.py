@@ -16,20 +16,21 @@ full_html = f"""<!DOCTYPE html>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
 :root {{
-  --bg: #05070a;
-  --card-bg: #0b0f17;
-  --card-border: #182234;
+  --bg: #04060a;
+  --card-bg: rgba(11, 16, 26, 0.88);
+  --card-border: #162338;
+  --card-hover-border: #00e5ff;
   --primary: #00ff66;
-  --primary-glow: rgba(0, 255, 102, 0.28);
+  --primary-glow: rgba(0, 255, 102, 0.35);
   --cyan: #00e5ff;
-  --cyan-glow: rgba(0, 229, 255, 0.22);
+  --cyan-glow: rgba(0, 229, 255, 0.3);
   --purple: #a855f7;
-  --purple-glow: rgba(168, 85, 247, 0.25);
+  --purple-glow: rgba(168, 85, 247, 0.3);
   --danger: #ff3366;
   --text: #e2e8f0;
   --text-muted: #8492a6;
   --term-bg: #020408;
-  --term-border: #00ff6633;
+  --term-border: rgba(0, 255, 102, 0.25);
 }}
 
 * {{ margin:0; padding:0; box-sizing:border-box; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }}
@@ -38,148 +39,153 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
 /* Canvas для эффекта матрицы */
 #matrixCanvas {{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.18; display:none; }}
 
-.container {{ max-width:760px; margin:0 auto; position:relative; z-index:1; }}
+.container {{ max-width:860px; margin:0 auto; position:relative; z-index:1; }}
 
 /* Навбар */
-.navbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--card-border); padding:8px 0 12px; margin-bottom:12px; background:rgba(5,7,10,0.85); backdrop-filter:blur(10px); }}
+.navbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--card-border); padding:8px 0 12px; margin-bottom:12px; background:rgba(4,6,10,0.9); backdrop-filter:blur(12px); }}
 .brand {{ font-size:16px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; }}
-.brand i {{ color:var(--primary); text-shadow:0 0 10px var(--primary-glow); }}
+.brand i {{ color:var(--primary); text-shadow:0 0 12px var(--primary-glow); }}
 .nav-actions {{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }}
 
-.user-badge {{ display:inline-flex; align-items:center; gap:6px; padding:5px 10px; background:#101726; border-radius:8px; font-size:11px; font-weight:700; color:var(--cyan); border:1px solid #1e293b; cursor:pointer; }}
-.user-badge:hover {{ border-color:var(--primary); }}
+.user-badge {{ display:inline-flex; align-items:center; gap:6px; padding:5px 11px; background:#0b1322; border-radius:8px; font-size:11px; font-weight:700; color:var(--cyan); border:1px solid #1a2942; cursor:pointer; }}
+.user-badge:hover {{ border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }}
 
 .view-page {{ display:none; }}
 .view-page.active {{ display:block; }}
 
-/* Страница Регистрации */
-.auth-container {{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:16px; text-align:center; }}
-.auth-card {{ background:linear-gradient(135deg, #091322, #0d1e34); border:2px solid var(--cyan); border-radius:16px; padding:28px 22px; max-width:420px; width:100%; box-shadow:0 0 40px rgba(0,229,255,0.25); }}
-.auth-icon {{ font-size:48px; color:var(--cyan); margin-bottom:14px; text-shadow:0 0 20px var(--cyan-glow); }}
-.auth-title {{ font-size:18px; font-weight:800; color:#fff; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }}
-.auth-subtitle {{ font-size:12px; color:#94a3b8; margin-bottom:20px; line-height:1.5; }}
-.auth-input {{ width:100%; padding:13px; background:#04070c; border:1px solid var(--cyan); border-radius:10px; color:#fff; font-size:14px; font-weight:700; text-align:center; outline:none; margin-bottom:14px; }}
-.auth-input:focus {{ border-color:var(--primary); box-shadow:0 0 15px var(--primary-glow); }}
+/* Hero баннер со статистикой */
+.hero-stats-banner {{ display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, rgba(9,19,34,0.75), rgba(13,30,52,0.85)); border:1px solid #1a3254; border-radius:12px; padding:10px 14px; margin-bottom:12px; backdrop-filter:blur(10px); flex-wrap:wrap; gap:8px; }}
+.stat-pill {{ display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:#cbd5e1; }}
+.stat-pill i {{ color:var(--primary); font-size:12px; }}
+.stat-pill.cyan i {{ color:var(--cyan); }}
+.stat-pill.purple i {{ color:var(--purple); }}
 
 /* Главный быстрый поиск на первой странице */
-.quick-recon-box {{ background:linear-gradient(135deg, #09121f, #0d1a2d); border:1px solid #1e3557; border-radius:12px; padding:14px; margin-bottom:14px; box-shadow:0 4px 20px rgba(0,0,0,0.5); }}
-.quick-title {{ font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:10px; text-transform:uppercase; }}
+.quick-recon-box {{ background:linear-gradient(135deg, #07101c, #0b1c33); border:1px solid #193860; border-radius:14px; padding:14px; margin-bottom:14px; box-shadow:0 6px 24px rgba(0,0,0,0.6); }}
+.quick-title {{ font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.4px; }}
 .quick-input-group {{ display:flex; gap:6px; }}
-.quick-input {{ flex:1; padding:11px 13px; background:#04070c; border:1px solid #1e293b; border-radius:8px; color:#fff; font-size:13px; outline:none; transition:border .2s; }}
-.quick-input:focus {{ border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }}
+.quick-input {{ flex:1; padding:12px 14px; background:#02050a; border:1px solid #1e3352; border-radius:10px; color:#fff; font-size:13px; outline:none; transition:all .2s; }}
+.quick-input:focus {{ border-color:var(--primary); box-shadow:0 0 12px var(--primary-glow); }}
 
 /* Поиск по каталогу */
-.search-box {{ position:relative; margin-bottom:10px; }}
+.search-box-row {{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }}
+.search-box {{ position:relative; flex:1; }}
 .search-box i {{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px; }}
-.search-box input {{ width:100%; padding:11px 14px 11px 38px; background:#080c14; border:1px solid var(--card-border); border-radius:10px; color:#fff; font-size:13px; outline:none; transition:all .2s; }}
-.search-box input:focus {{ border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }}
+.search-box input {{ width:100%; padding:11px 14px 11px 38px; background:#070c16; border:1px solid var(--card-border); border-radius:10px; color:#fff; font-size:13px; outline:none; transition:all .2s; }}
+.search-box input:focus {{ border-color:var(--cyan); box-shadow:0 0 12px var(--cyan-glow); }}
+.search-counter {{ font-size:11px; font-weight:700; color:var(--cyan); white-space:nowrap; background:#0b1424; padding:9px 12px; border-radius:10px; border:1px solid #162842; }}
 
 /* Категории (Chips) */
-.filter-chips {{ display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }}
+.filter-chips {{ display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:14px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }}
 .filter-chips::-webkit-scrollbar {{ display:none; }}
-.chip {{ padding:6px 11px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:16px; font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap; cursor:pointer; }}
-.chip.active, .chip:hover {{ background:rgba(0,255,102,0.12); border-color:var(--primary); color:var(--primary); }}
+.chip {{ padding:7px 12px; background:#080e1a; border:1px solid #16243a; border-radius:20px; font-size:11px; font-weight:700; color:#94a3b8; white-space:nowrap; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all .15s; }}
+.chip:hover, .chip.active {{ background:rgba(0,255,102,0.12); border-color:var(--primary); color:var(--primary); box-shadow:0 0 10px rgba(0,255,102,0.15); }}
 
-/* Каталог */
-.group-title {{ font-size:13px; font-weight:800; color:var(--cyan); margin:14px 0 6px; display:flex; align-items:center; gap:6px; text-transform:uppercase; }}
-.group-desc {{ font-size:11px; color:var(--text-muted); margin-bottom:8px; }}
+/* 2-КОЛОНОЧНАЯ СЕТКА КАРТОЧЕК */
+.group-title {{ font-size:13px; font-weight:800; color:var(--cyan); margin:18px 0 6px; display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.5px; }}
+.group-desc {{ font-size:11px; color:var(--text-muted); margin-bottom:10px; }}
 
-.cards-grid {{ display:grid; gap:8px; }}
-.card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:10px; padding:12px; cursor:pointer; transition:all .15s; }}
-.card:hover {{ border-color:var(--cyan); transform:translateY(-1px); }}
-.card-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:6px; }}
-.card-title {{ font-size:14px; font-weight:700; color:#fff; display:flex; align-items:center; gap:6px; }}
-.badge {{ font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; text-transform:uppercase; }}
+.cards-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px; }}
+.card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:14px; cursor:pointer; transition:all .2s; display:flex; flex-direction:column; justify-content:space-between; backdrop-filter:blur(8px); }}
+.card:hover {{ border-color:var(--cyan); transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,229,255,0.12); }}
+.card-header {{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:8px; }}
+.card-title {{ font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:7px; line-height:1.3; }}
+.card-icon {{ color:var(--primary); font-size:14px; }}
+.badge {{ font-size:9px; font-weight:800; padding:2px 7px; border-radius:10px; text-transform:uppercase; white-space:nowrap; }}
 .badge-api {{ background:rgba(0,255,102,0.15); color:var(--primary); border:1px solid var(--primary); }}
 .badge-web {{ background:rgba(0,229,255,0.15); color:var(--cyan); border:1px solid var(--cyan); }}
 .badge-doc {{ background:rgba(148,163,184,0.12); color:var(--text-muted); border:1px solid var(--text-muted); }}
 
-.card-purpose {{ font-size:11px; color:var(--text-muted); line-height:1.4; margin-bottom:8px; }}
+.card-purpose {{ font-size:11px; color:#cbd5e1; line-height:1.45; margin-bottom:10px; flex:1; }}
+.card-target-tag {{ font-size:10px; color:var(--cyan); font-family:monospace; margin-bottom:10px; }}
 
 /* Кнопки */
 .btn-group {{ display:flex; flex-wrap:wrap; gap:6px; }}
-.btn {{ padding:8px 14px; font-size:11px; font-weight:700; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none; }}
+.btn {{ padding:8px 14px; font-size:11px; font-weight:700; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:all .15s; }}
 .btn-primary {{ background:var(--primary); color:#000; font-weight:800; }}
-.btn-primary:hover {{ filter:brightness(1.1); box-shadow:0 0 10px var(--primary-glow); }}
-.btn-secondary {{ background:#111927; color:var(--text); border:1px solid #1e293b; }}
+.btn-primary:hover {{ filter:brightness(1.1); box-shadow:0 0 12px var(--primary-glow); }}
+.btn-secondary {{ background:#0c1422; color:var(--text); border:1px solid #1a2c48; }}
+.btn-secondary:hover {{ border-color:var(--cyan); color:#fff; }}
 .btn-purple {{ background:linear-gradient(135deg, #7c3aed, #9333ea); color:#fff; }}
 .btn-cyan {{ background:linear-gradient(135deg, #00e5ff, #0099ff); color:#000; font-weight:800; }}
 .btn-danger {{ background:rgba(255,51,102,0.15); color:var(--danger); border:1px solid var(--danger); }}
 
 /* Страница инструмента */
-.tool-view-header {{ background:#090d16; border:1px solid var(--card-border); border-radius:12px; padding:14px; margin-bottom:12px; }}
-.back-btn {{ display:inline-flex; align-items:center; gap:6px; color:var(--cyan); font-size:12px; font-weight:600; cursor:pointer; margin-bottom:8px; }}
+.tool-view-header {{ background:#080e18; border:1px solid var(--card-border); border-radius:14px; padding:16px; margin-bottom:12px; }}
+.back-btn {{ display:inline-flex; align-items:center; gap:6px; color:var(--cyan); font-size:12px; font-weight:700; cursor:pointer; margin-bottom:10px; }}
+.back-btn:hover {{ color:var(--primary); }}
 .tool-view-title {{ font-size:17px; font-weight:800; color:#fff; margin-bottom:4px; }}
-.tool-view-desc {{ font-size:12px; color:var(--text-muted); margin-bottom:10px; }}
+.tool-view-desc {{ font-size:12px; color:var(--text-muted); margin-bottom:12px; line-height:1.45; }}
 
-.workspace-box {{ background:#080c14; border:1px solid var(--card-border); border-radius:12px; padding:14px; margin-bottom:12px; }}
-.workspace-title {{ font-size:13px; font-weight:800; color:var(--primary); margin-bottom:10px; display:flex; align-items:center; gap:6px; text-transform:uppercase; }}
+.workspace-box {{ background:#060a12; border:1px solid var(--card-border); border-radius:14px; padding:16px; margin-bottom:12px; }}
+.workspace-title {{ font-size:13px; font-weight:800; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:6px; text-transform:uppercase; }}
 .input-row {{ display:flex; gap:6px; margin-bottom:10px; }}
-.tool-input {{ flex:1; padding:10px 12px; background:#04070c; border:1px solid var(--card-border); border-radius:8px; color:#fff; font-size:13px; outline:none; }}
-.tool-input:focus {{ border-color:var(--primary); }}
+.tool-input {{ flex:1; padding:11px 13px; background:#02050a; border:1px solid var(--card-border); border-radius:8px; color:#fff; font-size:13px; outline:none; }}
+.tool-input:focus {{ border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }}
 
 /* Загрузка фото */
-.upload-dropzone {{ border:2px dashed #1e293b; border-radius:10px; padding:18px; text-align:center; cursor:pointer; background:#04070c; margin-bottom:10px; }}
-.upload-dropzone:hover {{ border-color:var(--cyan); }}
-.upload-preview {{ max-width:100%; max-height:220px; border-radius:8px; margin:8px auto; display:none; object-fit:contain; }}
+.upload-dropzone {{ border:2px dashed #1e3557; border-radius:12px; padding:22px; text-align:center; cursor:pointer; background:#04070e; margin-bottom:12px; transition:all .2s; }}
+.upload-dropzone:hover {{ border-color:var(--cyan); background:rgba(0,229,255,0.04); }}
+.upload-preview {{ max-width:100%; max-height:260px; border-radius:10px; margin:10px auto; display:none; object-fit:contain; border:1px solid #1a2f4c; }}
 
 /* ХАКЕРСКАЯ КОНСОЛЬ В СТИЛЕ КИБЕРПАНК */
-.hacker-terminal {{ background:var(--term-bg); border:1px solid var(--term-border); border-radius:10px; padding:12px; margin-bottom:12px; box-shadow:0 0 20px rgba(0,255,102,0.08); position:relative; overflow:hidden; }}
-.term-topbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #14281c; padding-bottom:6px; margin-bottom:8px; font-size:11px; font-family:'Courier New', monospace; font-weight:700; color:var(--primary); }}
+.hacker-terminal {{ background:var(--term-bg); border:1px solid var(--term-border); border-radius:10px; padding:12px; margin-bottom:12px; box-shadow:0 0 24px rgba(0,255,102,0.08); position:relative; }}
+.term-topbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #102418; padding-bottom:6px; margin-bottom:8px; font-size:11px; font-family:'Courier New', monospace; font-weight:700; color:var(--primary); }}
 .term-dots {{ display:flex; gap:4px; }}
 .term-dot {{ width:8px; height:8px; border-radius:50%; display:inline-block; }}
 .term-dot-red {{ background:#ff3366; }}
 .term-dot-yellow {{ background:#ffaa00; }}
 .term-dot-green {{ background:#00ff66; box-shadow:0 0 6px #00ff66; }}
-.term-log-content {{ font-family:'Courier New', Consolas, monospace; font-size:11px; line-height:1.45; color:#38ef7d; word-break:break-all; white-space:pre-wrap; max-height:260px; overflow-y:auto; scrollbar-width:thin; }}
+.term-log-content {{ font-family:'Courier New', Consolas, monospace; font-size:11.5px; line-height:1.45; color:#38ef7d; word-break:break-all; white-space:pre-wrap; max-height:280px; overflow-y:auto; scrollbar-width:thin; }}
 
 /* ИНТЕРАКТИВНЫЙ CLI ТЕРМИНАЛ */
-.cli-console-box {{ background:#020407; border:2px solid #00ff6644; border-radius:12px; padding:14px; box-shadow:0 0 30px rgba(0,255,102,0.12); font-family:'Courier New', Consolas, monospace; }}
-.cli-output {{ min-height:220px; max-height:380px; overflow-y:auto; color:#00ff66; font-size:12px; line-height:1.5; white-space:pre-wrap; margin-bottom:10px; scrollbar-width:thin; }}
-.cli-prompt-row {{ display:flex; align-items:center; gap:8px; border-top:1px solid #0d2818; padding-top:8px; }}
+.cli-console-box {{ background:#020407; border:2px solid #00ff6644; border-radius:14px; padding:16px; box-shadow:0 0 36px rgba(0,255,102,0.12); font-family:'Courier New', Consolas, monospace; }}
+.cli-output {{ min-height:240px; max-height:420px; overflow-y:auto; color:#00ff66; font-size:12px; line-height:1.5; white-space:pre-wrap; margin-bottom:12px; scrollbar-width:thin; }}
+.cli-prompt-row {{ display:flex; align-items:center; gap:8px; border-top:1px solid #0d2818; padding-top:10px; }}
 .cli-prompt-label {{ color:var(--cyan); font-weight:700; font-size:12px; }}
 .cli-input {{ flex:1; background:transparent; border:none; color:#00ff66; font-family:'Courier New', monospace; font-size:13px; font-weight:700; outline:none; }}
 
 /* БЛОК ДАННЫХ */
-.custom-card {{ background:linear-gradient(135deg, #091322, #0d1e34); border:1px solid #1e3a5f; border-radius:10px; padding:12px; margin-bottom:12px; }}
+.custom-card {{ background:linear-gradient(135deg, #07111e, #0b1a2e); border:1px solid #162f50; border-radius:12px; padding:14px; margin-bottom:12px; }}
 .custom-card-title {{ font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:10px; text-transform:uppercase; }}
 .custom-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }}
-.custom-item {{ background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:7px; border:1px solid rgba(0,229,255,0.15); }}
+.custom-item {{ background:rgba(0,0,0,0.4); padding:9px 12px; border-radius:8px; border:1px solid rgba(0,229,255,0.12); }}
 .custom-label {{ font-size:10px; font-weight:700; color:var(--cyan); text-transform:uppercase; margin-bottom:2px; }}
 .custom-val {{ font-size:12px; font-weight:700; color:#fff; word-break:break-all; }}
 
-/* Информационная плашка */
-.info-banner {{ background:#0a1322; border:1px solid #1a2f4c; border-radius:8px; padding:10px 12px; font-size:11px; color:#cbd5e1; line-height:1.5; margin-bottom:10px; }}
+.info-banner {{ background:#081220; border:1px solid #162c4a; border-radius:10px; padding:12px 14px; font-size:11px; color:#cbd5e1; line-height:1.5; margin-bottom:12px; }}
 
-/* AI Досье Блок */
-.ai-dossier-card {{ background:#090e18; border:1px solid #1a2942; border-radius:10px; padding:12px; margin-bottom:12px; }}
-.ai-dossier-title {{ font-size:13px; font-weight:800; color:var(--purple); display:flex; align-items:center; gap:6px; margin-bottom:8px; }}
-.ai-dossier-text {{ font-size:12px; color:#cbd5e1; line-height:1.55; white-space:pre-wrap; }}
+.profiles-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:6px; margin-top:8px; }}
+.profile-card {{ background:#04070d; border:1px solid #131f32; border-radius:8px; padding:9px; display:flex; align-items:center; justify-content:space-between; }}
+.profile-left {{ display:flex; align-items:center; gap:8px; }}
+.profile-icon {{ font-size:14px; color:var(--cyan); width:18px; text-align:center; }}
+.profile-name {{ font-size:12px; font-weight:700; color:#fff; }}
+.profile-tag {{ font-size:9px; color:var(--primary); }}
 
-/* Таблицы */
+.loader {{ display:none; text-align:center; padding:16px 0; }}
+.spinner {{ border:2px solid rgba(255,255,255,0.1); border-top:2px solid var(--primary); border-radius:50%; width:24px; height:24px; animation:spin 0.8s linear infinite; margin:0 auto 8px; }}
+@keyframes spin {{ 0% {{ transform:rotate(0deg); }} 100% {{ transform:rotate(360deg); }} }}
+
+.code-wrap {{ position:relative; background:#020408; border:1px solid #132236; border-radius:8px; padding:10px 12px; font-family:'Courier New', monospace; font-size:11px; color:var(--primary); word-break:break-all; white-space:pre-wrap; }}
+.cmd-box {{ margin-bottom:8px; }}
+.cmd-label {{ font-size:10px; font-weight:700; color:var(--cyan); text-transform:uppercase; margin-bottom:3px; display:flex; justify-content:space-between; align-items:center; }}
+.copy-btn {{ position:absolute; right:6px; top:6px; background:#0c1728; color:var(--text-muted); border:none; border-radius:5px; padding:4px 8px; font-size:10px; cursor:pointer; }}
+.copy-btn:hover {{ background:var(--primary); color:#000; }}
+
 .admin-table {{ width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }}
 .admin-table th {{ text-align:left; padding:8px 6px; background:#0e1624; color:var(--text-muted); border-bottom:1px solid #1a273b; }}
 .admin-table td {{ padding:8px 6px; border-bottom:1px solid #0f1828; color:#cbd5e1; }}
 
-/* Сетка профилей */
-.profiles-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:6px; margin-top:8px; }}
-.profile-card {{ background:#080c14; border:1px solid #162235; border-radius:8px; padding:9px; display:flex; align-items:center; justify-content:space-between; }}
-.profile-left {{ display:flex; align-items:center; gap:8px; }}
-.profile-icon {{ font-size:15px; color:var(--cyan); width:18px; text-align:center; }}
-.profile-name {{ font-size:12px; font-weight:700; color:#fff; }}
-.profile-tag {{ font-size:9px; color:var(--primary); }}
+/* Авторизация */
+.auth-container {{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:16px; text-align:center; }}
+.auth-card {{ background:linear-gradient(135deg, #071220, #0b1a2e); border:2px solid var(--cyan); border-radius:16px; padding:30px 24px; max-width:420px; width:100%; box-shadow:0 0 40px rgba(0,229,255,0.25); }}
+.auth-icon {{ font-size:52px; color:var(--cyan); margin-bottom:14px; text-shadow:0 0 20px var(--cyan-glow); }}
+.auth-title {{ font-size:18px; font-weight:800; color:#fff; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }}
+.auth-subtitle {{ font-size:12px; color:#94a3b8; margin-bottom:20px; line-height:1.5; }}
+.auth-input {{ width:100%; padding:13px; background:#02050a; border:1px solid var(--cyan); border-radius:10px; color:#fff; font-size:14px; font-weight:700; text-align:center; outline:none; margin-bottom:14px; }}
+.auth-input:focus {{ border-color:var(--primary); box-shadow:0 0 15px var(--primary-glow); }}
 
-.loader {{ display:none; text-align:center; padding:14px 0; }}
-.spinner {{ border:2px solid rgba(255,255,255,0.1); border-top:2px solid var(--primary); border-radius:50%; width:22px; height:22px; animation:spin 0.8s linear infinite; margin:0 auto 8px; }}
-@keyframes spin {{ 0% {{ transform:rotate(0deg); }} 100% {{ transform:rotate(360deg); }} }}
-
-.code-wrap {{ position:relative; background:#04060a; border:1px solid #162235; border-radius:7px; padding:8px 10px; font-family:'Courier New', monospace; font-size:11px; color:var(--primary); word-break:break-all; white-space:pre-wrap; }}
-.cmd-box {{ margin-bottom:8px; }}
-.cmd-label {{ font-size:10px; font-weight:700; color:var(--cyan); text-transform:uppercase; margin-bottom:3px; display:flex; justify-content:space-between; align-items:center; }}
-.copy-btn {{ position:absolute; right:6px; top:6px; background:#101726; color:var(--text-muted); border:none; border-radius:5px; padding:3px 6px; font-size:10px; cursor:pointer; }}
-.copy-btn:hover {{ background:var(--primary); color:#000; }}
-
-.footer-info {{ text-align:center; font-size:10px; color:#475569; margin-top:20px; }}
+.footer-info {{ text-align:center; font-size:10px; color:#475569; margin-top:24px; }}
 </style>
 </head>
 <body>
@@ -196,14 +202,14 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
       <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="handleUserBadgeClick()">
         <i id="userBadgeIcon" class="fa-solid fa-user-check"></i> <span id="currentUsernameSpan">Позывной</span>
       </div>
-      <button class="btn btn-primary" onclick="showView('terminalView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-terminal"></i> CLI</button>
-      <button class="btn btn-purple" id="navAttrBtn" onclick="showView('attributionView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-user-secret"></i> Вирты</button>
-      <button class="btn btn-secondary" id="navPhotoBtn" onclick="showView('photoView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-camera"></i> Фото</button>
-      <button class="btn btn-secondary" onclick="toggleMatrix()" style="padding:5px 8px; font-size:11px;" title="Матрица"><i class="fa-solid fa-code"></i></button>
+      <button class="btn btn-primary" onclick="showView('terminalView')" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-terminal"></i> CLI</button>
+      <button class="btn btn-purple" id="navAttrBtn" onclick="showView('attributionView')" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-user-secret"></i> Вирты</button>
+      <button class="btn btn-secondary" id="navPhotoBtn" onclick="showView('photoView')" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-camera"></i> Фото</button>
+      <button class="btn btn-secondary" onclick="toggleMatrix()" style="padding:5px 9px; font-size:11px;" title="Матрица"><i class="fa-solid fa-code"></i></button>
     </div>
   </div>
 
-  <!-- ВЬЮ 0: ОТДЕЛЬНАЯ СТРАНИЦА РЕГИСТРАЦИИ (ОБЯЗАТЕЛЬНЫЙ ЭКРАН) -->
+  <!-- ВЬЮ 0: ОТДЕЛЬНАЯ СТРАНИЦА РЕГИСТРАЦИИ -->
   <div class="view-page" id="registerView">
     <div class="auth-container">
       <div class="auth-card">
@@ -224,31 +230,41 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
   <!-- ВЬЮ 1: ГЛАВНЫЙ КАТАЛОГ & БЫСТРЫЙ ПОИСК -->
   <div class="view-page" id="catalogView">
     
+    <!-- STATS HERO BANNER -->
+    <div class="hero-stats-banner">
+      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 26 Утилит Онлайн</div>
+      <div class="stat-pill cyan"><i class="fa-solid fa-bolt"></i> Sherlock 480+ Баз</div>
+      <div class="stat-pill purple"><i class="fa-solid fa-user-secret"></i> Детектор Виртов</div>
+    </div>
+
     <!-- БЫСТРЫЙ СКАНЕР ПРЯМО НА ГЛАВНОЙ -->
     <div class="quick-recon-box">
       <div class="quick-title">
         <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Экспресс-поиск: Sherlock · GitHub Email · Phone · Crypto
       </div>
       <div class="quick-input-group">
-        <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм, GitHub логин, телефон или криптокошелек..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
+        <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм, GitHub логин, телефон, домен или криптокошелек..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
         <button class="btn btn-primary" onclick="runMainQuickScan()"><i class="fa-solid fa-bolt"></i> Найти</button>
       </div>
     </div>
 
-    <div class="search-box">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="searchInput" placeholder="Фильтр программ: GitHub, Crypto, Sherlock, Telegram, Subfinder, EXIF, GeoIP..." oninput="renderCatalog()">
+    <div class="search-box-row">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Поиск по программам: GitHub, Sherlock, Subfinder, EXIF, GeoIP..." oninput="renderCatalog()">
+      </div>
+      <div class="search-counter" id="searchCounterBadge">26 утилит</div>
     </div>
 
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)">Все утилиты</div>
-      <div class="chip" onclick="setFilter('hacker_crypto_git', this)">💻 GitHub & Crypto OSINT</div>
-      <div class="chip" onclick="setFilter('telegram_osint', this)">✈️ Детектор виртов & TG</div>
-      <div class="chip" onclick="setFilter('username_osint', this)">🔍 Sherlock Engine</div>
-      <div class="chip" onclick="setFilter('social_google_instagram', this)">📱 Google & Instagram</div>
-      <div class="chip" onclick="setFilter('web_infra_secrets', this)">🔑 Краулеры & Ключи</div>
-      <div class="chip" onclick="setFilter('amazing_osint', this)">🌟 GeoINT & Спутники</div>
-      <div class="chip" onclick="setFilter('email_checks', this)">📧 Почта & Телефон</div>
+      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (26)</div>
+      <div class="chip" onclick="setFilter('hacker_crypto_git', this)"><i class="fa-brands fa-github"></i> GitHub & Crypto</div>
+      <div class="chip" onclick="setFilter('telegram_osint', this)"><i class="fa-brands fa-telegram"></i> Telegram & Вирты</div>
+      <div class="chip" onclick="setFilter('username_osint', this)"><i class="fa-solid fa-magnifying-glass"></i> Sherlock Никнеймы</div>
+      <div class="chip" onclick="setFilter('email_checks', this)"><i class="fa-solid fa-phone"></i> Телефон & Email</div>
+      <div class="chip" onclick="setFilter('web_infra_secrets', this)"><i class="fa-solid fa-network-wired"></i> Домены & Серверы</div>
+      <div class="chip" onclick="setFilter('amazing_osint', this)"><i class="fa-solid fa-camera"></i> Фото & GeoINT</div>
+      <div class="chip" onclick="setFilter('social_google_instagram', this)"><i class="fa-brands fa-instagram"></i> Соцсети</div>
     </div>
 
     <div id="catalogContainer"></div>
@@ -270,10 +286,10 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
       <div class="workspace-title"><i class="fa-solid fa-bolt"></i> Терминал запуска утилиты</div>
       
       <div id="tvPhotoUploaderBox" style="display:none;">
-        <div class="upload-dropzone" onclick="document.getElementById('tvFileInput').click()">
-          <i class="fa-solid fa-cloud-arrow-up" style="font-size:28px; color:var(--cyan); margin-bottom:6px;"></i>
-          <div style="font-weight:700; color:#fff; font-size:12px;">Выбрать фото для экспертизы</div>
-          <div style="font-size:11px; color:var(--text-muted);">EXIF, GPS, камера и поиск по картинкам</div>
+        <div class="upload-dropzone" onclick="document.getElementById('tvFileInput').click()" ondragover="event.preventDefault()" ondrop="handlePhotoDrop(event, 'tvFileInput')">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size:32px; color:var(--cyan); margin-bottom:6px;"></i>
+          <div style="font-weight:700; color:#fff; font-size:13px;">Нажмите или перетащите фото сюда</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Анализ тегов EXIF, GPS-координат, камеры и Google Lens</div>
           <input type="file" id="tvFileInput" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
         </div>
         <img id="tvPhotoPreview" class="upload-preview">
@@ -312,24 +328,24 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
           <span class="term-dot term-dot-green"></span>
         </div>
         <span>CYBER-TERMINAL v2.5 [ROOT SESSION]</span>
-        <span style="color:var(--primary); font-size:10px;">● CONNECTED</span>
+        <span style="color:var(--primary); font-size:10px;">● ONLINE</span>
       </div>
       
       <div class="cli-output" id="cliOutputContent">OSINT CYBER HUB · Interactive Command Terminal
-Type 'help' to see all available commands, or run scans directly.
-Example: 'sherlock wertag20', 'github torvalds', 'phone +79991234567', 'crypto 0x...'
+Type 'help' to see available commands, or execute any tool directly.
+Examples: 'sherlock wertag20', 'github torvalds', 'subfinder google.com', 'phone +79991234567', 'crypto 0x...'
 ----------------------------------------------------------------------
 </div>
 
       <div class="cli-prompt-row">
         <span class="cli-prompt-label">root@cyberhub:~#</span>
-        <input type="text" id="cliInputField" class="cli-input" placeholder="Введите команду (help, scan, github, crypto, clear)..." autofocus onkeydown="handleCliKeyDown(event)">
-        <button class="btn btn-primary" style="padding:4px 10px; font-size:11px;" onclick="executeCliCommand()">RUN</button>
+        <input type="text" id="cliInputField" class="cli-input" placeholder="Введите команду (help, sherlock, github, subfinder, crypto, clear)..." autofocus onkeydown="handleCliKeyDown(event)">
+        <button class="btn btn-primary" style="padding:5px 12px; font-size:11px;" onclick="executeCliCommand()">RUN</button>
       </div>
     </div>
   </div>
 
-  <!-- ВЬЮ 4: СПЕЦИАЛИЗИРОВАННЫЙ МОДУЛЬ АТРИБУЦИИ ВИРТОВ -->
+  <!-- ВЬЮ 4: АТРИБУЦИЯ ВИРТОВ -->
   <div class="view-page" id="attributionView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -339,7 +355,7 @@ Example: 'sherlock wertag20', 'github torvalds', 'phone +79991234567', 'crypto 0
       <div class="workspace-title" style="color:var(--purple);">
         <i class="fa-solid fa-user-secret"></i> Детектор виртов & Поиск основы (Sockpuppet Attribution)
       </div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; line-height:1.4;">
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px; line-height:1.45;">
         Выявление реального владельца и основы, когда вам пишут с купленного или виртуального аккаунта.
       </div>
 
@@ -347,10 +363,10 @@ Example: 'sherlock wertag20', 'github torvalds', 'phone +79991234567', 'crypto 0
         <input class="tool-input" id="attrTargetInput" placeholder="Юзернейм или ID вирта (например: @alex_temp или 6834920194)">
       </div>
       <div style="margin-bottom:8px;">
-        <textarea class="tool-input" id="attrTextSample" style="height:65px; resize:none;" placeholder="Текст сообщений вирта (для стилометрии и выявления сленга/опечаток)..."></textarea>
+        <textarea class="tool-input" id="attrTextSample" style="height:65px; resize:none;" placeholder="Текст сообщений вирта (для выявления сленга и связей)..."></textarea>
       </div>
 
-      <button class="btn btn-purple" style="width:100%; justify-content:center; padding:10px;" onclick="runAttributionScanDirect()">
+      <button class="btn btn-purple" style="width:100%; justify-content:center; padding:11px;" onclick="runAttributionScanDirect()">
         <i class="fa-solid fa-crosshairs"></i> Рассчитать атрибуцию и найти основу
       </button>
 
@@ -371,10 +387,10 @@ Example: 'sherlock wertag20', 'github torvalds', 'phone +79991234567', 'crypto 0
 
     <div class="workspace-box">
       <div class="workspace-title" style="color:var(--cyan);"><i class="fa-solid fa-camera"></i> Экспертиза снимка (EXIF, GPS, Камера)</div>
-      <div class="upload-dropzone" onclick="document.getElementById('directPhotoInput').click()">
-        <i class="fa-solid fa-image" style="font-size:32px; color:var(--cyan); margin-bottom:6px;"></i>
-        <div style="font-weight:700; color:#fff; font-size:12px;">Загрузить фото для анализа метаданных</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">JPG, PNG, WEBP, HEIC (без сжатия)</div>
+      <div class="upload-dropzone" onclick="document.getElementById('directPhotoInput').click()" ondragover="event.preventDefault()" ondrop="handlePhotoDrop(event, 'directPhotoInput')">
+        <i class="fa-solid fa-image" style="font-size:36px; color:var(--cyan); margin-bottom:8px;"></i>
+        <div style="font-weight:700; color:#fff; font-size:13px;">Загрузить фото для анализа метаданных</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">JPG, PNG, WEBP (без сжатия)</div>
         <input type="file" id="directPhotoInput" accept="image/*" style="display:none;" onchange="processDirectPhoto(this)">
       </div>
 
@@ -505,7 +521,7 @@ function startMatrixRain() {{
 
   function draw() {{
     if (!matrixActive) return;
-    ctx.fillStyle = 'rgba(5, 7, 10, 0.08)';
+    ctx.fillStyle = 'rgba(4, 6, 10, 0.08)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#00ff66';
     ctx.font = fontSize + 'px monospace';
@@ -665,9 +681,11 @@ function setFilter(cat, elem) {{
   renderCatalog();
 }}
 
+// ОТРИСОВКА КАТАЛОГА В УЛУЧШЕННОЙ 2-КОЛОНОЧНОЙ СЕТКЕ
 function renderCatalog() {{
   const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
   const container = document.getElementById('catalogContainer');
+  const counterBadge = document.getElementById('searchCounterBadge');
   if (!container) return;
   container.innerHTML = '';
 
@@ -707,14 +725,33 @@ function renderCatalog() {{
         badge = '<span class="badge badge-web">🌐 WEB</span>';
       }}
 
+      let iconClass = 'fa-solid fa-cube';
+      if (tool.id.includes('git')) iconClass = 'fa-brands fa-github';
+      else if (tool.id.includes('crypto')) iconClass = 'fa-solid fa-wallet';
+      else if (tool.id.includes('phone')) iconClass = 'fa-solid fa-phone';
+      else if (tool.id.includes('tg') || tool.id.includes('tele')) iconClass = 'fa-brands fa-telegram';
+      else if (tool.id.includes('photo') || tool.id.includes('suncalc') || tool.id.includes('exif')) iconClass = 'fa-solid fa-camera';
+      else if (tool.id.includes('email') || tool.id.includes('holehe')) iconClass = 'fa-solid fa-envelope';
+      else if (tool.id.includes('subfinder') || tool.id.includes('domain') || tool.id.includes('web')) iconClass = 'fa-solid fa-globe';
+
       card.innerHTML = `
-        <div class="card-header">
-          <div class="card-title">${{tool.name}}</div>
-          ${{badge}}
+        <div>
+          <div class="card-header">
+            <div class="card-title">
+              <i class="${{iconClass}} card-icon"></i>
+              <span>${{tool.name}}</span>
+            </div>
+            ${{badge}}
+          </div>
+          <div class="card-purpose">${{tool.purpose}}</div>
+          <div class="card-target-tag">🎯 Цель: ${{tool.input || 'параметр'}}</div>
         </div>
-        <div class="card-purpose">${{tool.purpose}}</div>
         <div class="btn-group" onclick="event.stopPropagation()">
-          <button class="btn btn-primary" onclick="openToolPage('${{tool.id}}')"><i class="fa-solid fa-crosshairs"></i> Запуск</button>
+          <button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="openToolPage('${{tool.id}}')">
+            <i class="fa-solid fa-bolt"></i> Запуск
+          </button>
+          ${{tool.web_url ? `<button onclick="openExternalUrl('${{tool.web_url}}')" class="btn btn-secondary" title="Открыть веб-сервис"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>` : ''}}
+          ${{tool.repo ? `<button onclick="openExternalUrl('${{tool.repo}}')" class="btn btn-secondary" title="GitHub Репозиторий"><i class="fa-brands fa-github"></i></button>` : ''}}
         </div>
       `;
       grid.appendChild(card);
@@ -724,8 +761,10 @@ function renderCatalog() {{
     container.appendChild(groupWrap);
   }});
 
+  if (counterBadge) counterBadge.innerText = `${{totalShown}} утилит`;
+
   if (totalShown === 0) {{
-    container.innerHTML = '<div style="text-align:center; padding:24px; color:var(--text-muted); font-size:12px;">Ничего не найдено.</div>';
+    container.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted); font-size:13px;">Ничего не найдено по вашему запросу.</div>';
   }}
 }}
 
@@ -795,7 +834,7 @@ function openToolPage(toolId) {{
     btnGroup.innerHTML += `<button onclick="openExternalUrl('${{selected.repo}}')" class="btn btn-secondary"><i class="fa-brands fa-github"></i> GitHub</button>`;
   }}
 
-  const isPhotoTool = selected.id.includes('suncalc') || selected.id.includes('meta') || (selected.input||'').includes('photo');
+  const isPhotoTool = selected.id.includes('suncalc') || selected.id.includes('meta') || selected.id.includes('photo') || (selected.input||'').includes('photo');
   
   if (isPhotoTool) {{
     document.getElementById('tvPhotoUploaderBox').style.display = 'block';
@@ -904,6 +943,7 @@ function renderToolSpecificOutput(data, target) {{
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>GITHUB-INTEL@STATION:~# ./gh-dork ${{data.username}}</span>
+          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{logLines}}</div>
       </div>
@@ -974,6 +1014,7 @@ function renderToolSpecificOutput(data, target) {{
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>CRYPTO-INTEL@STATION:~# ./trace ${{data.address.substr(0, 10)}}...</span>
+          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{logLines}}</div>
       </div>
@@ -1021,7 +1062,7 @@ ${{checkedLines || `[${{nowStr}}] [-] NO DIRECT MATCHES FOUND`}}
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>SHERLOCK@STATION:~# ./sherlock ${{data.username}}</span>
-          <span style="font-size:10px; color:var(--cyan);"><i class="fa-solid fa-circle" style="font-size:7px; color:var(--primary);"></i> LIVE</span>
+          <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{cliLog}}</div>
       </div>
@@ -1085,7 +1126,6 @@ ${{checkedLines || `[${{nowStr}}] [-] NO DIRECT MATCHES FOUND`}}
   }} else if (data.type === 'phone') {{
     const tz = (data.timezones || []).join(', ') || 'UTC';
     const m = data.messengers || {{}};
-    const d = data.dorks || {{}};
 
     let cliLog = `[${{nowStr}}] [PHONE] PARSING E.164: ${{data.e164}} (${{data.national}})
 [${{nowStr}}] [GEO] REGION: ${{data.country}} | CARRIER: ${{data.carrier}}
@@ -1098,6 +1138,7 @@ ${{checkedLines || `[${{nowStr}}] [-] NO DIRECT MATCHES FOUND`}}
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>PHONE-RECON@STATION:~# ./phoneinfoga scan -n ${{data.e164}}</span>
+          <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{cliLog}}</div>
       </div>
@@ -1143,7 +1184,22 @@ ${{checkedLines || `[${{nowStr}}] [-] NO DIRECT MATCHES FOUND`}}
     const hdrs = d.headers || {{}};
     const subs = d.subdomains_found || [];
 
+    let cliLog = `[${{nowStr}}] [SUBFINDER] ENUMERATING: ${{data.target}}
+[${{nowStr}}] [DNS] RESOLVED IPS: ${{(d.ip_addresses || []).join(', ')}}
+[${{nowStr}}] [SSL] ISSUER: ${{ssl.issuer || 'N/A'}} (VALID: ${{ssl.valid}})
+[${{nowStr}}] [HTTP] SERVER: ${{hdrs.Server || 'Hidden'}}
+[${{nowStr}}] [SUBDOMAINS] FOUND: ${{subs.length}} ACTIVE NODES.`;
+
     html += `
+      <div class="hacker-terminal">
+        <div class="term-topbar">
+          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+          <span>SUBFINDER@STATION:~# ./subfinder -d ${{data.target}}</span>
+          <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
+        </div>
+        <div class="term-log-content">${{cliLog}}</div>
+      </div>
+
       <div class="custom-card">
         <div class="custom-card-title"><i class="fa-solid fa-network-wired" style="color:var(--cyan);"></i> Инфраструктура домена</div>
         <div class="custom-grid">
@@ -1217,7 +1273,7 @@ ${{checkedLines || `[${{nowStr}}] [-] NO DIRECT MATCHES FOUND`}}
 
   // 7. CLI TOOL DIRECT RUNNER
   }} else if (data.type === 'cli_tool') {{
-    let cliLog = `[${{nowStr}}] [MODULE] INITIALIZING: ${{data.tool_name}}
+    let cliLog = data.raw_cli_output || `[${{nowStr}}] [MODULE] INITIALIZING: ${{data.tool_name}}
 [${{nowStr}}] [TARGET] "${{data.target}}"
 [${{nowStr}}] [COMMAND] ${{data.cli_command}}
 [${{nowStr}}] [STATUS] READY TO EXECUTE`;
@@ -1227,6 +1283,7 @@ ${{checkedLines || `[${{nowStr}}] [-] NO DIRECT MATCHES FOUND`}}
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>${{data.tool_id.toUpperCase()}}@STATION:~# ${{data.cli_command}}</span>
+          <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{cliLog}}</div>
       </div>
@@ -1301,6 +1358,8 @@ async function executeCliCommand() {{
   github <username>        - Extract commit emails & repos for GitHub user
   crypto <wallet_address>  - Identify network, balance & ledger links for wallet
   phone <phone_number>     - Lookup carrier, region and VoIP status
+  subfinder <domain>       - Enumerate subdomains, DNS and SSL certificates
+  holehe <email>           - Check email registration across 120+ platforms
   ip <ip_address>          - Lookup GeoIP, ISP and ASN
   attr <tg_username>       - Sockpuppet attribution & root handle correlation
   matrix                   - Toggle Matrix Digital Rain background FX
@@ -1363,20 +1422,67 @@ async function executeCliCommand() {{
   outputEl.scrollTop = outputEl.scrollHeight;
 }}
 
-// ОБРАБОТКА ФОТО
-async function processDirectPhoto(input) {{
+// ОБРАБОТКА ФОТО (ИСПРАВЛЕНО И РАБОТАЕТ В ОБОИХ ОКНАХ)
+function handlePhotoDrop(e, inputId) {{
+  e.preventDefault();
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {{
+    const fileInput = document.getElementById(inputId);
+    fileInput.files = e.dataTransfer.files;
+    if (inputId === 'tvFileInput') handlePhotoUpload(fileInput);
+    else processDirectPhoto(fileInput);
+  }}
+}}
+
+async function handlePhotoUpload(input) {{
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
-  const preview = document.getElementById('directPhotoPreview');
+  const preview = document.getElementById('tvPhotoPreview');
+  const loader = document.getElementById('tvLoader');
+  const loaderText = document.getElementById('tvLoaderText');
+  const outBox = document.getElementById('tvOutputBox');
+
+  loader.style.display = 'block';
+  loaderText.innerText = 'Анализ тегов EXIF, GPS и камеры...';
+  outBox.style.display = 'none';
+
   const reader = new FileReader();
   reader.onload = async function(e) {{
     preview.src = e.target.result;
     preview.style.display = 'block';
 
-    const loader = document.getElementById('photoLoader');
-    const outBox = document.getElementById('photoResultBox');
-    loader.style.display = 'block';
-    outBox.innerHTML = '';
+    try {{
+      const res = await fetch('/api/scan/photo', {{
+        method: 'POST',
+        headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
+        body: JSON.stringify({{ image_base64: e.target.result }})
+      }});
+      const data = await res.json();
+      loader.style.display = 'none';
+      outBox.style.display = 'block';
+      renderPhotoSpecificCard(data, outBox);
+    }} catch (err) {{
+      loader.style.display = 'none';
+      outBox.style.display = 'block';
+      outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${{err.message}}</div>`;
+    }}
+  }};
+  reader.readAsDataURL(file);
+}}
+
+async function processDirectPhoto(input) {{
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const preview = document.getElementById('directPhotoPreview');
+  const loader = document.getElementById('photoLoader');
+  const outBox = document.getElementById('photoResultBox');
+
+  loader.style.display = 'block';
+  outBox.innerHTML = '';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {{
+    preview.src = e.target.result;
+    preview.style.display = 'block';
 
     try {{
       const res = await fetch('/api/scan/photo', {{
@@ -1397,18 +1503,36 @@ async function processDirectPhoto(input) {{
 
 function renderPhotoSpecificCard(data, container) {{
   const exif = data.exif || {{}};
+  const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
   let hasGps = !!exif.gps;
   let hasCamera = !!(exif.camera_make || exif.camera_model);
   let hasDate = !!exif.date_time;
 
-  let html = '';
+  let cliLog = `[${{nowStr}}] [EXIF-PARSER] READING IMAGE HEADERS...
+[${{nowStr}}] [FORMAT] ${{exif.format || 'JPEG'}} | DIMENSIONS: ${{exif.dimensions || '—'}}
+[${{nowStr}}] [CAMERA] MAKE: ${{exif.camera_make || 'None'}} | MODEL: ${{exif.camera_model || 'None'}}
+[${{nowStr}}] [DATE] TIMESTAMP: ${{exif.date_time || 'None'}}
+[${{nowStr}}] [GPS] COORDINATES: ${{hasGps ? `${{exif.gps.latitude}}, ${{exif.gps.longitude}}` : 'No GPS metadata'}}
+[${{nowStr}}] [✓] PHOTO METADATA ANALYSIS COMPLETED.`;
+
+  let html = `
+    <div class="hacker-terminal">
+      <div class="term-topbar">
+        <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+        <span>EXIF-TOOL@STATION:~# exiftool -v input_image</span>
+        <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
+      </div>
+      <div class="term-log-content">${{cliLog}}</div>
+    </div>
+  `;
+
   if (hasCamera || hasDate || hasGps) {{
     html += `
       <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Метаданные снимка (EXIF)</div>
+        <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Извлеченные метаданные снимка</div>
         <div class="custom-grid">
           <div class="custom-item">
-            <div class="custom-label">📷 Камера</div>
+            <div class="custom-label">📷 Устройство / Камера</div>
             <div class="custom-val">${{exif.camera_make || ''}} ${{exif.camera_model || '—'}}</div>
           </div>
           <div class="custom-item">
@@ -1416,12 +1540,12 @@ function renderPhotoSpecificCard(data, container) {{
             <div class="custom-val">${{exif.date_time || 'Скрыта'}}</div>
           </div>
           <div class="custom-item" style="grid-column: span 2;">
-            <div class="custom-label">📍 Координаты GPS</div>
+            <div class="custom-label">📍 Геолокация (GPS)</div>
             <div class="custom-val">
               ${{hasGps ? `
                 <span style="color:var(--primary);">📍 ${{exif.gps.latitude}}, ${{exif.gps.longitude}}</span>
-                <button onclick="openExternalUrl('${{exif.google_maps_url}}')" class="btn btn-primary" style="padding:2px 7px; font-size:9px; margin-left:6px;">Google Maps</button>
-              ` : '<span style="color:var(--text-muted);">Метки GPS отсутствуют</span>'}}
+                <button onclick="openExternalUrl('${{exif.google_maps_url}}')" class="btn btn-primary" style="padding:3px 8px; font-size:10px; margin-left:8px;">Google Maps</button>
+              ` : '<span style="color:var(--text-muted);">Координаты отсутствуют в EXIF</span>'}}
             </div>
           </div>
         </div>
@@ -1430,19 +1554,18 @@ function renderPhotoSpecificCard(data, container) {{
   }} else {{
     html += `
       <div class="info-banner">
-        <b>ℹ️ Метаданные (EXIF) очищены:</b> В этом снимке отсутствуют теги камеры. Соцсети удаляют EXIF при сжатии.
+        <b>ℹ️ Метаданные (EXIF) чистые:</b> Снимок не содержит скрытых тегов камеры (соцсети и мессенджеры часто удаляют EXIF для защиты приватности).
       </div>
     `;
   }}
 
   html += `
-    <div style="margin-bottom:12px;">
-      <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-        🔍 Обратный поиск оригинала в поисковиках:
-      </div>
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);"></i> Поиск оригинала и копий в поисковых системах</div>
       <div class="btn-group">
-        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс</button>
+        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс Картинки</button>
         <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
+        <button onclick="openExternalUrl('https://tineye.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> TinEye</button>
       </div>
     </div>
   `;
@@ -1496,6 +1619,7 @@ function renderAttributionOutput(data, container) {{
       <div class="term-topbar">
         <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
         <span>ATTRIBUTION@ENGINE:~# ./attr @${{target}}</span>
+        <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
       </div>
       <div class="term-log-content">${{logLines}}</div>
     </div>
@@ -1573,7 +1697,6 @@ async function loadAdminUsers() {{
     tbody.innerHTML = '';
     users.forEach(u => {{
       const tr = document.createElement('tr');
-      const roleBadge = u.role === 'admin' ? '<span class="badge badge-api">ADMIN</span>' : '<span class="badge badge-doc">USER</span>';
       const statusTxt = u.status === 'active' ? '<span style="color:var(--primary); font-weight:700;">🟢 АКТИВЕН</span>' : '<span style="color:var(--danger); font-weight:700;">🔴 БЛОК</span>';
       const tgInfo = u.tg_username ? `@${{u.tg_username}}` : (u.tg_id ? `ID:${{u.tg_id}}` : '—');
       
@@ -1740,5 +1863,4 @@ initUserProfile();
 """
 
 html_path.write_text(full_html, encoding="utf-8")
-print("Enhanced index.html successfully created!")
-
+print("Enhanced index.html successfully generated!")
