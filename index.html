@@ -313,25 +313,25 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
     <div class="workspace-box">
       <div class="workspace-title" style="color:var(--purple); display:flex; justify-content:space-between; align-items:center;">
-        <span><i class="fa-solid fa-users-gear"></i> Управление аккаунтами</span>
+        <span><i class="fa-solid fa-users-gear"></i> Управление пользователями</span>
         <button class="btn btn-purple" onclick="toggleAddUserModal()"><i class="fa-solid fa-plus"></i> Добавить</button>
       </div>
 
       <div id="addUserFormBox" style="display:none; background:#0d1524; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #1e293b;">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
-          <input class="tool-input" id="newUsername" placeholder="Логин">
-          <input class="tool-input" id="newPassword" placeholder="Пароль">
+          <input class="tool-input" id="newUsername" placeholder="Позывной / Никнейм">
+          <input class="tool-input" id="newNotes" placeholder="Telegram ID / Примечание">
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
           <select class="tool-input" id="newRole">
-            <option value="user">User</option>
-            <option value="vip">VIP</option>
-            <option value="admin">Admin</option>
+            <option value="user">User (Обычный)</option>
+            <option value="vip">VIP (Расширенный)</option>
+            <option value="admin">Admin (Владелец)</option>
           </select>
-          <input class="tool-input" id="newNotes" placeholder="Примечание">
+          <input class="tool-input" id="newPassword" type="password" placeholder="Пароль (опционально)">
         </div>
         <div class="btn-group">
-          <button class="btn btn-primary" onclick="submitCreateUser()">Создать</button>
+          <button class="btn btn-primary" onclick="submitCreateUser()"><i class="fa-solid fa-check"></i> Создать</button>
           <button class="btn btn-secondary" onclick="toggleAddUserModal()">Отмена</button>
         </div>
       </div>
@@ -339,10 +339,10 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       <div style="overflow-x:auto;">
         <table class="admin-table">
           <thead>
-            <tr><th>Логин</th><th>Роль</th><th>Статус</th><th>Поисков</th><th>Действия</th></tr>
+            <tr><th>Позывной / Ник</th><th>Telegram</th><th>IP адрес</th><th>Статус</th><th>Поисков</th><th>Действия</th></tr>
           </thead>
           <tbody id="usersTableBody">
-            <tr><td colspan="5" style="text-align:center; padding:10px;">Загрузка...</td></tr>
+            <tr><td colspan="6" style="text-align:center; padding:10px;">Загрузка пользователей...</td></tr>
           </tbody>
         </table>
       </div>
@@ -350,18 +350,44 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
     <div class="workspace-box">
       <div class="workspace-title" style="display:flex; justify-content:space-between; align-items:center;">
-        <span><i class="fa-solid fa-network-wired"></i> Журнал IP-визитов</span>
-        <button class="btn btn-secondary" onclick="loadAdminVisitors()"><i class="fa-solid fa-rotate"></i></button>
+        <span><i class="fa-solid fa-network-wired"></i> Журнал IP-визитов и подключений</span>
+        <button class="btn btn-secondary" onclick="loadAdminVisitors()"><i class="fa-solid fa-rotate"></i> Обновить</button>
       </div>
       <div style="overflow-x:auto;">
         <table class="admin-table">
           <thead>
-            <tr><th>Время</th><th>IP</th><th>Страна</th><th>Клиент</th></tr>
+            <tr><th>Время</th><th>Пользователь / Ник</th><th>IP адрес</th><th>Геолокация</th><th>Клиент</th></tr>
           </thead>
           <tbody id="visitorsTableBody">
-            <tr><td colspan="4" style="text-align:center; padding:10px;">Загрузка...</td></tr>
+            <tr><td colspan="5" style="text-align:center; padding:10px;">Загрузка IP-журнала...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА ПЕРВОГО ВХОДА (ОНБОРДИНГ - ВЫБОР НИКНЕЙМА) -->
+  <div id="onboardingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:9999; backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:linear-gradient(135deg, #091322, #0d1e34); border:1px solid var(--cyan); border-radius:14px; padding:22px; max-width:380px; width:100%; box-shadow:0 0 30px rgba(0,229,255,0.25); text-align:center;">
+      <i class="fa-solid fa-user-astronaut" style="font-size:42px; color:var(--cyan); margin-bottom:12px;"></i>
+      <div style="font-size:16px; font-weight:800; color:#fff; margin-bottom:6px;">Добро пожаловать в Cyber Hub</div>
+      <div style="font-size:12px; color:#94a3b8; margin-bottom:16px; line-height:1.45;">
+        Создайте ваш постоянный позывной (никнейм) для работы с системой разведки:
+      </div>
+      <input type="text" id="userOnboardNickname" class="tool-input" style="text-align:center; font-weight:700; font-size:14px; margin-bottom:14px; border-color:var(--cyan);" placeholder="Ваш никнейм...">
+      <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:13px;" onclick="submitOnboardingNickname()">
+        <i class="fa-solid fa-check"></i> Зарегистрироваться и войти
+      </button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН БЛОКИРОВКИ ПОЛЬЗОВАТЕЛЯ -->
+  <div id="blockedScreenModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#05070a; z-index:10000; align-items:center; justify-content:center; padding:20px; text-align:center;">
+    <div style="background:#13090e; border:1px solid var(--danger); border-radius:14px; padding:24px; max-width:380px; width:100%; box-shadow:0 0 30px rgba(255,51,102,0.35);">
+      <i class="fa-solid fa-ban" style="font-size:48px; color:var(--danger); margin-bottom:12px;"></i>
+      <div style="font-size:16px; font-weight:800; color:#fff; margin-bottom:6px;">ДОСТУП ЗАБЛОКИРОВАН</div>
+      <div style="font-size:12px; color:#cbd5e1; line-height:1.5;">
+        Ваш аккаунт деактивирован администратором.<br>Обратитесь к владельцу системы для восстановления доступа.
       </div>
     </div>
   </div>
@@ -387,24 +413,106 @@ if (tg) {
     tgUserId = String(tg.initDataUnsafe.user.id);
     currentSessionUser = tg.initDataUnsafe.user.username || ('tg_' + tgUserId);
   }
-}
+// ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ И ОНБОРДИНГ
+async function initUserProfile() {
+  let tgId = '';
+  let tgUser = '';
+  let tgName = '';
 
-// ПРОВЕРКА ПРАВ АДМИНИСТРАТОРА (ДОСТУПНО ТОЛЬКО ВЛАДЕЛЬЦУ)
-async function checkAdminAuth() {
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.expand();
+    tg.ready();
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      tgId = String(tg.initDataUnsafe.user.id);
+      tgUser = tg.initDataUnsafe.user.username || '';
+      tgName = `${tg.initDataUnsafe.user.first_name || ''} ${tg.initDataUnsafe.user.last_name || ''}`.trim();
+    }
+  }
+
+  tgUserId = tgId;
+
   try {
-    const res = await fetch('/api/auth/me', {
-      headers: { 'X-Telegram-User-Id': tgUserId }
+    const res = await fetch('/api/user/profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-User-Id': tgId
+      },
+      body: JSON.stringify({
+        tg_id: tgId,
+        tg_username: tgUser,
+        tg_name: tgName
+      })
     });
     const data = await res.json();
+
+    if (data.blocked) {
+      document.getElementById('blockedScreenModal').style.display = 'flex';
+      return;
+    }
+
     if (data.is_admin) {
       isUserAdmin = true;
       document.getElementById('currentUserBadge').style.display = 'inline-flex';
+      document.getElementById('currentUsernameSpan').innerText = data.nickname || 'Админ';
     } else {
       isUserAdmin = false;
       document.getElementById('currentUserBadge').style.display = 'none';
     }
+
+    if (!data.registered) {
+      document.getElementById('userOnboardNickname').value = data.suggested_nickname || '';
+      document.getElementById('onboardingModal').style.display = 'flex';
+    } else {
+      currentSessionUser = data.nickname || 'guest';
+    }
   } catch (e) {
     document.getElementById('currentUserBadge').style.display = 'none';
+  }
+}
+
+async function submitOnboardingNickname() {
+  const nick = document.getElementById('userOnboardNickname').value.trim();
+  if (!nick || nick.length < 2) {
+    alert('Введите позывной (минимум 2 символа)');
+    return;
+  }
+
+  let tgUser = '';
+  let tgName = '';
+  const tg = window.Telegram?.WebApp;
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    tgUser = tg.initDataUnsafe.user.username || '';
+    tgName = `${tg.initDataUnsafe.user.first_name || ''} ${tg.initDataUnsafe.user.last_name || ''}`.trim();
+  }
+
+  try {
+    const res = await fetch('/api/user/profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-User-Id': tgUserId
+      },
+      body: JSON.stringify({
+        tg_id: tgUserId,
+        tg_username: tgUser,
+        tg_name: tgName,
+        nickname: nick
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('onboardingModal').style.display = 'none';
+      currentSessionUser = data.nickname || nick;
+      if (data.is_admin) {
+        isUserAdmin = true;
+        document.getElementById('currentUserBadge').style.display = 'inline-flex';
+        document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
+      }
+    }
+  } catch (e) {
+    alert('Ошибка: ' + e.message);
   }
 }
 
@@ -717,7 +825,7 @@ function toggleAddUserModal() {
 async function loadAdminUsers() {
   if (!isUserAdmin) return;
   const tbody = document.getElementById('usersTableBody');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
 
   try {
     const res = await fetch('/api/admin/users', {
@@ -730,24 +838,26 @@ async function loadAdminUsers() {
     users.forEach(u => {
       const tr = document.createElement('tr');
       const roleBadge = u.role === 'admin' ? '<span class="badge badge-api">ADMIN</span>' : (u.role === 'vip' ? '<span class="badge badge-web">VIP</span>' : '<span class="badge badge-doc">USER</span>');
-      const statusTxt = u.status === 'active' ? '<span style="color:var(--primary);">ON</span>' : '<span style="color:var(--danger);">BLOCKED</span>';
+      const statusTxt = u.status === 'active' ? '<span style="color:var(--primary); font-weight:700;">🟢 АКТИВЕН</span>' : '<span style="color:var(--danger); font-weight:700;">🔴 БЛОК</span>';
+      const tgInfo = u.tg_username ? `@${u.tg_username}` : (u.tg_id ? `ID: ${u.tg_id}` : '—');
       
       tr.innerHTML = `
-        <td><b>${u.username}</b></td>
-        <td>${roleBadge}</td>
+        <td><b>${u.nickname || u.username}</b></td>
+        <td style="font-size:10px; color:var(--cyan);">${tgInfo}</td>
+        <td style="font-family:monospace; font-size:10px; color:#38ef7d;">${u.last_ip || '—'}</td>
         <td>${statusTxt}</td>
         <td><code>${u.total_scans}</code></td>
         <td>
           <div class="btn-group">
-            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="toggleUserStatus('${u.username}')">${u.status === 'active' ? 'Блок' : 'Разблок'}</button>
-            ${u.username !== 'admin' ? `<button class="btn btn-danger" style="padding:2px 5px; font-size:9px;" onclick="deleteUser('${u.username}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+            <button class="btn btn-secondary" style="padding:3px 6px; font-size:9px;" onclick="toggleUserStatus('${u.id_key || u.tg_id || u.username}')">${u.status === 'active' ? 'Блок' : 'Разблок'}</button>
+            ${u.role !== 'admin' ? `<button class="btn btn-danger" style="padding:3px 6px; font-size:9px;" onclick="deleteUser('${u.id_key || u.tg_id || u.username}')"><i class="fa-solid fa-trash"></i></button>` : ''}
           </div>
         </td>
       `;
       tbody.appendChild(tr);
     });
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger); text-align:center;">Ошибка</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center;">Ошибка</td></tr>';
   }
 }
 
@@ -758,8 +868,8 @@ async function submitCreateUser() {
   const role = document.getElementById('newRole').value;
   const notes = document.getElementById('newNotes').value.trim();
 
-  if (!username || !password) {
-    alert('Укажите логин и пароль');
+  if (!username) {
+    alert('Укажите позывной или имя');
     return;
   }
 
@@ -777,6 +887,7 @@ async function submitCreateUser() {
       toggleAddUserModal();
       document.getElementById('newUsername').value = '';
       document.getElementById('newPassword').value = '';
+      document.getElementById('newNotes').value = '';
       loadAdminUsers();
     } else {
       alert('Ошибка: ' + data.error);
@@ -803,7 +914,7 @@ async function toggleUserStatus(username) {
 
 async function deleteUser(username) {
   if (!isUserAdmin) return;
-  if (!confirm(`Удалить аккаунт ${username}?`)) return;
+  if (!confirm(`Удалить пользователя ${username}?`)) return;
   try {
     await fetch('/api/admin/users/delete', {
       method: 'POST',
@@ -820,7 +931,7 @@ async function deleteUser(username) {
 async function loadAdminVisitors() {
   if (!isUserAdmin) return;
   const tbody = document.getElementById('visitorsTableBody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
 
   try {
     const res = await fetch('/api/admin/visitors?limit=50', {
@@ -832,16 +943,21 @@ async function loadAdminVisitors() {
     tbody.innerHTML = '';
     rows.forEach(r => {
       const tr = document.createElement('tr');
+      const timeStr = (r.ts || '').substr(11, 8);
+      const userDisplay = r.user || (r.tg_username ? `@${r.tg_username}` : (r.tg_id ? `TG:${r.tg_id}` : 'Гость'));
+      const geoDisplay = r.country ? `${r.country} ${r.city ? `(${r.city})` : ''}` : 'GLOBAL';
+
       tr.innerHTML = `
-        <td style="color:#94a3b8; font-size:10px;">${(r.ts||'').substr(11,8)}</td>
+        <td style="color:#94a3b8; font-size:10px;">${timeStr}</td>
+        <td style="font-size:11px; font-weight:700; color:#fff;">${userDisplay}</td>
         <td style="font-family:monospace; color:var(--primary); font-weight:700;">${r.ip || '—'}</td>
-        <td><span class="badge badge-api">${r.country || 'GLOBAL'}</span></td>
-        <td style="font-size:10px; color:#94a3b8; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.ua || 'Telegram'}</td>
+        <td><span class="badge badge-api">${geoDisplay}</span></td>
+        <td style="font-size:10px; color:#94a3b8; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.ua || 'Telegram'}</td>
       `;
       tbody.appendChild(tr);
     });
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger); text-align:center;">Ошибка</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger); text-align:center;">Ошибка</td></tr>';
   }
 }
 
@@ -1449,7 +1565,7 @@ function filterResultProfiles(cat, btn) {
 }
 
 loadCatalog();
-checkAdminAuth();
+initUserProfile();
 </script>
 </body>
 </html>

@@ -57,12 +57,10 @@ async def cmd_start(message: types.Message):
     admin_text = ""
     if is_admin(message.from_user.id):
         admin_text = "\n\n👑 <b>Админ:</b> <code>/users</code> | <code>/adduser</code> | <code>/banuser</code> | <code>/visits</code>"
-
     text = (
         "<b>OSINT CYBER HUB</b>"
         f"{admin_text}"
     )
-    await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
 
 
 @dp.message(Command("id"))
@@ -188,5 +186,4 @@ async def main():
     await dp.start_polling(bot)
 
 
-if __name__ == "__main__":
     asyncio.run(main())

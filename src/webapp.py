@@ -111,10 +111,38 @@ def increment_user_scan(username: str = "guest") -> None:
 
 
 def client_ip(request: Request) -> str:
-    xff = request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for")
+    cf_ip = request.headers.get("cf-connecting-ip")
+    if cf_ip and cf_ip.strip():
+        return cf_ip.strip()
+
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip and real_ip.strip():
+        return real_ip.strip()
+
+    xff = request.headers.get("x-forwarded-for")
     if xff:
-        return xff.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+        first_ip = xff.split(",")[0].strip()
+        if first_ip:
+            return first_ip
+
+    if request.client and request.client.host:
+        return request.client.host
+    return "127.0.0.1"
+
+
+async def resolve_ip_geo(ip: str) -> dict:
+    if not ip or ip in ["127.0.0.1", "localhost", "unknown", "0.0.0.0"] or ip.startswith("192.168.") or ip.startswith("10."):
+        return {"country": "LOCAL / VPN", "city": "Internal"}
+    try:
+        async with httpx.AsyncClient(timeout=2.5) as client:
+            r = await client.get(f"http://ip-api.com/json/{ip}?fields=status,country,city")
+            if r.status_code == 200:
+                js = r.json()
+                if js.get("status") == "success":
+                    return {"country": js.get("country", "GLOBAL"), "city": js.get("city", "")}
+    except Exception:
+        pass
+    return {"country": "GLOBAL", "city": ""}
 
 
 def append_visit(record: dict) -> None:
@@ -125,21 +153,26 @@ def append_visit(record: dict) -> None:
 @app.middleware("http")
 async def log_visits(request: Request, call_next):
     path = request.url.path
-    skip = path.startswith("/api/") or path.startswith("/admin/visits") or path == "/favicon.ico"
     response = await call_next(request)
-    if skip:
-        return response
-    rec = {
-        "ts": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "ip": client_ip(request),
-        "path": path,
-        "ua": request.headers.get("user-agent", "")[:250],
-        "country": request.headers.get("cf-ipcountry", "RU"),
-    }
-    try:
-        append_visit(rec)
-    except Exception:
-        pass
+    if path == "/" or path == "/lab":
+        ip = client_ip(request)
+        ua = request.headers.get("user-agent", "")[:180]
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        rec = {
+            "ts": ts,
+            "user": "Web-Гость",
+            "tg_id": "",
+            "tg_username": "",
+            "ip": ip,
+            "path": path,
+            "country": "RU",
+            "city": "",
+            "ua": ua
+        }
+        try:
+            append_visit(rec)
+        except Exception:
+            pass
     return response
 
 
@@ -408,18 +441,151 @@ async def api_auth_me(request: Request):
     }
 
 
+@app.post("/api/user/profile")
+async def api_user_profile(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    tg_id = str(body.get("tg_id", "")).strip()
+    tg_username = str(body.get("tg_username", "")).strip().lstrip("@")
+    tg_name = str(body.get("tg_name", "")).strip()
+    nickname_input = str(body.get("nickname", "")).strip()
+
+    ip = client_ip(request)
+    ua = request.headers.get("user-agent", "")[:180]
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    users = load_users()
+    user_key = tg_id if tg_id else (tg_username if tg_username else "guest")
+
+    is_admin = (str(tg_id) == str(ADMIN_CHAT_ID)) or (bool(ADMIN_CHAT_ID) and str(ADMIN_CHAT_ID) in [tg_id, tg_username])
+
+    # 1. Existing user
+    if user_key in users:
+        u = users[user_key]
+        u["last_seen"] = now_str
+        u["last_ip"] = ip
+        if tg_username and not u.get("tg_username"): u["tg_username"] = tg_username
+        if tg_name and not u.get("tg_name"): u["tg_name"] = tg_name
+        if is_admin: u["role"] = "admin"
+        save_users(users)
+
+        geo = await resolve_ip_geo(ip)
+        append_visit({
+            "ts": now_str,
+            "user": u.get("nickname") or u.get("username") or user_key,
+            "tg_id": tg_id,
+            "tg_username": tg_username,
+            "ip": ip,
+            "country": geo.get("country", "GLOBAL"),
+            "city": geo.get("city", ""),
+            "ua": ua
+        })
+
+        if u.get("status") == "blocked":
+            return {
+                "ok": True,
+                "registered": True,
+                "blocked": True,
+                "is_admin": False,
+                "nickname": u.get("nickname", "User"),
+                "error": "Доступ заблокирован администратором."
+            }
+
+        return {
+            "ok": True,
+            "registered": True,
+            "blocked": False,
+            "is_admin": is_admin,
+            "nickname": u.get("nickname") or u.get("username") or "Agent",
+            "role": u.get("role", "user"),
+            "user": u
+        }
+
+    # 2. Registering with submitted nickname
+    if nickname_input and len(nickname_input) >= 2:
+        nickname_clean = re.sub(r"[^\w\-\.]", "", nickname_input)[:24]
+        new_user = {
+            "tg_id": tg_id or user_key,
+            "username": nickname_clean,
+            "nickname": nickname_clean,
+            "tg_username": tg_username,
+            "tg_name": tg_name,
+            "role": "admin" if is_admin else "user",
+            "status": "active",
+            "registered_at": now_str,
+            "last_seen": now_str,
+            "last_ip": ip,
+            "total_scans": 0,
+            "notes": f"TG: @{tg_username}" if tg_username else ""
+        }
+        users[user_key] = new_user
+        save_users(users)
+
+        geo = await resolve_ip_geo(ip)
+        append_visit({
+            "ts": now_str,
+            "user": nickname_clean,
+            "tg_id": tg_id,
+            "tg_username": tg_username,
+            "ip": ip,
+            "country": geo.get("country", "GLOBAL"),
+            "city": geo.get("city", ""),
+            "ua": ua
+        })
+
+        return {
+            "ok": True,
+            "registered": True,
+            "blocked": False,
+            "is_admin": is_admin,
+            "nickname": nickname_clean,
+            "role": new_user["role"],
+            "user": new_user
+        }
+
+    # 3. Not registered yet
+    suggested = tg_username or tg_name or "Agent"
+    geo = await resolve_ip_geo(ip)
+    append_visit({
+        "ts": now_str,
+        "user": f"Новый гость (TG: {tg_id or '—'})",
+        "tg_id": tg_id,
+        "tg_username": tg_username,
+        "ip": ip,
+        "country": geo.get("country", "GLOBAL"),
+        "city": geo.get("city", ""),
+        "ua": ua
+    })
+
+    return {
+        "ok": True,
+        "registered": False,
+        "blocked": False,
+        "is_admin": is_admin,
+        "suggested_nickname": suggested
+    }
+
+
 @app.get("/api/admin/users")
 async def api_admin_get_users(request: Request):
     if not is_admin_request(request):
         return JSONResponse({"ok": False, "error": "Доступ запрещен. Только для администратора."}, status_code=403)
     users = load_users()
     user_list = []
-    for u in users.values():
+    for key, u in users.items():
         user_list.append({
-            "username": u.get("username"),
+            "id_key": key,
+            "tg_id": u.get("tg_id", key),
+            "username": u.get("nickname") or u.get("username") or key,
+            "nickname": u.get("nickname") or u.get("username") or "—",
+            "tg_username": u.get("tg_username", ""),
+            "last_ip": u.get("last_ip", "—"),
             "role": u.get("role", "user"),
             "status": u.get("status", "active"),
-            "created_at": u.get("created_at", "—"),
+            "created_at": u.get("registered_at") or u.get("created_at") or "—",
             "total_scans": u.get("total_scans", 0),
             "notes": u.get("notes", "")
         })
@@ -431,24 +597,27 @@ async def api_admin_create_user(request: Request):
     if not is_admin_request(request):
         return JSONResponse({"ok": False, "error": "Доступ запрещен. Только для администратора."}, status_code=403)
     body = await request.json()
-    username = str(body.get("username", "")).strip().lower()
+    username = str(body.get("username", "")).strip()
     password = str(body.get("password", "")).strip()
     role = str(body.get("role", "user")).strip().lower()
     notes = str(body.get("notes", "")).strip()
 
-    if not username or not password:
-        return JSONResponse({"ok": False, "error": "Заполните логин и пароль"}, status_code=400)
+    if not username:
+        return JSONResponse({"ok": False, "error": "Заполните имя пользователя"}, status_code=400)
 
     users = load_users()
     if username in users:
         return JSONResponse({"ok": False, "error": "Пользователь с таким логином уже существует"}, status_code=400)
 
     users[username] = {
+        "tg_id": username,
         "username": username,
+        "nickname": username,
         "password": password,
         "role": role if role in ["admin", "vip", "user"] else "user",
         "status": "active",
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "registered_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "last_ip": "Создан админом",
         "total_scans": 0,
         "notes": notes
     }
@@ -464,13 +633,19 @@ async def api_admin_toggle_user(request: Request):
     username = str(body.get("username", "")).strip()
 
     users = load_users()
-    if username not in users:
+    target_key = None
+    for k, v in users.items():
+        if k == username or v.get("tg_id") == username or v.get("nickname") == username or v.get("username") == username:
+            target_key = k
+            break
+
+    if not target_key:
         return JSONResponse({"ok": False, "error": "Пользователь не найден"}, status_code=404)
 
-    current_status = users[username].get("status", "active")
-    users[username]["status"] = "blocked" if current_status == "active" else "active"
+    current_status = users[target_key].get("status", "active")
+    users[target_key]["status"] = "blocked" if current_status == "active" else "active"
     save_users(users)
-    return {"ok": True, "new_status": users[username]["status"]}
+    return {"ok": True, "new_status": users[target_key]["status"]}
 
 
 @app.post("/api/admin/users/delete")
@@ -480,15 +655,22 @@ async def api_admin_delete_user(request: Request):
     body = await request.json()
     username = str(body.get("username", "")).strip()
 
-    if username == "admin":
+    users = load_users()
+    target_key = None
+    for k, v in users.items():
+        if k == username or v.get("tg_id") == username or v.get("nickname") == username or v.get("username") == username:
+            target_key = k
+            break
+
+    if not target_key:
+        return JSONResponse({"ok": False, "error": "Пользователь не найден"}, status_code=404)
+
+    if str(users[target_key].get("tg_id")) == str(ADMIN_CHAT_ID):
         return JSONResponse({"ok": False, "error": "Нельзя удалить главного администратора"}, status_code=400)
 
-    users = load_users()
-    if username in users:
-        del users[username]
-        save_users(users)
-        return {"ok": True, "message": f"Пользователь {username} удален"}
-    return JSONResponse({"ok": False, "error": "Пользователь не найден"}, status_code=404)
+    del users[target_key]
+    save_users(users)
+    return {"ok": True, "message": "Пользователь удален"}
 
 
 # --- КАТАЛОГ И ЛОГИ ВИЗИТОВ ---
