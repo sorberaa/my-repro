@@ -430,6 +430,21 @@ async function initUserProfile() {
     }
   }
 
+  // Для локального теста в браузере поддерживаем ?tg_id=... или локальный ID браузера
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramId = urlParams.get('tg_id') || urlParams.get('id');
+  if (!tgId && paramId) {
+    tgId = String(paramId);
+  }
+  if (!tgId) {
+    let localStoredId = localStorage.getItem('osint_local_uid');
+    if (!localStoredId) {
+      localStoredId = 'browser_' + Math.floor(100000 + Math.random() * 900000);
+      localStorage.setItem('osint_local_uid', localStoredId);
+    }
+    tgId = localStoredId;
+  }
+
   tgUserId = tgId;
 
   try {
