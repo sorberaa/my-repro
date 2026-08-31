@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OSINT & Recon Hub Pro</title>
+<title>OSINT Pro Hub (Sherlock 60+ & Vision AI)</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
@@ -48,7 +48,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
 .chip { padding:6px 12px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:20px; font-size:12px; color:var(--text-muted); white-space:nowrap; cursor:pointer; transition:all .15s ease; }
 .chip.active, .chip:hover { background:rgba(0,255,102,0.1); border-color:var(--primary); color:var(--primary); font-weight:600; }
 
-/* Группы и карточки */
+/* Карточки каталога */
 .group-title { font-size:14px; font-weight:700; color:var(--cyan); margin:18px 0 10px; display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.5px; }
 .group-desc { font-size:11px; color:var(--text-muted); margin-top:-6px; margin-bottom:10px; }
 
@@ -73,24 +73,27 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
 .btn-primary:active { transform:scale(0.97); }
 .btn-secondary { background:#1e293b; color:var(--text); border:1px solid #334155; }
 .btn-secondary:hover { background:#283548; color:#fff; }
-.btn-outline { background:transparent; color:var(--cyan); border:1px solid var(--cyan); }
 .btn-purple { background:linear-gradient(135deg, #7c3aed, #a855f7); color:#fff; font-weight:700; }
 
-/* СТРАНИЦА ОТДЕЛЬНОГО ИНСТРУМЕНТА */
+/* СТРАНИЦА ИНСТРУМЕНТА */
 .tool-view-header { background:#0f172a; border:1px solid #1e293b; border-radius:14px; padding:18px; margin-bottom:16px; position:relative; }
 .back-btn { display:inline-flex; align-items:center; gap:6px; color:var(--cyan); font-size:12px; font-weight:600; cursor:pointer; margin-bottom:12px; }
 .back-btn:hover { text-decoration:underline; }
 .tool-view-title { font-size:20px; font-weight:800; color:#fff; display:flex; align-items:center; gap:10px; margin-bottom:6px; }
 .tool-view-desc { font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:14px; }
 
-/* Рабочая область инструмента */
 .workspace-box { background:#0a0f18; border:1px solid var(--card-border); border-radius:14px; padding:16px; margin-bottom:16px; }
 .workspace-title { font-size:14px; font-weight:700; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
 .input-row { display:flex; gap:8px; margin-bottom:14px; }
 .tool-input { flex:1; padding:12px 14px; background:var(--input-bg); border:1px solid var(--card-border); border-radius:10px; color:#fff; font-size:14px; outline:none; }
 .tool-input:focus { border-color:var(--primary); }
 
-/* Индивидуальный вывод инструмента */
+/* Загрузка фото */
+.upload-dropzone { border:2px dashed #334155; border-radius:12px; padding:24px; text-align:center; cursor:pointer; background:#070a10; transition:all .2s ease; margin-bottom:14px; }
+.upload-dropzone:hover { border-color:var(--cyan); background:#0c121c; }
+.upload-preview { max-width:100%; max-height:220px; border-radius:8px; margin:10px auto; display:none; }
+
+/* Вывод утилиты */
 .tool-output-box { background:#040608; border:1px solid #1e293b; border-radius:10px; padding:16px; margin-top:14px; display:none; }
 .output-header { display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; border-bottom:1px solid #1e293b; margin-bottom:12px; font-size:13px; font-weight:700; color:#fff; }
 
@@ -107,31 +110,21 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
 .ai-dossier-title { font-size:15px; font-weight:800; color:var(--cyan); display:flex; align-items:center; gap:8px; margin-bottom:12px; }
 .ai-dossier-text { font-size:13px; color:#cbd5e1; line-height:1.65; white-space:pre-wrap; }
 
-/* Сетка найденных профилей */
-.profiles-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; margin-top:12px; }
+/* Сетка найденных профилей Sherlock */
+.profiles-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; margin-top:12px; }
 .profile-card { background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; align-items:center; justify-content:space-between; }
 .profile-left { display:flex; align-items:center; gap:10px; }
-.profile-icon { font-size:20px; color:var(--cyan); }
+.profile-icon { font-size:20px; color:var(--cyan); width:24px; text-align:center; }
 .profile-name { font-size:13px; font-weight:700; color:#fff; }
 .profile-tag { font-size:10px; color:var(--primary); }
-
-/* АДМИН-ПАНЕЛЬ IP ЛОГОВ */
-.admin-box { background:#0a0f18; border:1px solid var(--card-border); border-radius:14px; padding:18px; }
-.admin-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-.admin-header h2 { font-size:17px; color:#fff; display:flex; align-items:center; gap:8px; }
-.visitor-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:10px; }
-.visitor-table th { text-align:left; padding:10px 8px; background:#111827; color:var(--text-muted); border-bottom:1px solid #1f2937; }
-.visitor-table td { padding:10px 8px; border-bottom:1px solid #111827; color:#cbd5e1; }
-.ip-badge { font-family:'Courier New', monospace; color:var(--primary); font-weight:700; }
 
 .loader { display:none; text-align:center; padding:16px 0; }
 .spinner { border:2px solid rgba(255,255,255,0.1); border-top:2px solid var(--primary); border-radius:50%; width:24px; height:24px; animation:spin 0.8s linear infinite; margin:0 auto 8px; }
 @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
 
-/* Блоки кода инструкций */
+.code-wrap { position:relative; background:var(--code-bg); border:1px solid #1f2937; border-radius:8px; padding:10px 12px; font-family:'Courier New', monospace; font-size:12px; color:var(--primary); word-break:break-all; white-space:pre-wrap; }
 .cmd-box { margin-bottom:10px; }
 .cmd-label { font-size:11px; font-weight:700; color:var(--cyan); text-transform:uppercase; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; }
-.code-wrap { position:relative; background:var(--code-bg); border:1px solid #1f2937; border-radius:8px; padding:10px 12px; font-family:'Courier New', monospace; font-size:12px; color:var(--primary); word-break:break-all; white-space:pre-wrap; }
 .copy-btn { position:absolute; right:8px; top:8px; background:#1e293b; color:var(--text-muted); border:none; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; }
 .copy-btn:hover { background:var(--primary); color:#000; }
 
@@ -147,8 +140,8 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
       <i class="fa-solid fa-shield-halved"></i> OSINT Pro Hub
     </div>
     <div class="nav-actions">
-      <button class="btn btn-secondary" onclick="showView('adminView')"><i class="fa-solid fa-user-secret"></i> IP Логи</button>
-      <button class="btn btn-purple" onclick="showAiModal()"><i class="fa-solid fa-brain"></i> AI Досье</button>
+      <button class="btn btn-secondary" onclick="showView('photoView')"><i class="fa-solid fa-camera"></i> Фото & EXIF</button>
+      <button class="btn btn-purple" onclick="showView('aiView')"><i class="fa-solid fa-brain"></i> AI Досье</button>
     </div>
   </div>
 
@@ -156,18 +149,17 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
   <div class="view-page active" id="catalogView">
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="searchInput" placeholder="Поиск по Telegram, никнейму, GeoINT, домену..." oninput="renderCatalog()">
+      <input type="text" id="searchInput" placeholder="Поиск по 60+ базам, никнеймам, Telegram, GeoINT..." oninput="renderCatalog()">
     </div>
 
     <div class="filter-chips">
       <div class="chip active" onclick="setFilter('all', this)">Все категории</div>
+      <div class="chip" onclick="setFilter('username_osint', this)">🔍 Sherlock (60+ сайтов)</div>
       <div class="chip" onclick="setFilter('telegram_osint', this)">✈️ Telegram Разведка</div>
-      <div class="chip" onclick="setFilter('amazing_osint', this)">🌟 Удивительный OSINT</div>
-      <div class="chip" onclick="setFilter('username_osint', this)">👤 Никнеймы</div>
+      <div class="chip" onclick="setFilter('amazing_osint', this)">🌟 Фото, GeoINT & Спутники</div>
       <div class="chip" onclick="setFilter('mapping_investigation', this)">🗺️ Графы и фреймворки</div>
       <div class="chip" onclick="setFilter('domain_network', this)">🌐 Домены и DNS</div>
       <div class="chip" onclick="setFilter('email_checks', this)">📧 Почта и телефоны</div>
-      <div class="chip" onclick="setFilter('security_utilities', this)">🛠️ Утилиты</div>
     </div>
 
     <div id="catalogContainer"></div>
@@ -187,15 +179,28 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
 
     <!-- Индивидуальная рабочая область -->
     <div class="workspace-box">
-      <div class="workspace-title"><i class="fa-solid fa-bolt"></i> Индивидуальный запуск и проверка</div>
-      <div class="input-row">
+      <div class="workspace-title"><i class="fa-solid fa-bolt"></i> Рабочая область инструмента</div>
+      
+      <!-- Блок загрузки фото для фото-утилит -->
+      <div id="tvPhotoUploaderBox" style="display:none;">
+        <div class="upload-dropzone" onclick="document.getElementById('tvFileInput').click()">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size:32px; color:var(--cyan); margin-bottom:8px;"></i>
+          <div style="font-weight:700; color:#fff;">Нажмите для выбора фото или перетащите сюда</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Извлечение GPS, даты, камеры и AI Vision гео-анализ</div>
+          <input type="file" id="tvFileInput" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
+        </div>
+        <img id="tvPhotoPreview" class="upload-preview">
+      </div>
+
+      <!-- Текстовый ввод для остальных утилит -->
+      <div class="input-row" id="tvTextInputRow">
         <input class="tool-input" id="tvTargetInput" placeholder="Введите цель...">
         <button class="btn btn-primary" onclick="runCurrentToolScan()"><i class="fa-solid fa-play"></i> Запустить</button>
       </div>
 
       <div class="loader" id="tvLoader">
         <div class="spinner"></div>
-        <span style="font-size:12px; color:var(--cyan);">Выполняется опрос и аналитическое сопоставление...</span>
+        <span style="font-size:12px; color:var(--cyan);">Выполняется глубокое сканирование и обработка...</span>
       </div>
 
       <!-- Персональный контейнер вывода -->
@@ -209,34 +214,33 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
     </div>
   </div>
 
-  <!-- ВЬЮ 3: АДМИН-ПАНЕЛЬ IP ЛОГОВ -->
-  <div class="view-page" id="adminView">
+  <!-- ВЬЮ 3: ВЫДЕЛЕННЫЙ ФОТО & VISION AI АНАЛИЗАТОР -->
+  <div class="view-page" id="photoView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
     </div>
 
-    <div class="admin-box">
-      <div class="admin-header">
-        <h2><i class="fa-solid fa-network-wired" style="color:var(--primary);"></i> Логи визитов и IP-адресов</h2>
-        <button class="btn btn-secondary" onclick="loadAdminVisitors()"><i class="fa-solid fa-rotate"></i> Обновить</button>
-      </div>
-      <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">Реальное время фиксации всех пользователей, открывших панель:</p>
+    <div class="workspace-box">
+      <div class="workspace-title" style="color:var(--cyan);"><i class="fa-solid fa-camera"></i> Фото-детектив & Геолокация (Vision AI + EXIF)</div>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+        Загрузите любую фотографию — система автоматически извлечет скрытые метаданные (GPS координаты, дату, модель камеры), определит примерную геолокацию по архитектуре и теням через Gemini Vision, и создаст ссылки для обратного поиска.
+      </p>
 
-      <div style="overflow-x:auto;">
-        <table class="visitor-table">
-          <thead>
-            <tr>
-              <th>Время (UTC)</th>
-              <th>IP Адрес</th>
-              <th>Страна</th>
-              <th>Устройство / User-Agent</th>
-            </tr>
-          </thead>
-          <tbody id="visitorsTableBody">
-            <tr><td colspan="4" style="text-align:center; padding:20px;">Загрузка логов...</td></tr>
-          </tbody>
-        </table>
+      <div class="upload-dropzone" onclick="document.getElementById('directPhotoInput').click()">
+        <i class="fa-solid fa-image" style="font-size:36px; color:var(--cyan); margin-bottom:8px;"></i>
+        <div style="font-weight:700; color:#fff;">Загрузить изображение для экспертизы</div>
+        <div style="font-size:12px; color:var(--text-muted);">Поддерживаются JPEG, PNG, WEBP, HEIC</div>
+        <input type="file" id="directPhotoInput" accept="image/*" style="display:none;" onchange="processDirectPhoto(this)">
       </div>
+
+      <img id="directPhotoPreview" class="upload-preview">
+
+      <div class="loader" id="photoLoader">
+        <div class="spinner" style="border-top-color:var(--cyan);"></div>
+        <span style="font-size:12px; color:var(--cyan);">Нейросеть распознает объекты, координаты и текст на фото...</span>
+      </div>
+
+      <div id="photoResultBox"></div>
     </div>
   </div>
 
@@ -266,7 +270,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
   </div>
 
   <div class="footer-info">
-    OSINT Pro WebApp · Автономная среда анализа открытых данных
+    OSINT Pro Hub · Sherlock Engine (60+ сервисов) & Gemini Vision AI
   </div>
 </div>
 
@@ -274,6 +278,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; 
 let FULL_CATALOG = [];
 let currentCategory = 'all';
 let activeTool = null;
+let currentUploadedBase64 = null;
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
@@ -285,11 +290,6 @@ function showView(viewId) {
   document.querySelectorAll('.view-page').forEach(el => el.classList.remove('active'));
   document.getElementById(viewId).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (viewId === 'adminView') loadAdminVisitors();
-}
-
-function showAiModal() {
-  showView('aiView');
 }
 
 async function loadCatalog() {
@@ -346,7 +346,7 @@ function renderCatalog() {
 
       let badge = '<span class="badge badge-doc">CLI / Справка</span>';
       if (tool.web_runnable && tool.launch?.type === 'api') {
-        badge = '<span class="badge badge-api">⚡ ВЕБ-СКАНЕР</span>';
+        badge = '<span class="badge badge-api">⚡ SHERLOCK 60+</span>';
       } else if (tool.web_url && tool.launch?.type === 'url') {
         badge = '<span class="badge badge-web">🌐 WEB-APP</span>';
       }
@@ -361,7 +361,7 @@ function renderCatalog() {
           <span><i class="fa-solid fa-crosshairs"></i> Вход: <b>${tool.input || '—'}</b></span>
         </div>
         <div class="btn-group" onclick="event.stopPropagation()">
-          <button class="btn btn-primary" onclick="openToolPage('${tool.id}')"><i class="fa-solid fa-arrow-right"></i> Открыть страницу утилиты</button>
+          <button class="btn btn-primary" onclick="openToolPage('${tool.id}')"><i class="fa-solid fa-arrow-right"></i> Открыть утилиту</button>
         </div>
       `;
       grid.appendChild(card);
@@ -400,13 +400,23 @@ function openToolPage(toolId) {
     btnGroup.innerHTML += `<a href="${selected.repo}" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fa-brands fa-github"></i> Репозиторий GitHub</a>`;
   }
 
-  // Настройка плейсхолдера
+  // Проверка: является ли утилита инструментом анализа фото (MetaDetective, SunCalc, Image GeoINT)
+  const isPhotoTool = selected.id.includes('suncalc') || selected.id.includes('meta') || selected.input.includes('photo') || selected.input.includes('файл');
+  
+  if (isPhotoTool) {
+    document.getElementById('tvPhotoUploaderBox').style.display = 'block';
+    document.getElementById('tvTextInputRow').style.display = 'none';
+  } else {
+    document.getElementById('tvPhotoUploaderBox').style.display = 'none';
+    document.getElementById('tvTextInputRow').style.display = 'flex';
+  }
+
   const input = document.getElementById('tvTargetInput');
   input.value = '';
   if (selected.scan_type === 'telegram' || selected.id.includes('tg')) {
     input.placeholder = `Введите @username или Telegram ID (например: durov или 5233450569)`;
   } else if (selected.input === 'username') {
-    input.placeholder = `Введите username для ${selected.name} (например: wertag20)`;
+    input.placeholder = `Введите username для 60+ баз данных (например: wertag20)`;
   } else if (selected.input === 'domain') {
     input.placeholder = `Введите домен (например: example.com)`;
   } else if (selected.input === 'email') {
@@ -441,7 +451,131 @@ function openToolPage(toolId) {
   showView('toolView');
 }
 
-// ЗАПУСК СКАНИРОВАНИЯ
+// ОБРАБОТКА ЗАГРУЗКИ ФОТО НА СТРАНИЦЕ УТИЛИТЫ
+async function handlePhotoUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+
+  const preview = document.getElementById('tvPhotoPreview');
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+
+    const loader = document.getElementById('tvLoader');
+    const outBox = document.getElementById('tvOutputBox');
+    loader.style.display = 'block';
+    outBox.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/scan/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: e.target.result })
+      });
+      const data = await res.json();
+      loader.style.display = 'none';
+      outBox.style.display = 'block';
+
+      renderPhotoAnalysisOutput(data, outBox);
+    } catch (err) {
+      loader.style.display = 'none';
+      outBox.style.display = 'block';
+      outBox.innerHTML = `<div style="color:var(--danger);">❌ Ошибка анализа фото: ${err.message}</div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ПРЯМОЙ АНАЛИЗ ФОТО ИЗ ВКЛАДКИ ФОТО
+async function processDirectPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+
+  const preview = document.getElementById('directPhotoPreview');
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+
+    const loader = document.getElementById('photoLoader');
+    const outBox = document.getElementById('photoResultBox');
+    loader.style.display = 'block';
+    outBox.innerHTML = '';
+
+    try {
+      const res = await fetch('/api/scan/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: e.target.result })
+      });
+      const data = await res.json();
+      loader.style.display = 'none';
+
+      renderPhotoAnalysisOutput(data, outBox);
+    } catch (err) {
+      loader.style.display = 'none';
+      outBox.innerHTML = `<div style="color:var(--danger); padding:12px;">❌ Ошибка: ${err.message}</div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderPhotoAnalysisOutput(data, container) {
+  const exif = data.exif || {};
+  let gpsHtml = '<span style="color:var(--text-muted);">Координаты GPS отсутствуют в EXIF (стерты или снято без геопозиции)</span>';
+
+  if (exif.gps) {
+    gpsHtml = `
+      <div style="color:var(--primary); font-weight:700; margin-bottom:6px;">
+        📍 Координаты: ${exif.gps.latitude}, ${exif.gps.longitude}
+      </div>
+      <a href="${exif.google_maps_url}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:6px 12px;">
+        <i class="fa-solid fa-map-location-dot"></i> Открыть точку на Google Maps
+      </a>
+    `;
+  }
+
+  let html = `
+    <div class="output-header">
+      <span><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Экспертиза изображения: Метаданные & Vision AI</span>
+      <span class="badge badge-api">УСПЕШНО</span>
+    </div>
+
+    <!-- Блок EXIF -->
+    <div style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:14px; margin-bottom:12px; font-size:13px;">
+      <div style="font-weight:700; color:#fff; margin-bottom:8px;"><i class="fa-solid fa-microchip"></i> EXIF Метаданные камеры:</div>
+      <div style="margin-bottom:4px;"><b>Камера:</b> ${exif.camera_make || '—'} ${exif.camera_model || 'Не указана'}</div>
+      <div style="margin-bottom:4px;"><b>Дата съемки:</b> ${exif.date_time || 'Скрыта'}</div>
+      <div style="margin-bottom:4px;"><b>ПО / Редактор:</b> ${exif.software || 'Оригинал камеры'}</div>
+      <div style="margin-top:10px; padding-top:10px; border-top:1px solid #1e293b;">
+        <b>GPS Геолокация:</b><br>${gpsHtml}
+      </div>
+    </div>
+
+    <!-- Кнопки обратного поиска по картинкам -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
+        <i class="fa-solid fa-magnifying-glass"></i> Обратный поиск изображения (Reverse Search):
+      </div>
+      <div class="btn-group">
+        <a href="https://yandex.ru/images/search?rpt=imageview" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс Картинки</a>
+        <a href="https://lens.google.com/" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</a>
+        <a href="https://tineye.com/" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> TinEye</a>
+      </div>
+    </div>
+
+    <!-- Блок Vision AI анализа местности -->
+    <div class="ai-dossier-card">
+      <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитический GeoINT отчет (Gemini Vision AI)</div>
+      <div class="ai-dossier-text">${formatMarkdownText(data.vision_ai_report)}</div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+// ЗАПУСК СКАНИРОВАНИЯ ТЕКСТОВОЙ ЦЕЛИ
 async function runCurrentToolScan() {
   if (!activeTool) return;
   const target = document.getElementById('tvTargetInput').value.trim();
@@ -489,103 +623,30 @@ function renderToolSpecificOutput(data, target) {
   const outBox = document.getElementById('tvOutputBox');
   let html = `
     <div class="output-header">
-      <span><i class="fa-solid fa-terminal" style="color:var(--primary);"></i> Вывод утилиты [${activeTool.name}] & AI-досье для: <code style="color:var(--cyan);">${target}</code></span>
+      <span><i class="fa-solid fa-terminal" style="color:var(--primary);"></i> Вывод [${activeTool.name}] & AI-досье: <code style="color:var(--cyan);">${target}</code></span>
       <span class="badge badge-api">ВЫПОЛНЕНО</span>
     </div>
   `;
 
-  // 1. БЛОК: ТЕРМИНАЛЬНЫЙ ВЫВОД САМОЙ ПРОГРАММЫ (CLI LOGS)
-  let cliLog = '';
   const nowStr = new Date().toISOString().replace('T', ' ').substr(0, 19);
 
-  if (data.type === 'telegram') {
-    cliLog = `[${nowStr}] [*] Инициализация модуля Telegram Profile Inspector...
-[${nowStr}] [*] Запрос метаданных шлюза t.me/${data.username}
-[${nowStr}] [+] HTTP 200 OK — Сущность Telegram найдена!
-[${nowStr}] [+] Имя / Title: "${data.title}"
-[${nowStr}] [+] Тип объекта: ${data.account_type}
-[${nowStr}] [+] Bio / Описание: "${data.description}"
-[${nowStr}] [+] Ссылка на аватар: ${data.photo_url || 'Отсутствует или скрыта'}
-[${nowStr}] [+] Direct URI: tg://resolve?domain=${data.username}
-[${nowStr}] [✓] Сканирование Telegram завершено успешно (1 объект сопоставлен).`;
-
-    html += `
-      <div style="margin-bottom:12px;">
-        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
-          <i class="fa-solid fa-code"></i> Консольный вывод утилиты (CLI Output):
-        </div>
-        <div class="code-wrap" style="color:#22c55e; font-size:11px; line-height:1.5;">${cliLog}</div>
-      </div>
-
-      <div class="tg-profile-card">
-        <img class="tg-avatar" src="${data.photo_url || 'https://telegram.org/img/t_logo.png'}" alt="Avatar">
-        <div class="tg-info">
-          <div class="tg-name">${data.title} <span class="badge badge-web">${data.account_type}</span></div>
-          <div class="tg-handle">@${data.username}</div>
-          <div class="tg-desc">${data.description}</div>
-          <div style="margin-top:8px;">
-            <a href="${data.url}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:4px 10px; font-size:11px;">✈️ Открыть в Telegram</a>
-          </div>
-        </div>
-      </div>
-    `;
-
-    if (data.ai_summary) {
-      html += `
-        <div class="ai-dossier-card">
-          <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитический ИИ-портрет (Gemini AI)</div>
-          <div class="ai-dossier-text">${formatMarkdownText(data.ai_summary)}</div>
-        </div>
-      `;
-    }
-
-  } else if (data.type === 'telegram_id') {
-    cliLog = `[${nowStr}] [*] Запуск Telegram ID Decoder...
-[${nowStr}] [*] Анализ числового ID: ${data.tg_id}
-[${nowStr}] [+] Диапазон регистрации: ${data.estimated_year}
-[${nowStr}] [+] Telegram Protocol URI: tg://user?id=${data.tg_id}
-[${nowStr}] [✓] Проверка ID завершена.`;
-
-    html += `
-      <div style="margin-bottom:12px;">
-        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-          <i class="fa-solid fa-code"></i> Консольный вывод утилиты (CLI Output):
-        </div>
-        <div class="code-wrap" style="color:#22c55e; font-size:11px;">${cliLog}</div>
-      </div>
-
-      <div style="background:#0f172a; padding:14px; border-radius:10px; margin-bottom:12px;">
-        <div style="font-size:14px; font-weight:700; color:#fff; margin-bottom:6px;">Telegram ID: <code style="color:var(--primary);">${data.tg_id}</code></div>
-        <div style="font-size:13px; color:#cbd5e1;">📅 Оценка периода регистрации: <b>${data.estimated_year}</b></div>
-      </div>
-    `;
-
-    if (data.ai_summary) {
-      html += `
-        <div class="ai-dossier-card">
-          <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитика ID (Gemini AI)</div>
-          <div class="ai-dossier-text">${formatMarkdownText(data.ai_summary)}</div>
-        </div>
-      `;
-    }
-
-  } else if (data.type === 'username') {
+  if (data.type === 'username') {
     const profiles = data.profiles || [];
-    let checkedLines = profiles.map(p => `[${nowStr}] [+] [200 FOUND] ${p.platform.padEnd(12)} -> ${p.url}`).join('\n');
-    cliLog = `[${nowStr}] [*] Запуск OSINT-поиска для псевдонима: "${data.username}"
-[${nowStr}] [*] Проверка сетевых узлов и эндпоинтов (всего ${data.total_checked} сервисов)...
-${checkedLines || `[${nowStr}] [-] Прямых публичных совпадений не найдено`}
-[${nowStr}] [✓] Сканирование завершено: ${data.found_count} подтвержденных аккаунтов.`;
+    let checkedLines = profiles.map(p => `[${nowStr}] [+] [FOUND] ${p.platform.padEnd(14)} (${p.category}) -> ${p.url}`).join('\n');
+    let cliLog = `[${nowStr}] [*] Инициализация движка Sherlock Engine (60+ баз данных)...
+[${nowStr}] [*] Целевой идентификатор: "${data.username}"
+${checkedLines || `[${nowStr}] [-] Прямых совпадений не обнаружено`}
+[${nowStr}] [✓] Поиск завершен: ${data.found_count} подтвержденных аккаунтов из ${data.total_checked} проверенных сервисов.`;
 
     html += `
       <div style="margin-bottom:12px;">
         <div style="font-size:12px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-          <i class="fa-solid fa-code"></i> Консольный вывод утилиты (CLI / Execution Log):
+          <i class="fa-solid fa-code"></i> Консольный вывод Sherlock Engine (CLI Log):
         </div>
         <div class="code-wrap" style="color:#22c55e; font-size:11px; line-height:1.5;">${cliLog}</div>
       </div>
 
-      <div style="font-size:13px; margin-bottom:10px;">
+      <div style="font-size:14px; font-weight:700; color:#fff; margin-bottom:10px;">
         Найдено подтвержденных профилей: <b style="color:var(--primary);">${data.found_count}</b> из ${data.total_checked}
       </div>
     `;
@@ -599,7 +660,7 @@ ${checkedLines || `[${nowStr}] [-] Прямых публичных совпад�
               <i class="fa-brands ${p.icon || 'fa-globe'} profile-icon"></i>
               <div>
                 <div class="profile-name">${p.platform}</div>
-                <span class="profile-tag">✅ Активен</span>
+                <span class="profile-tag">✅ ${p.category}</span>
               </div>
             </div>
             <a href="${p.url}" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:4px 8px; font-size:11px;">🔗 Открыть</a>
@@ -612,82 +673,43 @@ ${checkedLines || `[${nowStr}] [-] Прямых публичных совпад�
     if (data.ai_summary) {
       html += `
         <div class="ai-dossier-card">
-          <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитический ИИ-портрет (Gemini AI)</div>
+          <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитический ИИ-портрет личности (Gemini AI)</div>
           <div class="ai-dossier-text">${formatMarkdownText(data.ai_summary)}</div>
         </div>
       `;
     }
 
-  } else if (data.type === 'domain') {
-    const d = data.data || {};
-    cliLog = `[${nowStr}] [*] Запуск аудита доменного имени: ${data.target}
-[${nowStr}] [+] DNS A-Records: ${(d.dns?.A || []).join(', ') || 'Не определено'}
-[${nowStr}] [+] SSL Issuer: ${d.ssl?.issuer || 'Отсутствует / Ошибка'}
-[${nowStr}] [+] SSL Expiration: ${d.ssl?.notAfter || '—'}
-[${nowStr}] [+] HTTP Server Header: ${d.headers?.Server || 'Скрыт'}
-[${nowStr}] [+] Security: HSTS=${d.headers?.['Strict-Transport-Security'] || 'Нет'}, CSP=${d.headers?.['Content-Security-Policy'] || 'Нет'}
-[${nowStr}] [✓] Инфраструктурный аудит завершен.`;
+  } else if (data.type === 'telegram') {
+    let cliLog = `[${nowStr}] [*] Подключение к Telegram Gateway t.me/${data.username}...
+[${nowStr}] [+] HTTP 200 OK — Объект найден: "${data.title}"
+[${nowStr}] [+] Категория: ${data.account_type}
+[${nowStr}] [+] Bio: "${data.description}"
+[${nowStr}] [✓] Сканирование Telegram завершено.`;
 
     html += `
       <div style="margin-bottom:12px;">
-        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-          <i class="fa-solid fa-code"></i> Консольный вывод утилиты (CLI Output):
-        </div>
-        <div class="code-wrap" style="color:#22c55e; font-size:11px; line-height:1.5;">${cliLog}</div>
+        <div class="code-wrap" style="color:#22c55e; font-size:11px;">${cliLog}</div>
       </div>
-
-      <div style="display:grid; gap:8px; font-size:13px; margin-top:8px;">
-        <div style="background:#0f172a; padding:10px; border-radius:8px;"><b>DNS A-записи:</b> ${(d.dns?.A || []).join(', ') || '—'}</div>
-        <div style="background:#0f172a; padding:10px; border-radius:8px;"><b>SSL Издатель:</b> ${d.ssl?.issuer || '—'} (до ${d.ssl?.notAfter || '—'})</div>
-        <div style="background:#0f172a; padding:10px; border-radius:8px;"><b>Сервер:</b> ${d.headers?.Server || 'Скрыт'} | <b>HSTS:</b> ${d.headers?.['Strict-Transport-Security'] || 'Нет'}</div>
+      <div class="tg-profile-card">
+        <img class="tg-avatar" src="${data.photo_url || 'https://telegram.org/img/t_logo.png'}" alt="Avatar">
+        <div class="tg-info">
+          <div class="tg-name">${data.title} <span class="badge badge-web">${data.account_type}</span></div>
+          <div class="tg-handle">@${data.username}</div>
+          <div class="tg-desc">${data.description}</div>
+          <div style="margin-top:8px;">
+            <a href="${data.url}" target="_blank" rel="noopener" class="btn btn-primary" style="padding:4px 10px; font-size:11px;">✈️ Открыть в Telegram</a>
+          </div>
+        </div>
       </div>
     `;
-
-  } else if (data.type === 'email') {
-    const d = data.data || {};
-    cliLog = `[${nowStr}] [*] Запуск валидации Email-адреса: ${data.target}
-[${nowStr}] [+] Синтаксический анализ: Корректен (RFC 5322)
-[${nowStr}] [+] Почтовый домен: ${d.domain} (${d.status})
-[${nowStr}] [+] IP почтовых серверов: ${(d.domain_ip || []).join(', ')}
-[${nowStr}] [✓] Проверка адреса завершена.`;
-
-    html += `
-      <div style="margin-bottom:12px;">
-        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-          <i class="fa-solid fa-code"></i> Консольный вывод утилиты (CLI Output):
+    if (data.ai_summary) {
+      html += `
+        <div class="ai-dossier-card">
+          <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитика Telegram (Gemini AI)</div>
+          <div class="ai-dossier-text">${formatMarkdownText(data.ai_summary)}</div>
         </div>
-        <div class="code-wrap" style="color:#22c55e; font-size:11px; line-height:1.5;">${cliLog}</div>
-      </div>
-
-      <div style="font-size:13px;">
-        <div><b>Синтаксис:</b> <span style="color:var(--primary);">Валиден</span></div>
-        <div><b>Почтовый домен:</b> ${d.domain} (${d.status})</div>
-        <div><b>IP серверов:</b> ${(d.domain_ip || []).join(', ')}</div>
-      </div>
-    `;
-
-  } else if (data.type === 'ip') {
-    const d = data.data || {};
-    cliLog = `[${nowStr}] [*] Запрос GeoIP и маршрутизации для IP: ${data.target}
-[${nowStr}] [+] Локация: ${d.country || '—'} (${d.countryCode || '—'}), город ${d.city || '—'}
-[${nowStr}] [+] Провайдер (ISP): ${d.isp || '—'} | Организация: ${d.org || '—'}
-[${nowStr}] [+] AS Номер: ${d.as || '—'} | Часовой пояс: ${d.timezone || '—'}
-[${nowStr}] [✓] Анализ узла сети завершен.`;
-
-    html += `
-      <div style="margin-bottom:12px;">
-        <div style="font-size:12px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-          <i class="fa-solid fa-code"></i> Консольный вывод утилиты (CLI Output):
-        </div>
-        <div class="code-wrap" style="color:#22c55e; font-size:11px; line-height:1.5;">${cliLog}</div>
-      </div>
-
-      <div style="background:#0f172a; padding:12px; border-radius:10px; font-size:13px;">
-        <div><b>Страна / Город:</b> ${d.country || '—'}, ${d.city || '—'}</div>
-        <div><b>Провайдер:</b> ${d.isp || '—'} (${d.org || '—'})</div>
-        <div><b>AS:</b> ${d.as || '—'}</div>
-      </div>
-    `;
+      `;
+    }
   }
 
   outBox.innerHTML = html;
@@ -718,46 +740,13 @@ async function runAiDossierDirect() {
 
     resultDiv.innerHTML = `
       <div class="ai-dossier-card">
-        <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Полное аналитическое досье по цели: ${target}</div>
+        <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Аналитическое досье по цели: ${target}</div>
         <div class="ai-dossier-text">${formatMarkdownText(data.dossier)}</div>
       </div>
     `;
   } catch (err) {
     loader.style.display = 'none';
-    resultDiv.innerHTML = `<div style="color:var(--danger); padding:12px;">Ошибка AI дедукции: ${err.message}</div>`;
-  }
-}
-
-// АДМИН-ПАНЕЛЬ: ЗАГРУЗКА СПИСКА IP
-async function loadAdminVisitors() {
-  const tbody = document.getElementById('visitorsTableBody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:16px;">Загрузка актуальных логов...</td></tr>';
-
-  try {
-    const res = await fetch('/api/admin/visitors?limit=100');
-    const data = await res.json();
-    const rows = data.visitors || [];
-
-    if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:16px; color:var(--text-muted);">Визитов пока не зафиксировано.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = '';
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="color:#94a3b8; font-size:11px;">${r.ts || '—'}</td>
-        <td class="ip-badge">${r.ip || 'unknown'}</td>
-        <td><span class="badge badge-api">${r.country || 'GLOBAL'}</span></td>
-        <td style="font-size:11px; color:#94a3b8; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${r.ua || ''}">
-          ${r.ua || 'Telegram WebApp Client'}
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--danger); text-align:center; padding:16px;">Ошибка загрузки логов.</td></tr>`;
+    resultDiv.innerHTML = `<div style="color:var(--danger); padding:12px;">Ошибка: ${err.message}</div>`;
   }
 }
 
