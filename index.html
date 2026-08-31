@@ -33,11 +33,20 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 .brand i { color:var(--primary); text-shadow:0 0 10px var(--primary-glow); }
 .nav-actions { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 
-.user-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; background:#101726; border-radius:8px; font-size:11px; font-weight:700; color:var(--cyan); border:1px solid #1e293b; cursor:pointer; }
+.user-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; background:#101726; border-radius:8px; font-size:11px; font-weight:700; color:var(--cyan); border:1px solid #1e293b; cursor:pointer; }
 .user-badge:hover { border-color:var(--primary); }
 
 .view-page { display:none; }
 .view-page.active { display:block; }
+
+/* Страница Регистрации (Отдельный экран) */
+.auth-container { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:16px; text-align:center; }
+.auth-card { background:linear-gradient(135deg, #091322, #0d1e34); border:2px solid var(--cyan); border-radius:16px; padding:28px 22px; max-width:420px; width:100%; box-shadow:0 0 40px rgba(0,229,255,0.25); }
+.auth-icon { font-size:48px; color:var(--cyan); margin-bottom:14px; text-shadow:0 0 20px var(--cyan-glow); }
+.auth-title { font-size:18px; font-weight:800; color:#fff; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+.auth-subtitle { font-size:12px; color:#94a3b8; margin-bottom:20px; line-height:1.5; }
+.auth-input { width:100%; padding:13px; background:#04070c; border:1px solid var(--cyan); border-radius:10px; color:#fff; font-size:14px; font-weight:700; text-align:center; outline:none; margin-bottom:14px; }
+.auth-input:focus { border-color:var(--primary); box-shadow:0 0 15px var(--primary-glow); }
 
 /* Главный быстрый поиск на первой странице */
 .quick-recon-box { background:linear-gradient(135deg, #09121f, #0d1a2d); border:1px solid #1e3557; border-radius:12px; padding:14px; margin-bottom:14px; box-shadow:0 4px 20px rgba(0,0,0,0.5); }
@@ -76,7 +85,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
 /* Кнопки */
 .btn-group { display:flex; flex-wrap:wrap; gap:6px; }
-.btn { padding:7px 12px; font-size:11px; font-weight:700; border-radius:7px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; text-decoration:none; }
+.btn { padding:8px 14px; font-size:11px; font-weight:700; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
 .btn-primary { background:var(--primary); color:#000; }
 .btn-primary:hover { filter:brightness(1.1); }
 .btn-secondary { background:#111927; color:var(--text); border:1px solid #1e293b; }
@@ -156,34 +165,54 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
 <div class="container">
   <!-- Навбар -->
-  <div class="navbar">
+  <div class="navbar" id="mainNavbar">
     <div class="brand" onclick="showView('catalogView')">
       <i class="fa-solid fa-terminal"></i> OSINT Cyber Hub
     </div>
     <div class="nav-actions">
-      <button class="btn btn-primary" id="registerBtn" onclick="openOnboardingModal()" style="display:none; padding:6px 12px; font-size:11px;">
-        <i class="fa-solid fa-user-plus"></i> Создать позывной
-      <button class="btn btn-secondary" onclick="showView('photoView')"><i class="fa-solid fa-camera"></i> Фото</button>
+      <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="handleUserBadgeClick()">
+        <i id="userBadgeIcon" class="fa-solid fa-user-check"></i> <span id="currentUsernameSpan">Позывной</span>
+      </div>
+      <button class="btn btn-purple" id="navAttrBtn" onclick="showView('attributionView')"><i class="fa-solid fa-user-secret"></i> Детектор виртов</button>
+      <button class="btn btn-secondary" id="navPhotoBtn" onclick="showView('photoView')"><i class="fa-solid fa-camera"></i> Фото</button>
+    </div>
+  </div>
+
+  <!-- ВЬЮ 0: ОТДЕЛЬНАЯ СТРАНИЦА РЕГИСТРАЦИИ (ОБЯЗАТЕЛЬНЫЙ ЭКРАН) -->
+  <div class="view-page" id="registerView">
+    <div class="auth-container">
+      <div class="auth-card">
+        <i class="fa-solid fa-shield-halved auth-icon"></i>
+        <div class="auth-title">OSINT CYBER HUB</div>
+        <div class="auth-subtitle">
+          Для доступа к системе расследований, базам Sherlock и телефонной разведке зарегистрируйте ваш рабочий позывной:
+        </div>
+        <input type="text" id="regNicknameInput" class="auth-input" placeholder="Введите ваш позывной (например: Ghost_OSINT)" onkeydown="if(event.key==='Enter') doRegister()">
+        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:13px; font-size:13px;" onclick="doRegister()">
+          <i class="fa-solid fa-check"></i> Зарегистрироваться и войти
+        </button>
+        <div id="regStatusMsg" style="margin-top:12px; font-size:12px; color:var(--danger); display:none;"></div>
+      </div>
     </div>
   </div>
 
   <!-- ВЬЮ 1: ГЛАВНЫЙ КАТАЛОГ & БЫСТРЫЙ ПОИСК -->
-  <div class="view-page active" id="catalogView">
+  <div class="view-page" id="catalogView">
     
     <!-- БЫСТРЫЙ СКАНЕР ПРЯМО НА ГЛАВНОЙ -->
     <div class="quick-recon-box">
       <div class="quick-title">
-        <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Экспресс-поиск по 480+ базам Sherlock
+        <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Экспресс-поиск по 480+ базам Sherlock & Phone Recon
       </div>
       <div class="quick-input-group">
-        <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм или цель (например: wertag20)..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
+        <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм, телефон или цель (например: wertag20 или +79991234567)..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
         <button class="btn btn-primary" onclick="runMainQuickScan()"><i class="fa-solid fa-bolt"></i> Найти</button>
       </div>
     </div>
 
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="searchInput" placeholder="Фильтр программ: Telegram, Subfinder, EXIF, GeoIP, GHunt..." oninput="renderCatalog()">
+      <input type="text" id="searchInput" placeholder="Фильтр программ: Telegram, Subfinder, EXIF, GeoIP, Phone..." oninput="renderCatalog()">
     </div>
 
     <div class="filter-chips">
@@ -193,7 +222,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       <div class="chip" onclick="setFilter('social_google_instagram', this)">📱 Google & Instagram</div>
       <div class="chip" onclick="setFilter('web_infra_secrets', this)">🔑 Краулеры & Ключи</div>
       <div class="chip" onclick="setFilter('amazing_osint', this)">🌟 GeoINT & Спутники</div>
-      <div class="chip" onclick="setFilter('email_checks', this)">📧 Почта & IP</div>
+      <div class="chip" onclick="setFilter('email_checks', this)">📧 Почта & Телефон</div>
     </div>
 
     <div id="catalogContainer"></div>
@@ -225,7 +254,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       </div>
 
       <div class="input-row" id="tvTextInputRow">
-        <input class="tool-input" id="tvTargetInput" placeholder="Введите цель...">
+        <input class="tool-input" id="tvTargetInput" placeholder="Введите цель..." onkeydown="if(event.key==='Enter') runCurrentToolScan()">
         <button class="btn btn-primary" onclick="runCurrentToolScan()"><i class="fa-solid fa-play"></i> Старт</button>
       </div>
 
@@ -251,10 +280,10 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
     <div class="workspace-box">
       <div class="workspace-title" style="color:var(--purple);">
-        <i class="fa-solid fa-user-secret"></i> Детектор виртов & Поиск основного аккаунта (Sockpuppet Attribution)
+        <i class="fa-solid fa-user-secret"></i> Детектор виртов & Поиск основы (Sockpuppet Attribution)
       </div>
       <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; line-height:1.4;">
-        Выявление реального владельца, основы и цифровых связей, когда вам пишут с купленного или виртуального аккаунта.
+        Выявление реального владельца и основы, когда вам пишут с купленного или виртуального аккаунта.
       </div>
 
       <div style="margin-bottom:8px;">
@@ -303,7 +332,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     </div>
   </div>
 
-  <!-- ВЬЮ 5: УПРАВЛЕНИЕ АККАУНТАМИ -->
+  <!-- ВЬЮ 5: УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (АДМИН) -->
   <div class="view-page" id="usersAdminView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -359,28 +388,20 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
           <tbody id="visitorsTableBody">
             <tr><td colspan="5" style="text-align:center; padding:10px;">Загрузка IP-журнала...</td></tr>
           </tbody>
-  <!-- ОБЯЗАТЕЛЬНАЯ МОДАЛКА РЕГИСТРАЦИИ (НЕЛЬЗЯ ЗАКРЫТЬ БЕЗ РЕГИСТРАЦИИ) -->
-  <div id="onboardingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:99999; backdrop-filter:blur(14px); align-items:center; justify-content:center; padding:16px;">
-    <div style="background:linear-gradient(135deg, #091322, #0d1e34); border:2px solid var(--cyan); border-radius:16px; padding:24px; max-width:400px; width:100%; box-shadow:0 0 40px rgba(0,229,255,0.3); text-align:center;">
-      <i class="fa-solid fa-id-card-clip" style="font-size:46px; color:var(--cyan); margin-bottom:12px;"></i>
-      <div style="font-size:17px; font-weight:800; color:#fff; margin-bottom:6px;">ОБЯЗАТЕЛЬНАЯ РЕГИСТРАЦИЯ</div>
-      <div style="font-size:12px; color:#94a3b8; margin-bottom:16px; line-height:1.5;">
-        Для доступа к инструментам OSINT Cyber Hub придумайте ваш постоянный рабочий позывной (никнейм):
+        </table>
       </div>
-      <input type="text" id="userOnboardNickname" class="tool-input" style="text-align:center; font-weight:700; font-size:14px; margin-bottom:14px; border-color:var(--cyan); padding:10px;" placeholder="Ваш позывной (например: Ghost_Hunter)" onkeydown="if(event.key==='Enter') submitOnboardingNickname()">
-      <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:13px;" onclick="submitOnboardingNickname()">
-        <i class="fa-solid fa-shield-halved"></i> Зарегистрироваться и войти
-      </button>
     </div>
   </div>
 
-  <!-- ЭКРАН БЛОКИРОВКИ ПОЛЬЗОВАТЕЛЯ -->
-  <div id="blockedScreenModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#05070a; z-index:100000; align-items:center; justify-content:center; padding:20px; text-align:center;">
-    <div style="background:#13090e; border:2px solid var(--danger); border-radius:16px; padding:26px; max-width:390px; width:100%; box-shadow:0 0 40px rgba(255,51,102,0.4);">
-      <i class="fa-solid fa-ban" style="font-size:52px; color:var(--danger); margin-bottom:14px;"></i>
-      <div style="font-size:17px; font-weight:800; color:#fff; margin-bottom:8px;">ДОСТУП ЗАБЛОКИРОВАН</div>
-      <div style="font-size:12px; color:#cbd5e1; line-height:1.55;">
-        Ваш аккаунт деактивирован администратором.<br>Доступ к инструментам платформы закрыт.
+  <!-- ВЬЮ 6: ЭКРАН БЛОКИРОВКИ -->
+  <div class="view-page" id="blockedView">
+    <div class="auth-container">
+      <div style="background:#13090e; border:2px solid var(--danger); border-radius:16px; padding:28px 22px; max-width:400px; width:100%; box-shadow:0 0 40px rgba(255,51,102,0.35); text-align:center;">
+        <i class="fa-solid fa-ban" style="font-size:52px; color:var(--danger); margin-bottom:14px;"></i>
+        <div style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">ДОСТУП ЗАБЛОКИРОВАН</div>
+        <div style="font-size:12px; color:#cbd5e1; line-height:1.55;">
+          Ваш аккаунт деактивирован администратором.<br>Доступ к платформе закрыт.
+        </div>
       </div>
     </div>
   </div>
@@ -394,7 +415,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 let FULL_CATALOG = [];
 let currentCategory = 'all';
 let activeTool = null;
-let currentSessionUser = 'guest';
+let currentSessionUser = '';
 let tgUserId = '';
 let isUserAdmin = false;
 
@@ -404,12 +425,28 @@ if (tg) {
   tg.ready();
 }
 
-function openAdminPanel() {
-  if (!isUserAdmin) return;
-  showView('usersAdminView');
+function showView(viewId) {
+  if (viewId === 'usersAdminView' && !isUserAdmin) return;
+  document.querySelectorAll('.view-page').forEach(el => el.classList.remove('active'));
+  const targetEl = document.getElementById(viewId);
+  if (targetEl) targetEl.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (viewId === 'usersAdminView') {
+    loadAdminUsers();
+    loadAdminVisitors();
+  }
 }
 
-// ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ И ОБЯЗАТЕЛЬНАЯ РЕГИСТРАЦИЯ
+function handleUserBadgeClick() {
+  if (isUserAdmin) {
+    showView('usersAdminView');
+  } else {
+    showView('registerView');
+  }
+}
+
+// ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ ПРИ ЗАХОДЕ
 async function initUserProfile() {
   let tgId = '';
   let tgUser = '';
@@ -421,10 +458,10 @@ async function initUserProfile() {
     tgName = `${tg.initDataUnsafe.user.first_name || ''} ${tg.initDataUnsafe.user.last_name || ''}`.trim();
   }
 
-  // Для локального теста в браузере поддерживаем ?tg_id=... или локальный ID браузера
   const urlParams = new URLSearchParams(window.location.search);
   const paramId = urlParams.get('tg_id') || urlParams.get('id');
   if (!tgId && paramId) tgId = String(paramId);
+  
   if (!tgId) {
     let localStoredId = localStorage.getItem('osint_local_uid');
     if (!localStoredId) {
@@ -444,43 +481,44 @@ async function initUserProfile() {
     const data = await res.json();
 
     if (data.blocked) {
-      document.getElementById('blockedScreenModal').style.display = 'flex';
+      showView('blockedView');
       return;
     }
 
     if (data.is_admin) {
       isUserAdmin = true;
-      document.getElementById('registerBtn').style.display = 'none';
+      currentSessionUser = data.nickname || 'Admin';
       document.getElementById('currentUserBadge').style.display = 'inline-flex';
       document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-shield';
-      document.getElementById('currentUsernameSpan').innerText = data.nickname || 'Администратор';
-      currentSessionUser = data.nickname || 'Admin';
-      document.getElementById('onboardingModal').style.display = 'none';
+      document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
+      showView('catalogView');
     } else if (data.registered) {
       isUserAdmin = false;
-      document.getElementById('registerBtn').style.display = 'none';
+      currentSessionUser = data.nickname;
       document.getElementById('currentUserBadge').style.display = 'inline-flex';
       document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-check';
-      document.getElementById('currentUsernameSpan').innerText = data.nickname;
-      currentSessionUser = data.nickname;
-      document.getElementById('onboardingModal').style.display = 'none';
+      document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
+      showView('catalogView');
     } else {
-      // ПОЛЬЗОВАТЕЛЬ НЕ ЗАРЕГИСТРИРОВАН -> БЛОКИРУЕМ ЭКРАН МОДАЛКОЙ
+      // НЕ ЗАРЕГИСТРИРОВАН -> ОТКРЫВАЕМ СТРАНИЦУ РЕГИСТРАЦИИ
       isUserAdmin = false;
-      document.getElementById('registerBtn').style.display = 'none';
       document.getElementById('currentUserBadge').style.display = 'none';
-      document.getElementById('userOnboardNickname').value = data.suggested_nickname || '';
-      document.getElementById('onboardingModal').style.display = 'flex';
+      document.getElementById('regNicknameInput').value = data.suggested_nickname || '';
+      showView('registerView');
     }
   } catch (e) {
-    document.getElementById('onboardingModal').style.display = 'flex';
+    showView('registerView');
   }
 }
 
-async function submitOnboardingNickname() {
-  const nick = document.getElementById('userOnboardNickname').value.trim();
+// ОТПРАВКА ФОРМЫ РЕГИСТРАЦИИ
+async function doRegister() {
+  const nick = document.getElementById('regNicknameInput').value.trim();
+  const statusMsg = document.getElementById('regStatusMsg');
+
   if (!nick || nick.length < 2) {
-    alert('Пожалуйста, введите ваш позывной (минимум 2 символа)');
+    statusMsg.innerText = 'Пожалуйста, введите ваш позывной (минимум 2 символа)';
+    statusMsg.style.display = 'block';
     return;
   }
 
@@ -499,51 +537,29 @@ async function submitOnboardingNickname() {
     });
     const data = await res.json();
     if (data.ok) {
-      document.getElementById('onboardingModal').style.display = 'none';
       currentSessionUser = data.nickname || nick;
-      document.getElementById('registerBtn').style.display = 'none';
       document.getElementById('currentUserBadge').style.display = 'inline-flex';
       if (data.is_admin) {
         isUserAdmin = true;
         document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-shield';
         document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
       } else {
+        isUserAdmin = false;
         document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-check';
         document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
       }
+      showView('catalogView');
     } else {
-      alert('Ошибка регистрации: ' + (data.error || 'Попробуйте другой позывной'));
+      statusMsg.innerText = 'Ошибка: ' + (data.error || 'Попробуйте другой позывной');
+      statusMsg.style.display = 'block';
     }
   } catch (e) {
-    alert('Ошибка соединения: ' + e.message);
+    statusMsg.innerText = 'Ошибка соединения: ' + e.message;
+    statusMsg.style.display = 'block';
   }
 }
 
-// УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ВНЕШНИХ ССЫЛОК (TELEGRAM WEBAPP + BROWSER)
-function openExternalUrl(url) {
-  if (!url) return;
-  try {
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-      window.Telegram.WebApp.openLink(url);
-      return;
-    }
-  } catch (e) {}
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-
-function showView(viewId) {
-  if (viewId === 'usersAdminView' && !isUserAdmin) {
-    return;
-  }
-  document.querySelectorAll('.view-page').forEach(el => el.classList.remove('active'));
-  document.getElementById(viewId).classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (viewId === 'usersAdminView') {
-    loadAdminUsers();
-    loadAdminVisitors();
-  }
-}
-
+// ЗАГРУЗКА КАТАЛОГА УТИЛИТ
 async function loadCatalog() {
   try {
     const res = await fetch('/api/catalog');
@@ -565,6 +581,7 @@ function setFilter(cat, elem) {
 function renderCatalog() {
   const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
   const container = document.getElementById('catalogContainer');
+  if (!container) return;
   container.innerHTML = '';
 
   let totalShown = 0;
@@ -645,10 +662,27 @@ function runMainQuickScan() {
     document.getElementById('tvTargetInput').value = target;
   } else {
     openToolPage('sherlock');
+    document.getElementById('tvTargetInput').value = target;
   }
 
   runCurrentToolScan();
 }
+
+function openToolPage(toolId) {
+  let selected = null;
+  for (let g of FULL_CATALOG) {
+    for (let t of g.tools) {
+      if (t.id === toolId) { selected = t; break; }
+    }
+  }
+  if (!selected) {
+    selected = {
+      id: 'sherlock',
+      name: 'Sherlock Project Engine',
+      purpose: 'Поиск открытых аккаунтов по 480+ официальным базам данных.',
+      scan_type: 'username',
+      input: 'username'
+    };
   }
 
   activeTool = selected;
@@ -689,6 +723,8 @@ function runMainQuickScan() {
     input.placeholder = `Email (например: user@mail.ru)`;
   } else if (selected.input === 'ip' || selected.scan_type === 'ip') {
     input.placeholder = `IP-адрес (например: 8.8.8.8)`;
+  } else if (selected.input === 'phone' || selected.scan_type === 'phone') {
+    input.placeholder = `Номер телефона (например: +79991234567)`;
   } else {
     input.placeholder = `Цель для анализа`;
   }
@@ -708,382 +744,7 @@ function runMainQuickScan() {
   showView('toolView');
 }
 
-// ЗАПУСК АТРИБУЦИИ ВИРТОВ
-async function runAttributionScanDirect() {
-  const target = document.getElementById('attrTargetInput').value.trim();
-  const text_sample = document.getElementById('attrTextSample').value.trim();
-  const loader = document.getElementById('attrLoader');
-  const outBox = document.getElementById('attrResultBox');
-
-  if (!target) {
-    alert('Введите юзернейм или ID вирта');
-    return;
-  }
-
-  loader.style.display = 'block';
-  outBox.innerHTML = '';
-
-  try {
-    const res = await fetch('/api/scan/attribution', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target, text_sample, caller: currentSessionUser })
-    });
-    const data = await res.json();
-    loader.style.display = 'none';
-
-    renderAttributionOutput(data, outBox);
-  } catch (err) {
-    loader.style.display = 'none';
-    outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${err.message}</div>`;
-  }
-}
-
-function renderAttributionOutput(data, container) {
-  const tg = data.tg_data || {};
-  const roots = data.discovered_roots || [];
-  const cand = data.candidate_roots || [];
-  const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
-
-  let rootsHtml = '';
-  if (roots.length > 0) {
-    rootsHtml = roots.map(r => `
-      <div class="profile-card" style="margin-bottom:4px;">
-        <div class="profile-left">
-          <i class="fa-solid fa-link profile-icon"></i>
-          <div>
-            <div class="profile-name">@${r.root_handle}</div>
-            <span class="profile-tag">✅ ${r.platform}</span>
-          </div>
-        </div>
-        <button onclick="openExternalUrl('${r.url}')" class="btn btn-secondary" style="padding:3px 7px; font-size:9px;">🔗 Профиль</button>
-      </div>
-    `).join('');
-  } else {
-    rootsHtml = `<div style="font-size:11px; color:var(--text-muted);">Кандидаты на основу: ${cand.map(c=>'@'+c).join(', ') || 'Паттерны не выявлены'}</div>`;
-  }
-
-  let html = `
-    <div class="hacker-terminal">
-      <div class="term-topbar">
-        <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-        <span>ATTRIBUTION-ENGINE@STATION:~# ./sockpuppet-recon @${data.target}</span>
-      </div>
-      <div class="term-log-content">[${nowStr}] [TARGET] INVESTIGATING SOCKPUPPET: @${data.target}
-[${nowStr}] [TG] RESOLVED NAME: "${tg.title}" | ID AGE: ${tg.age_verdict}
-[${nowStr}] [MUTATIONS] ROOT PATTERN: "${data.base_stem}" -> PROBING CANDIDATES: ${cand.join(', ')}
-[${nowStr}] [CORRELATION] DISCOVERED ${roots.length} DIGITAL ROOTS IN REPOSITORIES.</div>
-    </div>
-
-    <div style="background:#090d16; border:1px solid #1e293b; border-radius:10px; padding:12px; margin-bottom:10px; display:flex; gap:12px; align-items:center;">
-      <img style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--purple);" src="${tg.photo_url || 'https://telegram.org/img/t_logo.png'}" alt="Avatar">
-      <div style="flex:1;">
-        <div style="font-weight:700; color:#fff; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
-          <span>${tg.title || data.target}</span>
-          <span class="badge badge-api">SOCKPUPPET</span>
-        </div>
-        <div style="color:var(--cyan); font-size:11px;">@${tg.username || data.target}</div>
-        <div style="color:var(--text-muted); font-size:10px; margin-top:2px;"><b>Возраст:</b> ${tg.age_verdict}</div>
-      </div>
-    </div>
-
-    <div class="custom-card">
-      <div class="custom-card-title"><i class="fa-solid fa-network-wired" style="color:var(--primary);"></i> Обнаруженные родительские аккаунты (Основа)</div>
-      ${rootsHtml}
-    </div>
-
-    <div style="margin-bottom:10px;">
-      <div style="font-size:10px; font-weight:700; color:var(--cyan); margin-bottom:4px; text-transform:uppercase;">
-        🔍 Реверс-поиск аватара на личные профили:
-      </div>
-      <div class="btn-group">
-        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс</button>
-        <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
-      </div>
-    </div>
-
-    <div class="ai-dossier-card">
-      <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Заключение Атрибуции & План проверки</div>
-      <div class="ai-dossier-text">${formatMarkdownText(data.ai_dossier)}</div>
-    </div>
-  `;
-
-  container.innerHTML = html;
-}
-
-// УПРАВЛЕНИЕ АККАУНТАМИ
-function toggleAddUserModal() {
-  const box = document.getElementById('addUserFormBox');
-  box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
-
-async function loadAdminUsers() {
-  if (!isUserAdmin) return;
-  const tbody = document.getElementById('usersTableBody');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
-
-  try {
-    const res = await fetch('/api/admin/users', {
-      headers: { 'X-Telegram-User-Id': tgUserId }
-    });
-    const data = await res.json();
-    const users = data.users || [];
-
-    tbody.innerHTML = '';
-    users.forEach(u => {
-      const tr = document.createElement('tr');
-      const roleBadge = u.role === 'admin' ? '<span class="badge badge-api">ADMIN</span>' : (u.role === 'vip' ? '<span class="badge badge-web">VIP</span>' : '<span class="badge badge-doc">USER</span>');
-      const statusTxt = u.status === 'active' ? '<span style="color:var(--primary); font-weight:700;">🟢 АКТИВЕН</span>' : '<span style="color:var(--danger); font-weight:700;">🔴 БЛОК</span>';
-      const tgInfo = u.tg_username ? `@${u.tg_username}` : (u.tg_id ? `ID: ${u.tg_id}` : '—');
-      
-      tr.innerHTML = `
-        <td><b>${u.nickname || u.username}</b></td>
-        <td style="font-size:10px; color:var(--cyan);">${tgInfo}</td>
-        <td style="font-family:monospace; font-size:10px; color:#38ef7d;">${u.last_ip || '—'}</td>
-        <td>${statusTxt}</td>
-        <td><code>${u.total_scans}</code></td>
-        <td>
-          <div class="btn-group">
-            <button class="btn btn-secondary" style="padding:3px 6px; font-size:9px;" onclick="toggleUserStatus('${u.id_key || u.tg_id || u.username}')">${u.status === 'active' ? 'Блок' : 'Разблок'}</button>
-            ${u.role !== 'admin' ? `<button class="btn btn-danger" style="padding:3px 6px; font-size:9px;" onclick="deleteUser('${u.id_key || u.tg_id || u.username}')"><i class="fa-solid fa-trash"></i></button>` : ''}
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center;">Ошибка</td></tr>';
-  }
-}
-
-async function submitCreateUser() {
-  if (!isUserAdmin) return;
-  const username = document.getElementById('newUsername').value.trim();
-  const password = document.getElementById('newPassword').value.trim();
-  const role = document.getElementById('newRole').value;
-  const notes = document.getElementById('newNotes').value.trim();
-
-  if (!username) {
-    alert('Укажите позывной или имя');
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/admin/users/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgUserId
-      },
-      body: JSON.stringify({ username, password, role, notes })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      toggleAddUserModal();
-      document.getElementById('newUsername').value = '';
-      document.getElementById('newPassword').value = '';
-      document.getElementById('newNotes').value = '';
-      loadAdminUsers();
-    } else {
-      alert('Ошибка: ' + data.error);
-    }
-  } catch (e) {
-    alert('Ошибка: ' + e.message);
-  }
-}
-
-async function toggleUserStatus(username) {
-  if (!isUserAdmin) return;
-  try {
-    await fetch('/api/admin/users/toggle_status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgUserId
-      },
-      body: JSON.stringify({ username })
-    });
-    loadAdminUsers();
-  } catch (e) {}
-}
-
-async function deleteUser(username) {
-  if (!isUserAdmin) return;
-  if (!confirm(`Удалить пользователя ${username}?`)) return;
-  try {
-    await fetch('/api/admin/users/delete', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgUserId
-      },
-      body: JSON.stringify({ username })
-    });
-    loadAdminUsers();
-  } catch (e) {}
-}
-
-async function loadAdminVisitors() {
-  if (!isUserAdmin) return;
-  const tbody = document.getElementById('visitorsTableBody');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
-
-  try {
-    const res = await fetch('/api/admin/visitors?limit=50', {
-      headers: { 'X-Telegram-User-Id': tgUserId }
-    });
-    const data = await res.json();
-    const rows = data.visitors || [];
-
-    tbody.innerHTML = '';
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      const timeStr = (r.ts || '').substr(11, 8);
-      const userDisplay = r.user || (r.tg_username ? `@${r.tg_username}` : (r.tg_id ? `TG:${r.tg_id}` : 'Гость'));
-      const geoDisplay = r.country ? `${r.country} ${r.city ? `(${r.city})` : ''}` : 'GLOBAL';
-
-      tr.innerHTML = `
-        <td style="color:#94a3b8; font-size:10px;">${timeStr}</td>
-        <td style="font-size:11px; font-weight:700; color:#fff;">${userDisplay}</td>
-        <td style="font-family:monospace; color:var(--primary); font-weight:700;">${r.ip || '—'}</td>
-        <td><span class="badge badge-api">${geoDisplay}</span></td>
-        <td style="font-size:10px; color:#94a3b8; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.ua || 'Telegram'}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger); text-align:center;">Ошибка</td></tr>';
-  }
-}
-
-// ОБРАБОТКА ФОТО И ВЫВОД МЕТАДАННЫХ
-async function handlePhotoUpload(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-
-  const preview = document.getElementById('tvPhotoPreview');
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-
-    const loader = document.getElementById('tvLoader');
-    const outBox = document.getElementById('tvOutputBox');
-    loader.style.display = 'block';
-    outBox.style.display = 'none';
-
-    try {
-      const res = await fetch('/api/scan/photo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: e.target.result })
-      });
-      const data = await res.json();
-      loader.style.display = 'none';
-      outBox.style.display = 'block';
-
-      renderPhotoSpecificCard(data, outBox);
-    } catch (err) {
-      loader.style.display = 'none';
-      outBox.style.display = 'block';
-      outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${err.message}</div>`;
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-async function processDirectPhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-
-  const preview = document.getElementById('directPhotoPreview');
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-
-    const loader = document.getElementById('photoLoader');
-    const outBox = document.getElementById('photoResultBox');
-    loader.style.display = 'block';
-    outBox.innerHTML = '';
-
-    try {
-      const res = await fetch('/api/scan/photo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: e.target.result })
-      });
-      const data = await res.json();
-      loader.style.display = 'none';
-
-      renderPhotoSpecificCard(data, outBox);
-    } catch (err) {
-      loader.style.display = 'none';
-      outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${err.message}</div>`;
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-function renderPhotoSpecificCard(data, container) {
-  const exif = data.exif || {};
-  let hasGps = !!exif.gps;
-  let hasCamera = !!(exif.camera_make || exif.camera_model);
-  let hasDate = !!exif.date_time;
-
-  let html = '';
-
-  if (hasCamera || hasDate || hasGps) {
-    html += `
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Найденные метаданные (EXIF)</div>
-        <div class="custom-grid">
-          <div class="custom-item">
-            <div class="custom-label">📷 Камера</div>
-            <div class="custom-val">${exif.camera_make || ''} ${exif.camera_model || '—'}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🕒 Дата съемки</div>
-            <div class="custom-val">${exif.date_time || 'Скрыта'}</div>
-          </div>
-          <div class="custom-item" style="grid-column: span 2;">
-            <div class="custom-label">📍 Геолокация (GPS)</div>
-            <div class="custom-val">
-              ${hasGps ? `
-                <span style="color:var(--primary);">📍 ${exif.gps.latitude}, ${exif.gps.longitude}</span>
-                <button onclick="openExternalUrl('${exif.google_maps_url}')" class="btn btn-primary" style="padding:2px 7px; font-size:9px; margin-left:6px;">Google Maps</button>
-              ` : '<span style="color:var(--text-muted);">Метки GPS отсутствуют в снимке</span>'}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    html += `
-      <div class="info-banner">
-        <b>ℹ️ Метаданные (EXIF) очищены:</b><br>
-        В этом изображении отсутствуют встроенные теги камеры и координаты. Мессенджеры (Telegram, WhatsApp, VK) и соцсети автоматически удаляют EXIF при сжатии фото.
-      </div>
-    `;
-  }
-
-  html += `
-    <div style="margin-bottom:12px;">
-      <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-        🔍 Обратный поиск оригинала в поисковиках:
-      </div>
-      <div class="btn-group">
-        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс Картинки</button>
-        <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
-        <button onclick="openExternalUrl('https://tineye.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> TinEye</button>
-      </div>
-    </div>
-  `;
-
-  container.innerHTML = html;
-}
-
-// ЗАПУСК СКАНИРОВАНИЯ
+// ЗАПУСК СКАНИРОВАНИЯ В ТЕРМИНАЛЕ
 async function runCurrentToolScan() {
   if (!activeTool) return;
   const rawTarget = document.getElementById('tvTargetInput').value.trim();
@@ -1125,7 +786,6 @@ async function runCurrentToolScan() {
     endpoint = '/api/scan/ip';
     loaderText.innerText = 'Определение геопозиции IP и провайдера...';
   } else {
-    // ДЛЯ SHERLOCK И ВСЕХ ПОИСКОВИКОВ НИКНЕЙМОВ:
     endpoint = '/api/scan/username';
     cleanTarget = rawTarget.replace(/^@+/, '');
     loaderText.innerText = 'Опрос официальных баз Sherlock Project...';
@@ -1134,8 +794,8 @@ async function runCurrentToolScan() {
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target: cleanTarget, caller: currentSessionUser })
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
+      body: JSON.stringify({ target: cleanTarget, caller: currentSessionUser || 'user' })
     });
     const data = await res.json();
     loader.style.display = 'none';
@@ -1153,13 +813,135 @@ async function runCurrentToolScan() {
   }
 }
 
-// ПОНЯТНЫЙ, КРАСИВЫЙ И УДОБНЫЙ ВЫВОД РЕЗУЛЬТАТОВ
+// ЗАПУСК АТРИБУЦИИ ВИРТОВ
+async function runAttributionScanDirect() {
+  const target = document.getElementById('attrTargetInput').value.trim();
+  const text_sample = document.getElementById('attrTextSample').value.trim();
+  const loader = document.getElementById('attrLoader');
+  const outBox = document.getElementById('attrResultBox');
+
+  if (!target) {
+    alert('Введите юзернейм или ID вирта');
+    return;
+  }
+
+  loader.style.display = 'block';
+  outBox.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/scan/attribution', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
+      body: JSON.stringify({ target: target.replace(/^@+/, ''), text_sample, caller: currentSessionUser })
+    });
+    const data = await res.json();
+    loader.style.display = 'none';
+    renderAttributionOutput(data, outBox);
+  } catch (err) {
+    loader.style.display = 'none';
+    outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${err.message}</div>`;
+  }
+}
+
+function renderAttributionOutput(data, container) {
+  const target = data.target || '';
+  const root = data.root_handle || '';
+  const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
+  const mutations = data.candidate_mutations || [];
+  const idAge = data.id_age_estimate || {};
+
+  let logLines = `[${nowStr}] [ATTR] ANALYZING TARGET ACCOUNT: @${target}
+[${nowStr}] [ID-PROBE] ESTIMATED CREATION: ${idAge.year || '2023–2024'} (${idAge.note || 'Вирт/Купленный'})
+[${nowStr}] [MUTATION] GENERATED ROOT CANDIDATES: ${mutations.join(', ')}
+[${nowStr}] [SYNTHESIS] CORRELATING DIGITAL FOOTPRINTS...`;
+
+  let html = `
+    <div class="hacker-terminal">
+      <div class="term-topbar">
+        <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+        <span>ATTRIBUTION@ENGINE:~# ./attr @${target}</span>
+      </div>
+      <div class="term-log-content">${logLines}</div>
+    </div>
+
+    <div class="custom-card" style="border-color:var(--purple);">
+      <div class="custom-card-title" style="color:var(--purple);">
+        <i class="fa-solid fa-user-secret"></i> Результаты детектора виртов
+      </div>
+      <div class="custom-grid">
+        <div class="custom-item">
+          <div class="custom-label">🎯 Исходный аккаунт</div>
+          <div class="custom-val">@${target}</div>
+        </div>
+        <div class="custom-item">
+          <div class="custom-label">🔍 Вероятная основа (Корень)</div>
+          <div class="custom-val" style="color:var(--primary); font-size:13px;">${root ? '@' + root : 'Прямой корень скрыт'}</div>
+        </div>
+        <div class="custom-item">
+          <div class="custom-label">📅 Возраст Telegram ID</div>
+          <div class="custom-val">${idAge.year || 'Не определен'}</div>
+        </div>
+        <div class="custom-item">
+          <div class="custom-label">🏷️ Вердикт профиля</div>
+          <div class="custom-val" style="color:${data.is_sockpuppet_suspect ? 'var(--danger)' : 'var(--primary)'};">
+            ${data.is_sockpuppet_suspect ? '⚠️ Подозрение на вирт' : '✅ Обычный аккаунт'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  if (mutations.length > 0) {
+    html += `
+      <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
+        🔗 Связанные профили вероятного владельца в соцсетях:
+      </div>
+      <div class="profiles-grid">
+    `;
+    mutations.forEach(m => {
+      html += `
+        <div class="profile-card">
+          <div class="profile-left">
+            <i class="fa-solid fa-link profile-icon" style="color:var(--purple);"></i>
+            <div>
+              <div class="profile-name">@${m}</div>
+              <span class="profile-tag">Кандидат в основу</span>
+            </div>
+          </div>
+          <button onclick="openExternalUrl('https://t.me/${m}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">Проверить TG</button>
+        </div>
+      `;
+    });
+    html += '</div>';
+  }
+
+  html += `
+    <div style="margin-top:12px; margin-bottom:12px;">
+      <div style="font-size:10px; font-weight:700; color:var(--cyan); margin-bottom:4px; text-transform:uppercase;">
+        🔍 Реверс-поиск аватара на личные профили:
+      </div>
+      <div class="btn-group">
+        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс</button>
+        <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
+      </div>
+    </div>
+
+    <div class="ai-dossier-card">
+      <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Заключение Атрибуции & План проверки</div>
+      <div class="ai-dossier-text">${formatMarkdownText(data.ai_dossier)}</div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+// ВЫВОД РЕЗУЛЬТАТОВ РАЗВЕДКИ (SHERLOCK, PHONE, DOMAIN, IP)
 function renderToolSpecificOutput(data, target) {
   const outBox = document.getElementById('tvOutputBox');
   const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
   let html = '';
 
-  // 1. ТИП: USERNAME (Sherlock Engine)
+  // 1. SHERLOCK USERNAME
   if (data.type === 'username') {
     const pdata = data.probable_data || {};
     const profiles = data.profiles || [];
@@ -1174,11 +956,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
     html += `
       <div class="hacker-terminal">
         <div class="term-topbar">
-          <div class="term-dots">
-            <span class="term-dot term-dot-red"></span>
-            <span class="term-dot term-dot-yellow"></span>
-            <span class="term-dot term-dot-green"></span>
-          </div>
+          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>SHERLOCK@STATION:~# ./sherlock ${data.username}</span>
           <span style="font-size:10px; color:var(--cyan);"><i class="fa-solid fa-circle" style="font-size:7px; color:var(--primary);"></i> LIVE</span>
         </div>
@@ -1247,57 +1025,81 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       `;
     }
 
-  // 2. ТИП: TELEGRAM (Telegram Inspector)
-  } else if (data.type === 'telegram' || data.type === 'telegram_id') {
-    let cliLog = `[${nowStr}] [TG-PROBE] CONNECTING TO TELEGRAM GATEWAY: @${target}...
-[${nowStr}] [+] ENTITY RESOLVED: "${data.title || data.tg_id}"
-[${nowStr}] [+] TYPE: ${data.account_type || 'User ID'}
-[${nowStr}] [✓] TELEGRAM RECON COMPLETED.`;
+  // 2. PHONE RECON
+  } else if (data.type === 'phone') {
+    const tz = (data.timezones || []).join(', ') || 'UTC';
+    const m = data.messengers || {};
+    const d = data.dorks || {};
+
+    let cliLog = `[${nowStr}] [PHONE] PARSING E.164: ${data.e164} (${data.national})
+[${nowStr}] [GEO] REGION: ${data.country} | CARRIER: ${data.carrier}
+[${nowStr}] [LINE] TYPE: ${data.line_type} | TZ: ${tz}
+[${nowStr}] [MESSENGERS] CHECKING WA / TG / VIBER / SKYPE...
+[${nowStr}] [✓] PHONE RECON COMPLETED.`;
 
     html += `
       <div class="hacker-terminal">
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>TG-PROBE@STATION:~#</span>
+          <span>PHONE-RECON@STATION:~# ./phoneinfoga scan -n ${data.e164}</span>
         </div>
         <div class="term-log-content">${cliLog}</div>
       </div>
 
-      <div style="background:#090d16; border:1px solid #1e293b; border-radius:10px; padding:12px; margin-bottom:10px; display:flex; gap:12px; align-items:center;">
-        <img style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid var(--cyan);" src="${data.photo_url || 'https://telegram.org/img/t_logo.png'}" alt="Avatar">
-        <div style="flex:1;">
-          <div style="font-weight:700; color:#fff; font-size:14px; display:flex; justify-content:space-between; align-items:center;">
-            <span>${data.title || target}</span>
-            <span class="badge badge-web">${data.account_type || 'TELEGRAM ID'}</span>
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-phone" style="color:var(--primary);"></i> Данные оператора и региона</div>
+        <div class="custom-grid">
+          <div class="custom-item">
+            <div class="custom-label">📞 Номер телефона</div>
+            <div class="custom-val" style="color:var(--primary); font-size:14px;">${data.e164}</div>
           </div>
-          <div style="color:var(--cyan); font-size:12px; margin-top:2px;">@${data.username || target}</div>
-          <div style="color:var(--text-muted); font-size:11px; margin-top:4px; line-height:1.4;">${data.description || data.estimated_year || ''}</div>
-          ${data.url ? `<button onclick="openExternalUrl('${data.url}')" class="btn btn-primary" style="padding:4px 10px; font-size:10px; margin-top:8px;">✈️ Открыть в Telegram</button>` : ''}
+          <div class="custom-item">
+            <div class="custom-label">🏢 Оператор связи</div>
+            <div class="custom-val">${data.carrier}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🌍 Страна и Регион</div>
+            <div class="custom-val">${data.country}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🏷️ Тип линии</div>
+            <div class="custom-val" style="color:${data.is_voip_suspect ? 'var(--danger)' : '#fff'};">
+              ${data.is_voip_suspect ? '⚠️ VoIP / Виртуальный номер' : '📱 Мобильный / Физический'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-comments" style="color:var(--cyan);"></i> Проверка в мессенджерах (в 1 клик)</div>
+        <div class="btn-group">
+          ${m.whatsapp ? `<button onclick="openExternalUrl('${m.whatsapp}')" class="btn btn-primary" style="background:#25D366; color:#000;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>` : ''}
+          ${m.telegram ? `<button onclick="openExternalUrl('${m.telegram}')" class="btn btn-primary" style="background:#229ED9; color:#fff;"><i class="fa-brands fa-telegram"></i> Telegram</button>` : ''}
+          ${m.viber ? `<button onclick="openExternalUrl('${m.viber}')" class="btn btn-purple"><i class="fa-brands fa-viber"></i> Viber</button>` : ''}
+        </div>
+      </div>
+
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Поисковые дорки по объявлениям и соцсетям</div>
+        <div class="btn-group">
+          ${d.avito ? `<button onclick="openExternalUrl('${d.avito}')" class="btn btn-secondary"><i class="fa-solid fa-store"></i> Авито</button>` : ''}
+          ${d.youla ? `<button onclick="openExternalUrl('${d.youla}')" class="btn btn-secondary"><i class="fa-solid fa-bag-shopping"></i> Юла</button>` : ''}
+          ${d.vk ? `<button onclick="openExternalUrl('${d.vk}')" class="btn btn-secondary"><i class="fa-brands fa-vk"></i> ВКонтакте</button>` : ''}
+          ${d.hh ? `<button onclick="openExternalUrl('${d.hh}')" class="btn btn-secondary"><i class="fa-solid fa-briefcase"></i> HeadHunter</button>` : ''}
+          ${d.google_exact ? `<button onclick="openExternalUrl('${d.google_exact}')" class="btn btn-secondary"><i class="fa-brands fa-google"></i> Google Dork</button>` : ''}
+          ${d.yandex_exact ? `<button onclick="openExternalUrl('${d.yandex_exact}')" class="btn btn-secondary"><i class="fa-brands fa-yandex"></i> Яндекс</button>` : ''}
         </div>
       </div>
     `;
 
-  // 3. ТИП: DOMAIN & SUBFINDER (Subfinder, Web-Check)
+  // 3. DOMAIN & SUBFINDER
   } else if (data.type === 'domain') {
     const d = data.data || {};
     const ssl = d.ssl || {};
     const hdrs = d.headers || {};
     const subs = d.subdomains_found || [];
 
-    let cliLog = `[${nowStr}] [DNS] RESOLVING A RECORDS: ${target} -> ${d.ip_addresses?.join(', ') || 'OK'}
-[${nowStr}] [SSL] ISSUER: ${ssl.issuer || 'N/A'} (Valid: ${ssl.valid ? 'YES' : 'NO'})
-[${nowStr}] [HTTP] STATUS: ${d.server_info?.status_code || 200} | SERVER: ${hdrs.Server || 'Hidden'}
-[${nowStr}] [SUBDOMAINS] DISCOVERED: ${subs.length} ACTIVE NODES`;
-
     html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>DOM-RECON@STATION:~# ./subfinder -d ${target}</span>
-        </div>
-        <div class="term-log-content">${cliLog}</div>
-      </div>
-
       <div class="custom-card">
         <div class="custom-card-title"><i class="fa-solid fa-network-wired" style="color:var(--cyan);"></i> Инфраструктура домена</div>
         <div class="custom-grid">
@@ -1342,61 +1144,10 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       html += '</div>';
     }
 
-  // 4. ТИП: EMAIL
-  } else if (data.type === 'email') {
-    const d = data.data || {};
-    let cliLog = `[${nowStr}] [EMAIL] VALIDATING SYNTAX: ${d.email} -> VALID
-[${nowStr}] [MX] QUERYING DOMAIN: ${d.domain} -> ${d.mx_found ? 'MX ACTIVE' : 'NO MX'}
-[${nowStr}] [GRAVATAR] AVATAR CHECK -> ${d.gravatar ? 'FOUND' : 'NOT SET'}`;
-
-    html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>EMAIL-RECON@STATION:~#</span>
-        </div>
-        <div class="term-log-content">${cliLog}</div>
-      </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-envelope" style="color:var(--primary);"></i> Разведка почтового ящика</div>
-        <div class="custom-grid">
-          <div class="custom-item">
-            <div class="custom-label">✉️ Почтовый адрес</div>
-            <div class="custom-val">${d.email}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🏢 Почтовый домен</div>
-            <div class="custom-val">${d.domain} (${d.mx_found ? '✅ Активен' : '❌ Не найден'})</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🌐 IP Домена</div>
-            <div class="custom-val">${d.domain_ips?.join(', ') || '—'}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">👤 Gravatar Профиль</div>
-            <div class="custom-val">${d.gravatar ? '✅ Зарегистрирован' : 'Отсутствует'}</div>
-          </div>
-        </div>
-      </div>
-    `;
-
-  // 5. ТИП: IP & GEOINT
+  // 4. IP GEOINT
   } else if (data.type === 'ip') {
     const d = data.data || {};
-    let cliLog = `[${nowStr}] [GEOIP] QUERYING IP: ${target}
-[${nowStr}] [LOCATION] ${d.country || '—'}, ${d.city || '—'} (TZ: ${d.timezone || '—'})
-[${nowStr}] [ISP] ${d.isp || '—'} | AS: ${d.as || '—'}`;
-
     html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>GEOIP@STATION:~# ./geolocate ${target}</span>
-        </div>
-        <div class="term-log-content">${cliLog}</div>
-      </div>
-
       <div class="custom-card">
         <div class="custom-card-title"><i class="fa-solid fa-earth-americas" style="color:var(--cyan);"></i> Геолокация и Провайдер IP</div>
         <div class="custom-grid">
@@ -1417,102 +1168,238 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
             <div class="custom-val">${d.timezone || '—'}</div>
           </div>
         </div>
-        ${data.google_maps_url ? `
-          <div style="margin-top:10px;">
-            <button onclick="openExternalUrl('${data.google_maps_url}')" class="btn btn-primary">
-              <i class="fa-solid fa-map-pin"></i> Открыть координаты на Google Maps (${d.lat}, ${d.lon})
-            </button>
-          </div>
-        ` : ''}
       </div>
     `;
-
-  // 6. ТИП: PHONE (PhoneInfoga & Number Recon)
-  } else if (data.type === 'phone') {
-    const tz = (data.timezones || []).join(', ') || 'UTC';
-    const m = data.messengers || {};
-    const d = data.dorks || {};
-
-    let cliLog = `[${nowStr}] [PHONE] PARSING E.164: ${data.e164} (${data.national})
-[${nowStr}] [GEO] REGION: ${data.country} | CARRIER: ${data.carrier}
-[${nowStr}] [LINE] TYPE: ${data.line_type} | TZ: ${tz}
-[${nowStr}] [MESSENGERS] CHECKING WA / TG / VIBER / SKYPE...
-[${nowStr}] [✓] PHONE RECON COMPLETED.`;
-
-    html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>PHONE-RECON@STATION:~# ./phoneinfoga scan -n ${data.e164}</span>
-        </div>
-        <div class="term-log-content">${cliLog}</div>
-      </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-phone" style="color:var(--primary);"></i> Данные оператора и региона</div>
-        <div class="custom-grid">
-          <div class="custom-item">
-            <div class="custom-label">📞 Номер телефона</div>
-            <div class="custom-val" style="color:var(--primary); font-size:14px;">${data.e164}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🏢 Оператор связи</div>
-            <div class="custom-val">${data.carrier}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🌍 Страна и Регион</div>
-            <div class="custom-val">${data.country}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🏷️ Тип линии</div>
-            <div class="custom-val">${data.line_type}</div>
-          </div>
-          <div class="custom-item" style="grid-column: span 2;">
-            <div class="custom-label">🕒 Часовой пояс</div>
-            <div class="custom-val">${tz}</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-bottom:12px;">
-        <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-          💬 Проверка профилей в мессенджерах:
-        </div>
-        <div class="btn-group">
-          <button onclick="openExternalUrl('${m.whatsapp}')" class="btn btn-primary" style="background:#25D366; color:#000;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
-          <button onclick="openExternalUrl('${m.telegram_web}')" class="btn btn-primary" style="background:#229ED9; color:#fff;"><i class="fa-brands fa-telegram"></i> Telegram</button>
-          <button onclick="openExternalUrl('${m.viber}')" class="btn btn-secondary"><i class="fa-brands fa-viber"></i> Viber</button>
-          <button onclick="openExternalUrl('${m.skype}')" class="btn btn-secondary"><i class="fa-brands fa-skype"></i> Skype</button>
-        </div>
-      </div>
-
-      <div style="margin-bottom:12px;">
-        <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
-          🔍 Поисковые следы номера в сети (Dorks):
-        </div>
-        <div class="btn-group">
-          <button onclick="openExternalUrl('${d.marketplaces}')" class="btn btn-secondary"><i class="fa-solid fa-cart-shopping"></i> Авито / Юла / OLX</button>
-          <button onclick="openExternalUrl('${d.social}')" class="btn btn-secondary"><i class="fa-solid fa-users"></i> VK / OK / Соцсети</button>
-          <button onclick="openExternalUrl('${d.work}')" class="btn btn-secondary"><i class="fa-solid fa-briefcase"></i> Резюме (HH/SuperJob)</button>
-          <button onclick="openExternalUrl('${d.documents}')" class="btn btn-secondary"><i class="fa-solid fa-file-lines"></i> Документы (PDF/DOC)</button>
-          <button onclick="openExternalUrl('${d.yandex_exact}')" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> Яндекс</button>
-          <button onclick="openExternalUrl('${d.google_exact}')" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> Google</button>
-        </div>
-      </div>
-
-      <div class="ai-dossier-card">
-        <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Сводка разведки по номеру</div>
-        <div class="ai-dossier-text">${formatMarkdownText(data.ai_summary)}</div>
-      </div>
-    `;
-
-  // 7. ТИП: PHOTO
-  } else if (data.type === 'photo') {
-    renderPhotoSpecificCard(data, outBox);
-    return;
   }
 
   outBox.innerHTML = html;
+}
+
+// ОБРАБОТКА ФОТО
+async function processDirectPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const preview = document.getElementById('directPhotoPreview');
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+
+    const loader = document.getElementById('photoLoader');
+    const outBox = document.getElementById('photoResultBox');
+    loader.style.display = 'block';
+    outBox.innerHTML = '';
+
+    try {
+      const res = await fetch('/api/scan/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
+        body: JSON.stringify({ image_base64: e.target.result })
+      });
+      const data = await res.json();
+      loader.style.display = 'none';
+      renderPhotoSpecificCard(data, outBox);
+    } catch (err) {
+      loader.style.display = 'none';
+      outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${err.message}</div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderPhotoSpecificCard(data, container) {
+  const exif = data.exif || {};
+  let hasGps = !!exif.gps;
+  let hasCamera = !!(exif.camera_make || exif.camera_model);
+  let hasDate = !!exif.date_time;
+
+  let html = '';
+  if (hasCamera || hasDate || hasGps) {
+    html += `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Метаданные снимка (EXIF)</div>
+        <div class="custom-grid">
+          <div class="custom-item">
+            <div class="custom-label">📷 Камера</div>
+            <div class="custom-val">${exif.camera_make || ''} ${exif.camera_model || '—'}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🕒 Дата съемки</div>
+            <div class="custom-val">${exif.date_time || 'Скрыта'}</div>
+          </div>
+          <div class="custom-item" style="grid-column: span 2;">
+            <div class="custom-label">📍 Координаты GPS</div>
+            <div class="custom-val">
+              ${hasGps ? `
+                <span style="color:var(--primary);">📍 ${exif.gps.latitude}, ${exif.gps.longitude}</span>
+                <button onclick="openExternalUrl('${exif.google_maps_url}')" class="btn btn-primary" style="padding:2px 7px; font-size:9px; margin-left:6px;">Google Maps</button>
+              ` : '<span style="color:var(--text-muted);">Метки GPS отсутствуют</span>'}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="info-banner">
+        <b>ℹ️ Метаданные (EXIF) очищены:</b> В этом снимке отсутствуют теги камеры. Соцсети удаляют EXIF при сжатии.
+      </div>
+    `;
+  }
+
+  html += `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
+        🔍 Обратный поиск оригинала в поисковиках:
+      </div>
+      <div class="btn-group">
+        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс</button>
+        <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+// АДМИН-ФУНКЦИИ
+function toggleAddUserModal() {
+  const box = document.getElementById('addUserFormBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadAdminUsers() {
+  if (!isUserAdmin) return;
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
+
+  try {
+    const res = await fetch('/api/admin/users', { headers: { 'X-Telegram-User-Id': tgUserId } });
+    const data = await res.json();
+    const users = data.users || [];
+
+    tbody.innerHTML = '';
+    users.forEach(u => {
+      const tr = document.createElement('tr');
+      const roleBadge = u.role === 'admin' ? '<span class="badge badge-api">ADMIN</span>' : '<span class="badge badge-doc">USER</span>';
+      const statusTxt = u.status === 'active' ? '<span style="color:var(--primary); font-weight:700;">🟢 АКТИВЕН</span>' : '<span style="color:var(--danger); font-weight:700;">🔴 БЛОК</span>';
+      const tgInfo = u.tg_username ? `@${u.tg_username}` : (u.tg_id ? `ID:${u.tg_id}` : '—');
+      
+      tr.innerHTML = `
+        <td><b>${u.nickname || u.username}</b></td>
+        <td style="font-size:10px; color:var(--cyan);">${tgInfo}</td>
+        <td style="font-family:monospace; font-size:10px; color:#38ef7d;">${u.last_ip || '—'}</td>
+        <td>${statusTxt}</td>
+        <td><code>${u.total_scans}</code></td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-secondary" style="padding:3px 6px; font-size:9px;" onclick="toggleUserStatus('${u.id_key || u.tg_id || u.username}')">${u.status === 'active' ? 'Блок' : 'Разблок'}</button>
+            ${u.role !== 'admin' ? `<button class="btn btn-danger" style="padding:3px 6px; font-size:9px;" onclick="deleteUser('${u.id_key || u.tg_id || u.username}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center;">Ошибка загрузки</td></tr>';
+  }
+}
+
+async function submitCreateUser() {
+  if (!isUserAdmin) return;
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value.trim();
+  const role = document.getElementById('newRole').value;
+  const notes = document.getElementById('newNotes').value.trim();
+
+  if (!username) {
+    alert('Укажите позывной');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/users/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
+      body: JSON.stringify({ username, password, role, notes })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toggleAddUserModal();
+      document.getElementById('newUsername').value = '';
+      loadAdminUsers();
+    } else {
+      alert('Ошибка: ' + data.error);
+    }
+  } catch (e) {
+    alert('Ошибка: ' + e.message);
+  }
+}
+
+async function toggleUserStatus(username) {
+  if (!isUserAdmin) return;
+  try {
+    await fetch('/api/admin/users/toggle_status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
+      body: JSON.stringify({ username })
+    });
+    loadAdminUsers();
+  } catch (e) {}
+}
+
+async function deleteUser(username) {
+  if (!isUserAdmin) return;
+  if (!confirm(`Удалить пользователя ${username}?`)) return;
+  try {
+    await fetch('/api/admin/users/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
+      body: JSON.stringify({ username })
+    });
+    loadAdminUsers();
+  } catch (e) {}
+}
+
+async function loadAdminVisitors() {
+  if (!isUserAdmin) return;
+  const tbody = document.getElementById('visitorsTableBody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
+
+  try {
+    const res = await fetch('/api/admin/visitors?limit=50', { headers: { 'X-Telegram-User-Id': tgUserId } });
+    const data = await res.json();
+    const rows = data.visitors || [];
+
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      const timeStr = (r.ts || '').substr(11, 8);
+      const userDisplay = r.user || (r.tg_username ? `@${r.tg_username}` : (r.tg_id ? `TG:${r.tg_id}` : 'Гость'));
+      const geoDisplay = r.country ? `${r.country} ${r.city ? `(${r.city})` : ''}` : 'GLOBAL';
+
+      tr.innerHTML = `
+        <td style="color:#94a3b8; font-size:10px;">${timeStr}</td>
+        <td style="font-size:11px; font-weight:700; color:#fff;">${userDisplay}</td>
+        <td style="font-family:monospace; color:var(--primary); font-weight:700;">${r.ip || '—'}</td>
+        <td><span class="badge badge-api">${geoDisplay}</span></td>
+        <td style="font-size:10px; color:#94a3b8; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.ua || 'Telegram'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger); text-align:center;">Ошибка</td></tr>';
+  }
+}
+
+function openExternalUrl(url) {
+  if (!url) return;
+  try {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+      window.Telegram.WebApp.openLink(url);
+      return;
+    }
+  } catch (e) {}
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function createCmdBox(label, cmd) {
@@ -1559,6 +1446,7 @@ function filterResultProfiles(cat, btn) {
   });
 }
 
+// СТАРТ ПРИЛОЖЕНИЯ
 loadCatalog();
 initUserProfile();
 </script>
