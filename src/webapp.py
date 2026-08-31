@@ -43,7 +43,7 @@ USERS_FILE = DATA_DIR / "users.json"
 SCAN_CACHE = {}
 CACHE_TTL = 600
 
-app = FastAPI(title="OSINT Hub Pro: Correlated Multi-Source Intelligence & Sherlock 60+")
+app = FastAPI(title="OSINT Cyber Hub: Sherlock 75+, Hacker Terminal & Deep Recon")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -174,12 +174,13 @@ async def run_gemini_prompt(prompt: str, image_bytes: Optional[bytes] = None, mi
     return ""
 
 
-# --- БАЗА ПЛАТФОРМ ДЛЯ SUPER-ПОИСКОВИКА SHERLOCK (60+ СЕРВИСОВ) ---
+# --- РАСШИРЕННАЯ БАЗА ПЛАТФОРМ SHERLOCK (75+ СЕРВИСОВ СНГ И МИРА) ---
 
 SHERLOCK_SITES = [
-    # Соцсети и мессенджеры
+    # Мессенджеры и социальные сети СНГ / Мир
     {"name": "Telegram", "cat": "Социальные сети", "icon": "fa-telegram", "url": "https://t.me/{u}", "check": "https://t.me/{u}", "type": "tg"},
     {"name": "VKontakte", "cat": "Социальные сети", "icon": "fa-vk", "url": "https://vk.com/{u}", "check": "https://vk.com/{u}", "type": "status"},
+    {"name": "Odnoklassniki", "cat": "Социальные сети", "icon": "fa-odnoklassniki", "url": "https://ok.ru/{u}", "check": "https://ok.ru/{u}", "type": "status"},
     {"name": "TikTok", "cat": "Социальные сети", "icon": "fa-tiktok", "url": "https://www.tiktok.com/@{u}", "check": "https://www.tiktok.com/@{u}", "type": "status"},
     {"name": "Pinterest", "cat": "Социальные сети", "icon": "fa-pinterest", "url": "https://www.pinterest.com/{u}/", "check": "https://www.pinterest.com/{u}/", "type": "status"},
     {"name": "Reddit", "cat": "Социальные сети", "icon": "fa-reddit", "url": "https://www.reddit.com/user/{u}", "check": "https://www.reddit.com/user/{u}/about.json", "type": "reddit_api"},
@@ -187,11 +188,13 @@ SHERLOCK_SITES = [
     {"name": "Snapchat", "cat": "Социальные сети", "icon": "fa-snapchat", "url": "https://www.snapchat.com/add/{u}", "check": "https://www.snapchat.com/add/{u}", "type": "status"},
     {"name": "Mastodon", "cat": "Социальные сети", "icon": "fa-mastodon", "url": "https://mastodon.social/@{u}", "check": "https://mastodon.social/@{u}", "type": "status"},
     {"name": "Bluesky", "cat": "Социальные сети", "icon": "fa-cloud", "url": "https://bsky.app/profile/{u}.bsky.social", "check": "https://bsky.app/profile/{u}.bsky.social", "type": "status"},
+    {"name": "TenChat", "cat": "Социальные сети", "icon": "fa-briefcase", "url": "https://tenchat.ru/{u}", "check": "https://tenchat.ru/{u}", "type": "status"},
     {"name": "Tumblr", "cat": "Социальные сети", "icon": "fa-tumblr", "url": "https://{u}.tumblr.com", "check": "https://{u}.tumblr.com", "type": "status"},
     
-    # IT, Разработка и Дизайн
+    # IT, Разработка, Репозитории и Дизайн
     {"name": "GitHub", "cat": "IT & Разработка", "icon": "fa-github", "url": "https://github.com/{u}", "check": "https://api.github.com/users/{u}", "type": "github_api"},
     {"name": "GitLab", "cat": "IT & Разработка", "icon": "fa-gitlab", "url": "https://gitlab.com/{u}", "check": "https://gitlab.com/api/v4/users?username={u}", "type": "gitlab_api"},
+    {"name": "Bitbucket", "cat": "IT & Разработка", "icon": "fa-bitbucket", "url": "https://bitbucket.org/{u}/", "check": "https://bitbucket.org/{u}/", "type": "status"},
     {"name": "DockerHub", "cat": "IT & Разработка", "icon": "fa-docker", "url": "https://hub.docker.com/u/{u}", "check": "https://hub.docker.com/v2/users/{u}", "type": "status"},
     {"name": "Dev.to", "cat": "IT & Разработка", "icon": "fa-dev", "url": "https://dev.to/{u}", "check": "https://dev.to/api/users/by_username?url={u}", "type": "devto_api"},
     {"name": "Habr", "cat": "IT & Разработка", "icon": "fa-code", "url": "https://habr.com/ru/users/{u}/", "check": "https://habr.com/ru/users/{u}/", "type": "status"},
@@ -200,6 +203,8 @@ SHERLOCK_SITES = [
     {"name": "LeetCode", "cat": "IT & Разработка", "icon": "fa-terminal", "url": "https://leetcode.com/{u}", "check": "https://leetcode.com/{u}", "type": "status"},
     {"name": "Codeforces", "cat": "IT & Разработка", "icon": "fa-laptop-code", "url": "https://codeforces.com/profile/{u}", "check": "https://codeforces.com/profile/{u}", "type": "status"},
     {"name": "Replit", "cat": "IT & Разработка", "icon": "fa-code-branch", "url": "https://replit.com/@{u}", "check": "https://replit.com/@{u}", "type": "status"},
+    {"name": "NPM", "cat": "IT & Разработка", "icon": "fa-npm", "url": "https://www.npmjs.com/~{u}", "check": "https://www.npmjs.com/~{u}", "type": "status"},
+    {"name": "PyPI", "cat": "IT & Разработка", "icon": "fa-python", "url": "https://pypi.org/user/{u}/", "check": "https://pypi.org/user/{u}/", "type": "status"},
     {"name": "Behance", "cat": "IT & Разработка", "icon": "fa-behance", "url": "https://www.behance.net/{u}", "check": "https://www.behance.net/{u}", "type": "status"},
     {"name": "Dribbble", "cat": "IT & Разработка", "icon": "fa-dribbble", "url": "https://dribbble.com/{u}", "check": "https://dribbble.com/{u}", "type": "status"},
     {"name": "ArtStation", "cat": "IT & Разработка", "icon": "fa-palette", "url": "https://www.artstation.com/{u}", "check": "https://www.artstation.com/{u}", "type": "status"},
@@ -209,33 +214,42 @@ SHERLOCK_SITES = [
     {"name": "Roblox", "cat": "Гейминг", "icon": "fa-gamepad", "url": "https://www.roblox.com/user.aspx?username={u}", "check": "https://www.roblox.com/user.aspx?username={u}", "type": "status"},
     {"name": "Twitch", "cat": "Гейминг", "icon": "fa-twitch", "url": "https://www.twitch.tv/{u}", "check": "https://www.twitch.tv/{u}", "type": "status"},
     {"name": "Chess.com", "cat": "Гейминг", "icon": "fa-chess", "url": "https://www.chess.com/member/{u}", "check": "https://api.chess.com/pub/player/{u}", "type": "chess_api"},
+    {"name": "Lichess", "cat": "Гейминг", "icon": "fa-chess-knight", "url": "https://lichess.org/@/{u}", "check": "https://lichess.org/api/user/{u}", "type": "status"},
     {"name": "NameMC (Minecraft)", "cat": "Гейминг", "icon": "fa-cube", "url": "https://namemc.com/profile/{u}", "check": "https://namemc.com/profile/{u}", "type": "status"},
     {"name": "Osu!", "cat": "Гейминг", "icon": "fa-circle-dot", "url": "https://osu.ppy.sh/users/{u}", "check": "https://osu.ppy.sh/users/{u}", "type": "status"},
     {"name": "Faceit", "cat": "Гейминг", "icon": "fa-crosshairs", "url": "https://www.faceit.com/en/players/{u}", "check": "https://www.faceit.com/en/players/{u}", "type": "status"},
     {"name": "Speedrun.com", "cat": "Гейминг", "icon": "fa-stopwatch", "url": "https://www.speedrun.com/user/{u}", "check": "https://www.speedrun.com/user/{u}", "type": "status"},
+    {"name": "Tracker.gg", "cat": "Гейминг", "icon": "fa-chart-simple", "url": "https://tracker.gg/profile/{u}", "check": "https://tracker.gg/profile/{u}", "type": "status"},
 
     # Медиа, Музыка и Видео
     {"name": "YouTube", "cat": "Медиа & Музыка", "icon": "fa-youtube", "url": "https://www.youtube.com/@{u}", "check": "https://www.youtube.com/@{u}", "type": "status"},
+    {"name": "Rutube", "cat": "Медиа & Музыка", "icon": "fa-play", "url": "https://rutube.ru/channel/{u}/", "check": "https://rutube.ru/channel/{u}/", "type": "status"},
     {"name": "Spotify", "cat": "Медиа & Музыка", "icon": "fa-spotify", "url": "https://open.spotify.com/user/{u}", "check": "https://open.spotify.com/user/{u}", "type": "status"},
     {"name": "SoundCloud", "cat": "Медиа & Музыка", "icon": "fa-soundcloud", "url": "https://soundcloud.com/{u}", "check": "https://soundcloud.com/{u}", "type": "status"},
     {"name": "Bandcamp", "cat": "Медиа & Музыка", "icon": "fa-music", "url": "https://{u}.bandcamp.com", "check": "https://{u}.bandcamp.com", "type": "status"},
     {"name": "Last.fm", "cat": "Медиа & Музыка", "icon": "fa-lastfm", "url": "https://www.last.fm/user/{u}", "check": "https://www.last.fm/user/{u}", "type": "status"},
     {"name": "Vimeo", "cat": "Медиа & Музыка", "icon": "fa-vimeo", "url": "https://vimeo.com/{u}", "check": "https://vimeo.com/{u}", "type": "status"},
 
-    # Блоги, Форумы и Комьюнити
-    {"name": "Pikabu", "cat": "Блоги & Комьюнити", "icon": "fa-comments", "url": "https://pikabu.ru/@{u}", "check": "https://pikabu.ru/@{u}", "type": "status"},
-    {"name": "LiveJournal", "cat": "Блоги & Комьюнити", "icon": "fa-pen-nib", "url": "https://{u}.livejournal.com", "check": "https://{u}.livejournal.com", "type": "status"},
-    {"name": "Pastebin", "cat": "Блоги & Комьюнити", "icon": "fa-file-lines", "url": "https://pastebin.com/u/{u}", "check": "https://pastebin.com/u/{u}", "type": "status"},
-    {"name": "Wattpad", "cat": "Блоги & Комьюнити", "icon": "fa-book-open", "url": "https://www.wattpad.com/user/{u}", "check": "https://www.wattpad.com/user/{u}", "type": "status"},
-    {"name": "Letterboxd", "cat": "Блоги & Комьюнити", "icon": "fa-film", "url": "https://letterboxd.com/{u}", "check": "https://letterboxd.com/{u}", "type": "status"},
-    {"name": "MyAnimeList", "cat": "Блоги & Комьюнити", "icon": "fa-tv", "url": "https://myanimelist.net/profile/{u}", "check": "https://myanimelist.net/profile/{u}", "type": "status"},
-    {"name": "Duolingo", "cat": "Блоги & Комьюнити", "icon": "fa-language", "url": "https://www.duolingo.com/profile/{u}", "check": "https://www.duolingo.com/profile/{u}", "type": "status"},
+    # Блоги, Форумы и Сообщества СНГ / Мир
+    {"name": "Pikabu", "cat": "Блоги & Форумы", "icon": "fa-comments", "url": "https://pikabu.ru/@{u}", "check": "https://pikabu.ru/@{u}", "type": "status"},
+    {"name": "DTF.ru", "cat": "Блоги & Форумы", "icon": "fa-gamepad", "url": "https://dtf.ru/u/{u}", "check": "https://dtf.ru/u/{u}", "type": "status"},
+    {"name": "VC.ru", "cat": "Блоги & Форумы", "icon": "fa-chart-line", "url": "https://vc.ru/u/{u}", "check": "https://vc.ru/u/{u}", "type": "status"},
+    {"name": "4PDA", "cat": "Блоги & Форумы", "icon": "fa-mobile-screen", "url": "https://4pda.to/forum/index.php?showuser={u}", "check": "https://4pda.to/forum/index.php?showuser={u}", "type": "status"},
+    {"name": "LiveJournal", "cat": "Блоги & Форумы", "icon": "fa-pen-nib", "url": "https://{u}.livejournal.com", "check": "https://{u}.livejournal.com", "type": "status"},
+    {"name": "Pastebin", "cat": "Блоги & Форумы", "icon": "fa-file-lines", "url": "https://pastebin.com/u/{u}", "check": "https://pastebin.com/u/{u}", "type": "status"},
+    {"name": "Wattpad", "cat": "Блоги & Форумы", "icon": "fa-book-open", "url": "https://www.wattpad.com/user/{u}", "check": "https://www.wattpad.com/user/{u}", "type": "status"},
+    {"name": "Letterboxd", "cat": "Блоги & Форумы", "icon": "fa-film", "url": "https://letterboxd.com/{u}", "check": "https://letterboxd.com/{u}", "type": "status"},
+    {"name": "MyAnimeList", "cat": "Блоги & Форумы", "icon": "fa-tv", "url": "https://myanimelist.net/profile/{u}", "check": "https://myanimelist.net/profile/{u}", "type": "status"},
+    {"name": "Duolingo", "cat": "Блоги & Форумы", "icon": "fa-language", "url": "https://www.duolingo.com/profile/{u}", "check": "https://www.duolingo.com/profile/{u}", "type": "status"},
 
-    # Маркетплейсы и ссылки
-    {"name": "Linktree", "cat": "Контакты & Ссылки", "icon": "fa-link", "url": "https://linktr.ee/{u}", "check": "https://linktr.ee/{u}", "type": "status"},
-    {"name": "BuyMeACoffee", "cat": "Контакты & Ссылки", "icon": "fa-mug-hot", "url": "https://www.buymeacoffee.com/{u}", "check": "https://www.buymeacoffee.com/{u}", "type": "status"},
-    {"name": "Kwork", "cat": "Контакты & Ссылки", "icon": "fa-briefcase", "url": "https://kwork.ru/user/{u}", "check": "https://kwork.ru/user/{u}", "type": "status"},
-    {"name": "Freelance.ru", "cat": "Контакты & Ссылки", "icon": "fa-user-tie", "url": "https://freelance.ru/{u}", "check": "https://freelance.ru/{u}", "type": "status"},
+    # Маркетплейсы, Донаты и Фриланс
+    {"name": "Boosty", "cat": "Контакты & Донаты", "icon": "fa-bolt", "url": "https://boosty.to/{u}", "check": "https://boosty.to/{u}", "type": "status"},
+    {"name": "Patreon", "cat": "Контакты & Донаты", "icon": "fa-patreon", "url": "https://www.patreon.com/{u}", "check": "https://www.patreon.com/{u}", "type": "status"},
+    {"name": "Linktree", "cat": "Контакты & Донаты", "icon": "fa-link", "url": "https://linktr.ee/{u}", "check": "https://linktr.ee/{u}", "type": "status"},
+    {"name": "BuyMeACoffee", "cat": "Контакты & Донаты", "icon": "fa-mug-hot", "url": "https://www.buymeacoffee.com/{u}", "check": "https://www.buymeacoffee.com/{u}", "type": "status"},
+    {"name": "Kwork", "cat": "Контакты & Донаты", "icon": "fa-briefcase", "url": "https://kwork.ru/user/{u}", "check": "https://kwork.ru/user/{u}", "type": "status"},
+    {"name": "FL.ru", "cat": "Контакты & Донаты", "icon": "fa-laptop", "url": "https://www.fl.ru/users/{u}", "check": "https://www.fl.ru/users/{u}", "type": "status"},
+    {"name": "Freelance.ru", "cat": "Контакты & Донаты", "icon": "fa-user-tie", "url": "https://freelance.ru/{u}", "check": "https://freelance.ru/{u}", "type": "status"},
 ]
 
 
@@ -321,7 +335,6 @@ def synthesize_heuristic_dossier(username: str, found_profiles: list, intel_sign
     # 1. Наивероятнейшее имя
     best_name = names[0].split(" (")[0] if names else username
     for n in names:
-        # отдаем предпочтение полным именам из GitHub / Dev.to
         if " " in n:
             best_name = n.split(" (")[0]
             break
@@ -329,44 +342,41 @@ def synthesize_heuristic_dossier(username: str, found_profiles: list, intel_sign
     # 2. Наивероятнейшая локация
     best_loc = locations[0].split(" (")[0] if locations else "Определяется по часовому поясу / СНГ"
 
-    # 3. Оценка возраста по старейшим регистрациям и цифрам в нике
+    # 3. Реалистичная оценка возраста (с исправлением бага 20020)
+    current_year = datetime.now().year
     oldest_yr_str = reg_years[0].split(" ")[0] if reg_years else ""
-    est_age = "22–32 года (активный цифровой возраст)"
+    est_age = "20–30 лет (активный цифровой возраст)"
+
     if oldest_yr_str:
         try:
             yr = int(re.search(r"\d{4}", oldest_yr_str).group())
-            years_online = datetime.now().year - yr
-            est_age = f"~{20 + max(0, years_online)} лет (аккаунты в сети с {yr} г.)"
+            years_online = current_year - yr
+            est_age = f"~{18 + max(0, years_online)}–{24 + max(0, years_online)} лет (аккаунты в сети с {yr} г.)"
         except Exception:
             pass
     else:
         num_match = re.search(r"(\d{2,4})$", username)
         if num_match:
             num = int(num_match.group(1))
-            if 1960 <= num <= 2012:
-                est_age = f"~{datetime.now().year - num} лет (указан {num} г.р. в нике)"
+            if 1960 <= num <= 2010:
+                est_age = f"~{current_year - num} лет ({num} г.р.)"
             elif 70 <= num <= 99:
-                est_age = f"~{datetime.now().year - (1900 + num)} лет (19{num} г.р.)"
-            elif 1 <= num <= 25:
-                est_age = f"~{datetime.now().year - (2000 + num)} лет (200{num} г.р.)"
-
-    # 4. Сфера занятий
-    cats = [p["category"] for p in found_profiles]
-    interests = []
-    if "IT & Разработка" in cats: interests.append("Разработка ПО / IT Инженерия")
-    if "Гейминг" in cats: interests.append("Компьютерные игры / Киберспорт")
-    if "Медиа & Музыка" in cats: interests.append("Музыка и стриминг")
-    if "Блоги & Комьюнити" in cats: interests.append("Блогинг и форумы")
-    occupation = " & ".join(interests[:2]) if interests else "Пользователь социальных сетей"
+                birth_yr = 1900 + num
+                est_age = f"~{current_year - birth_yr} лет ({birth_yr} г.р.)"
+            elif 0 <= num <= 10:
+                birth_yr = 2000 + num
+                est_age = f"~{current_year - birth_yr} лет ({birth_yr} г.р.)"
+            elif 14 <= num <= 40:
+                est_age = f"~{num}–{num+4} лет (маркер возраста '{num}' в никнейме)"
 
     confidence = min(98, 45 + len(found_profiles) * 3 + (15 if names else 0) + (10 if locations else 0))
+    cats = [p["category"] for p in found_profiles]
 
     probable_data = {
         "name": best_name,
         "location": best_loc,
         "age_estimate": est_age,
         "oldest_account": reg_years[0] if reg_years else "2019–2022 гг.",
-        "occupation": occupation,
         "confidence": f"{confidence}%",
         "total_active": len(found_profiles)
     }
@@ -375,16 +385,15 @@ def synthesize_heuristic_dossier(username: str, found_profiles: list, intel_sign
 - 👤 **Вероятное реальное имя / ФИО**: `{best_name}` {'(подтверждено: ' + ', '.join(names[:2]) + ')' if names else '(доминирующий цифровой псевдоним)'}
 - 🎂 **Вероятный возраст / Год рождения**: `{est_age}`
 - 🏙️ **Вероятный город / Страна**: `{best_loc}`
-- 💼 **Основной род занятий и интересы**: `{occupation}`
 - 📊 **Индекс совпадения личности (Confidence)**: `{confidence}%` — {'высокая' if confidence >= 80 else 'средняя'} степень корреляции
 
 ---
 
 ### 🧠 ГЛУБОКИЙ АНАЛИТИЧЕСКИЙ РАЗБОР СВЯЗЕЙ:
-1. **Пересечение аккаунтов**: Идентификатор `{username}` активен на {len(found_profiles)} платформах (категории: {', '.join(set(cats))}).
-2. **Цифровой след**: {'Обнаружены совпадающие профили, гео-метки и описания.' if bios or names else 'Никнейм уникален и имеет высокую плотность совпадений в базах.'}
+1. **Пересечение аккаунтов**: Идентификатор `{username}` подтвержден на {len(found_profiles)} платформах (категории: {', '.join(set(cats))}).
+2. **Цифровой след**: {'Обнаружены совпадающие профили, гео-метки и метаданные.' if bios or names else 'Никнейм уникален и имеет высокую плотность совпадений в базах.'}
 3. **Рекомендованные следующие шаги**:
-   - Выполнить `/tg @{username}` для анализа активности в Telegram.
+   - Выполнить `/tg @{username}` для углубленного анализа Telegram.
    - Проверить аватар через модуль «Фото Экспертиза» (Google Lens / Яндекс).
    - Использовать `/export {username}` для сохранения полного отчета в файл.
 """
@@ -536,8 +545,8 @@ async def get_admin_visitors(limit: int = 50):
 @app.post("/api/scan/username")
 async def scan_username_sherlock(request: Request):
     """
-    Глубокий поиск по 60+ платформам с извлечением метаданных (GitHub, Telegram, Steam, Dev.to, Chess.com),
-    связыванием всех найденных зацепок и формированием агрегированных НАИВЕРОЯТНЕЙШИХ данных.
+    Глубокий поиск по 75+ платформам с извлечением метаданных (GitHub, Telegram, Steam, Dev.to, Chess.com),
+    связыванием зацепок и формированием агрегированных НАИВЕРОЯТНЕЙШИХ данных.
     """
     try:
         body = await request.json()
@@ -666,13 +675,12 @@ async def scan_username_sherlock(request: Request):
     # --- ИИ-СИНТЕЗ И ДЕДУКЦИЯ НАИВЕРОЯТНЕЙШИХ ДАННЫХ ---
     probable_data, default_markdown = synthesize_heuristic_dossier(username, found, intel_signals)
 
-    # Попытка запросить расширенный ИИ-анализ через Gemini, если ключ активен
     if GEMINI_API_KEY:
         categories_found = list(set(p["category"] for p in found))
         platforms_str = ", ".join([p["platform"] for p in found])
 
         prompt = f"""Ты — главный аналитик расследований OSINT.
-Проведен автоматизированный сбор по 60+ сервисам для цели: '{username}'.
+Проведен автоматизированный сбор по 75+ сервисам для цели: '{username}'.
 
 СОБРАННЫЕ ДАННЫЕ И СИГНАЛЫ:
 - Найденные платформы ({len(found)} шт.): {platforms_str}
@@ -683,14 +691,13 @@ async def scan_username_sherlock(request: Request):
 - Года регистраций аккаунтов: {intel_signals['reg_years']}
 
 ТВОЯ ЗАДАЧА:
-Свяжи все эти источники воедино и сделай вывод о НАИВЕРОЯТНЕЙШИХ данных человека.
+Свяжи все эти источники воедино и сделай вывод о НАИВЕРОЯТНЕЙШИХ данных человека (без указания рода деятельности).
 Верни ответ строго в таком формате:
 
 ### 🎯 НАИВЕРОЯТНЕЙШИЕ ДАННЫЕ (СВОДНЫЙ ВЫВОД):
 - 👤 **Вероятное реальное имя / ФИО**: (укажи самое вероятное имя и из каких источников оно подтверждено)
 - 🎂 **Вероятный возраст / Год рождения**: (сопоставь даты старейших регистраций, цифры в никнейме, сленг в bio и дай четкую оценку возраста)
 - 🏙️ **Вероятный город / Страна**: (сопоставь геолокации из GitHub/Steam/Chess/часовых поясов)
-- 💼 **Основной род занятий и интересы**: (определи по набору сервисов — разработчик, геймер, дизайнер, крипто-энтузиаст и т.д.)
 - 📊 **Индекс совпадения личности (Confidence)**: (например: 94% — высокая точность совпадения)
 
 ---
@@ -988,7 +995,7 @@ async def ai_deduce_persona(request: Request):
         ai_text = (
             f"💜 **Аналитическое досье на цель:** `{target}`\n\n"
             f"1. 👤 **Цифровой идентификатор:** `{target}`\n"
-            f"2. 🔍 **Векторы анализа:** Рекомендуется запустить перекрестный поиск по базам Sherlock 60+ через основную панель.\n"
+            f"2. 🔍 **Векторы анализа:** Рекомендуется запустить перекрестный поиск по базам Sherlock 75+ через основную панель.\n"
             f"3. 🌐 **Telegram и мессенджеры:** Проверьте публичный статус через `/tg @{target}`."
         )
     return {"ok": True, "target": target, "dossier": ai_text}
@@ -1003,14 +1010,14 @@ HTML_CONTENT = Path(__file__).resolve().parent.parent / "index.html"
 async def root():
     if HTML_CONTENT.exists():
         return HTML_CONTENT.read_text(encoding="utf-8")
-    return "<h1>OSINT Pro Hub Active</h1>"
+    return "<h1>OSINT Cyber Hub Active</h1>"
 
 
 @app.get("/lab", response_class=HTMLResponse)
 async def lab():
     if HTML_CONTENT.exists():
         return HTML_CONTENT.read_text(encoding="utf-8")
-    return "<h1>OSINT Pro Hub Active</h1>"
+    return "<h1>OSINT Cyber Hub Active</h1>"
 
 
 if __name__ == "__main__":
