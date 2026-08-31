@@ -217,48 +217,65 @@ def extract_exif_data(image_bytes: bytes) -> dict:
         "date_time": None,
         "software": None,
         "lens_model": None,
+        "dimensions": None,
+        "format": None,
         "gps": None,
         "google_maps_url": None,
         "raw_tags": {}
     }
     try:
         image = Image.open(io.BytesIO(image_bytes))
-        exif = image._getexif()
-        if not exif:
-            return info
+        info["format"] = image.format
+        info["dimensions"] = f"{image.width}x{image.height} px"
 
-        info["has_exif"] = True
-        gps_data = {}
+        exif = None
+        if hasattr(image, "_getexif"):
+            exif = image._getexif()
+        if not exif and hasattr(image, "getexif"):
+            exif = image.getexif()
 
-        for tag_id, value in exif.items():
-            tag_name = ExifTags.TAGS.get(tag_id, str(tag_id))
-            
-            if tag_name == "Make":
-                info["camera_make"] = str(value).strip()
-            elif tag_name == "Model":
-                info["camera_model"] = str(value).strip()
-            elif tag_name in ["DateTimeOriginal", "DateTime"]:
-                info["date_time"] = str(value).strip()
-            elif tag_name == "Software":
-                info["software"] = str(value).strip()
-            elif tag_name == "LensModel":
-                info["lens_model"] = str(value).strip()
-            elif tag_name == "GPSInfo":
-                for gps_tag_id in value:
-                    gps_tag_name = ExifTags.GPSTAGS.get(gps_tag_id, str(gps_tag_id))
-                    gps_data[gps_tag_name] = value[gps_tag_id]
+        if exif:
+            info["has_exif"] = True
+            gps_data = {}
+            for tag_id, value in exif.items():
+                tag_name = ExifTags.TAGS.get(tag_id, str(tag_id))
+                if tag_name == "Make":
+                    info["camera_make"] = str(value).strip()
+                elif tag_name == "Model":
+                    info["camera_model"] = str(value).strip()
+                elif tag_name in ["DateTimeOriginal", "DateTime", "DateTimeDigitized"]:
+                    if not info["date_time"]:
+                        info["date_time"] = str(value).strip()
+                elif tag_name == "Software":
+                    info["software"] = str(value).strip()
+                elif tag_name == "LensModel":
+                    info["lens_model"] = str(value).strip()
+                elif tag_name == "GPSInfo":
+                    gps_dict = value if isinstance(value, dict) else (dict(value) if hasattr(value, "items") else {})
+                    for gps_tag_id, gval in gps_dict.items():
+                        gps_tag_name = ExifTags.GPSTAGS.get(gps_tag_id, str(gps_tag_id))
+                        gps_data[gps_tag_name] = gval
 
-        if gps_data and "GPSLatitude" in gps_data and "GPSLongitude" in gps_data:
-            lat = get_decimal_from_dms(gps_data["GPSLatitude"], gps_data.get("GPSLatitudeRef", "N"))
-            lon = get_decimal_from_dms(gps_data["GPSLongitude"], gps_data.get("GPSLongitudeRef", "E"))
-            if lat is not None and lon is not None:
-                info["gps"] = {
-                    "latitude": round(lat, 6),
-                    "longitude": round(lon, 6),
-                    "lat_ref": gps_data.get("GPSLatitudeRef", "N"),
-                    "lon_ref": gps_data.get("GPSLongitudeRef", "E")
-                }
-                info["google_maps_url"] = f"https://www.google.com/maps?q={round(lat,6)},{round(lon,6)}"
+            if gps_data and "GPSLatitude" in gps_data and "GPSLongitude" in gps_data:
+                lat = get_decimal_from_dms(gps_data["GPSLatitude"], gps_data.get("GPSLatitudeRef", "N"))
+                lon = get_decimal_from_dms(gps_data["GPSLongitude"], gps_data.get("GPSLongitudeRef", "E"))
+                if lat is not None and lon is not None:
+                    info["gps"] = {
+                        "latitude": round(lat, 6),
+                        "longitude": round(lon, 6),
+                        "lat_ref": gps_data.get("GPSLatitudeRef", "N"),
+                        "lon_ref": gps_data.get("GPSLongitudeRef", "E")
+                    }
+                    info["google_maps_url"] = f"https://www.google.com/maps?q={round(lat,6)},{round(lon,6)}"
+
+        if hasattr(image, "info") and image.info:
+            png_meta = image.info
+            if "Software" in png_meta and not info["software"]:
+                info["software"] = str(png_meta["Software"])
+                info["has_exif"] = True
+            if "Creation Time" in png_meta and not info["date_time"]:
+                info["date_time"] = str(png_meta["Creation Time"])
+                info["has_exif"] = True
 
     except Exception:
         pass

@@ -156,35 +156,61 @@ SHERLOCK OSINT ENGINE — ДОСЬЕ РАССЛЕДОВАНИЯ
 # --- ОБРАБОТЧИК ФОТОГРАФИЙ (EXIF + GPS + VISION AI) ---
 
 @dp.message(F.photo)
+@dp.message(F.document)
 async def handle_photo_message(message: types.Message):
-    photo = message.photo[-1]
-    status_msg = await message.answer("📸 <i>Анализ метаданных фото и местности...</i>", parse_mode="HTML")
+    file_id = None
+    file_name = "photo.jpg"
+    mime = "image/jpeg"
+
+    if message.photo:
+        file_id = message.photo[-1].file_id
+    elif message.document:
+        doc = message.document
+        m = (doc.mime_type or "").lower()
+        if not (m.startswith("image/") or doc.file_name.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".heic", ".tiff"))):
+            return
+        file_id = doc.file_id
+        file_name = doc.file_name or "photo.jpg"
+        mime = doc.mime_type or "image/jpeg"
+
+    if not file_id:
+        return
+
+    status_msg = await message.answer("📸 <i>Анализ метаданных файла (EXIF / GPS / Камера)...</i>", parse_mode="HTML")
 
     file_io = io.BytesIO()
-    await bot.download(photo, destination=file_io)
+    await bot.download(file_id, destination=file_io)
     image_bytes = file_io.getvalue()
 
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
-            files = {"file": ("photo.jpg", image_bytes, "image/jpeg")}
+            files = {"file": (file_name, image_bytes, mime)}
             resp = await client.post(f"{LOCAL_API}/api/scan/photo", files=files)
             data = resp.json()
 
         exif = data.get("exif", {})
         vision_report = data.get("vision_ai_report", "")
         gps = exif.get("gps")
+        has_camera = bool(exif.get("camera_make") or exif.get("camera_model"))
+        has_date = bool(exif.get("date_time"))
 
         res_lines = ["📸 <b>Экспертиза изображения:</b>\n"]
-        res_lines.append(f"• <b>Камера:</b> {exif.get('camera_make') or '—'} {exif.get('camera_model') or ''}")
-        res_lines.append(f"• <b>Дата съемки:</b> {exif.get('date_time') or 'Скрыта'}")
+        if has_camera:
+            res_lines.append(f"• <b>Камера:</b> <code>{exif.get('camera_make') or ''} {exif.get('camera_model') or ''}</code>")
+        if has_date:
+            res_lines.append(f"• <b>Дата съемки:</b> <code>{exif.get('date_time')}</code>")
+        if exif.get("software"):
+            res_lines.append(f"• <b>ПО / Софт:</b> <code>{exif.get('software')}</code>")
+        if exif.get("dimensions"):
+            res_lines.append(f"• <b>Разрешение:</b> <code>{exif.get('dimensions')} ({exif.get('format')})</code>")
 
         if gps:
-            res_lines.append(f"• 📍 <b>GPS:</b> <code>{gps['latitude']}, {gps['longitude']}</code>")
-            res_lines.append(f"🔗 <a href='{exif.get('google_maps_url')}'>Открыть на Google Maps</a>")
-        else:
-            res_lines.append("• 📍 <b>GPS:</b> Метки отсутствуют")
+            res_lines.append(f"• 📍 <b>GPS Координаты:</b> <code>{gps['latitude']}, {gps['longitude']}</code>")
+            res_lines.append(f"🔗 <a href='{exif.get('google_maps_url')}'>Открыть точку на Google Maps</a>")
+        elif not (has_camera or has_date):
+            res_lines.append("ℹ️ <i>Метаданные (EXIF) отсутствуют в файле (очищены при сжатии мессенджером или соцсетью).</i>")
 
-        if vision_report:
+        if vision_report and len(vision_report) > 40 and "Экспертиза изображения завершена:" not in vision_report:
             res_lines.append(f"\n🧠 <b>Анализ:</b>\n{vision_report[:900]}")
 
         buttons = [
