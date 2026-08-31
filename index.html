@@ -163,11 +163,6 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     <div class="nav-actions">
       <button class="btn btn-primary" id="registerBtn" onclick="openOnboardingModal()" style="display:none; padding:6px 12px; font-size:11px;">
         <i class="fa-solid fa-user-plus"></i> Создать позывной
-      </button>
-      <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="handleUserBadgeClick()">
-        <i id="userBadgeIcon" class="fa-solid fa-user"></i> <span id="currentUsernameSpan">Гость</span>
-      </div>
-      <button class="btn btn-purple" onclick="showView('attributionView')"><i class="fa-solid fa-user-secret"></i> Детектор виртов</button>
       <button class="btn btn-secondary" onclick="showView('photoView')"><i class="fa-solid fa-camera"></i> Фото</button>
     </div>
   </div>
@@ -364,34 +359,28 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
           <tbody id="visitorsTableBody">
             <tr><td colspan="5" style="text-align:center; padding:10px;">Загрузка IP-журнала...</td></tr>
           </tbody>
-        </table>
+  <!-- ОБЯЗАТЕЛЬНАЯ МОДАЛКА РЕГИСТРАЦИИ (НЕЛЬЗЯ ЗАКРЫТЬ БЕЗ РЕГИСТРАЦИИ) -->
+  <div id="onboardingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:99999; backdrop-filter:blur(14px); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:linear-gradient(135deg, #091322, #0d1e34); border:2px solid var(--cyan); border-radius:16px; padding:24px; max-width:400px; width:100%; box-shadow:0 0 40px rgba(0,229,255,0.3); text-align:center;">
+      <i class="fa-solid fa-id-card-clip" style="font-size:46px; color:var(--cyan); margin-bottom:12px;"></i>
+      <div style="font-size:17px; font-weight:800; color:#fff; margin-bottom:6px;">ОБЯЗАТЕЛЬНАЯ РЕГИСТРАЦИЯ</div>
+      <div style="font-size:12px; color:#94a3b8; margin-bottom:16px; line-height:1.5;">
+        Для доступа к инструментам OSINT Cyber Hub придумайте ваш постоянный рабочий позывной (никнейм):
       </div>
-    </div>
-  </div>
-
-  <!-- МОДАЛКА РЕГИСТРАЦИИ И УПРАВЛЕНИЯ ПОЗЫВНЫМ -->
-  <div id="onboardingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:9999; backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:16px;">
-    <div style="background:linear-gradient(135deg, #091322, #0d1e34); border:1px solid var(--cyan); border-radius:14px; padding:22px; max-width:380px; width:100%; box-shadow:0 0 30px rgba(0,229,255,0.25); text-align:center; position:relative;">
-      <button onclick="closeOnboardingModal()" style="position:absolute; right:12px; top:12px; background:none; border:none; color:#64748b; font-size:16px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-      <i class="fa-solid fa-user-astronaut" style="font-size:42px; color:var(--cyan); margin-bottom:12px;"></i>
-      <div style="font-size:16px; font-weight:800; color:#fff; margin-bottom:6px;" id="onboardTitle">Позывной в Cyber Hub</div>
-      <div style="font-size:12px; color:#94a3b8; margin-bottom:16px; line-height:1.45;" id="onboardDesc">
-        Придумайте ваш постоянный позывной (никнейм) для работы в системе:
-      </div>
-      <input type="text" id="userOnboardNickname" class="tool-input" style="text-align:center; font-weight:700; font-size:14px; margin-bottom:14px; border-color:var(--cyan);" placeholder="Ваш никнейм (например: Ghost_OSINT)" onkeydown="if(event.key==='Enter') submitOnboardingNickname()">
+      <input type="text" id="userOnboardNickname" class="tool-input" style="text-align:center; font-weight:700; font-size:14px; margin-bottom:14px; border-color:var(--cyan); padding:10px;" placeholder="Ваш позывной (например: Ghost_Hunter)" onkeydown="if(event.key==='Enter') submitOnboardingNickname()">
       <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:13px;" onclick="submitOnboardingNickname()">
-        <i class="fa-solid fa-check"></i> Сохранить и войти
+        <i class="fa-solid fa-shield-halved"></i> Зарегистрироваться и войти
       </button>
     </div>
   </div>
 
   <!-- ЭКРАН БЛОКИРОВКИ ПОЛЬЗОВАТЕЛЯ -->
-  <div id="blockedScreenModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#05070a; z-index:10000; align-items:center; justify-content:center; padding:20px; text-align:center;">
-    <div style="background:#13090e; border:1px solid var(--danger); border-radius:14px; padding:24px; max-width:380px; width:100%; box-shadow:0 0 30px rgba(255,51,102,0.35);">
-      <i class="fa-solid fa-ban" style="font-size:48px; color:var(--danger); margin-bottom:12px;"></i>
-      <div style="font-size:16px; font-weight:800; color:#fff; margin-bottom:6px;">ДОСТУП ЗАБЛОКИРОВАН</div>
-      <div style="font-size:12px; color:#cbd5e1; line-height:1.5;">
-        Ваш аккаунт деактивирован администратором.<br>Обратитесь к владельцу системы для восстановления доступа.
+  <div id="blockedScreenModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#05070a; z-index:100000; align-items:center; justify-content:center; padding:20px; text-align:center;">
+    <div style="background:#13090e; border:2px solid var(--danger); border-radius:16px; padding:26px; max-width:390px; width:100%; box-shadow:0 0 40px rgba(255,51,102,0.4);">
+      <i class="fa-solid fa-ban" style="font-size:52px; color:var(--danger); margin-bottom:14px;"></i>
+      <div style="font-size:17px; font-weight:800; color:#fff; margin-bottom:8px;">ДОСТУП ЗАБЛОКИРОВАН</div>
+      <div style="font-size:12px; color:#cbd5e1; line-height:1.55;">
+        Ваш аккаунт деактивирован администратором.<br>Доступ к инструментам платформы закрыт.
       </div>
     </div>
   </div>
@@ -413,53 +402,29 @@ const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.expand();
   tg.ready();
-  if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-    tgUserId = String(tg.initDataUnsafe.user.id);
-    currentSessionUser = tg.initDataUnsafe.user.username || ('tg_' + tgUserId);
-  }
 }
 
-function openOnboardingModal() {
-  const currentNick = (currentSessionUser && currentSessionUser !== 'guest' && !currentSessionUser.startsWith('tg_') && !currentSessionUser.startsWith('browser_')) ? currentSessionUser : '';
-  document.getElementById('userOnboardNickname').value = currentNick;
-  document.getElementById('onboardingModal').style.display = 'flex';
+function openAdminPanel() {
+  if (!isUserAdmin) return;
+  showView('usersAdminView');
 }
 
-function closeOnboardingModal() {
-  document.getElementById('onboardingModal').style.display = 'none';
-}
-
-function handleUserBadgeClick() {
-  if (isUserAdmin) {
-    showView('usersAdminView');
-  } else {
-    openOnboardingModal();
-  }
-}
-
-// ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ И ОНБОРДИНГ
+// ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ И ОБЯЗАТЕЛЬНАЯ РЕГИСТРАЦИЯ
 async function initUserProfile() {
   let tgId = '';
   let tgUser = '';
   let tgName = '';
 
-  const tg = window.Telegram?.WebApp;
-  if (tg) {
-    tg.expand();
-    tg.ready();
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-      tgId = String(tg.initDataUnsafe.user.id);
-      tgUser = tg.initDataUnsafe.user.username || '';
-      tgName = `${tg.initDataUnsafe.user.first_name || ''} ${tg.initDataUnsafe.user.last_name || ''}`.trim();
-    }
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    tgId = String(tg.initDataUnsafe.user.id);
+    tgUser = tg.initDataUnsafe.user.username || '';
+    tgName = `${tg.initDataUnsafe.user.first_name || ''} ${tg.initDataUnsafe.user.last_name || ''}`.trim();
   }
 
   // Для локального теста в браузере поддерживаем ?tg_id=... или локальный ID браузера
   const urlParams = new URLSearchParams(window.location.search);
   const paramId = urlParams.get('tg_id') || urlParams.get('id');
-  if (!tgId && paramId) {
-    tgId = String(paramId);
-  }
+  if (!tgId && paramId) tgId = String(paramId);
   if (!tgId) {
     let localStoredId = localStorage.getItem('osint_local_uid');
     if (!localStoredId) {
@@ -468,21 +433,13 @@ async function initUserProfile() {
     }
     tgId = localStoredId;
   }
-
   tgUserId = tgId;
 
   try {
     const res = await fetch('/api/user/profile', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgId
-      },
-      body: JSON.stringify({
-        tg_id: tgId,
-        tg_username: tgUser,
-        tg_name: tgName
-      })
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgId },
+      body: JSON.stringify({ tg_id: tgId, tg_username: tgUser, tg_name: tgName })
     });
     const data = await res.json();
 
@@ -496,7 +453,9 @@ async function initUserProfile() {
       document.getElementById('registerBtn').style.display = 'none';
       document.getElementById('currentUserBadge').style.display = 'inline-flex';
       document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-shield';
-      document.getElementById('currentUsernameSpan').innerText = data.nickname || 'Админ';
+      document.getElementById('currentUsernameSpan').innerText = data.nickname || 'Администратор';
+      currentSessionUser = data.nickname || 'Admin';
+      document.getElementById('onboardingModal').style.display = 'none';
     } else if (data.registered) {
       isUserAdmin = false;
       document.getElementById('registerBtn').style.display = 'none';
@@ -504,29 +463,29 @@ async function initUserProfile() {
       document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-check';
       document.getElementById('currentUsernameSpan').innerText = data.nickname;
       currentSessionUser = data.nickname;
+      document.getElementById('onboardingModal').style.display = 'none';
     } else {
+      // ПОЛЬЗОВАТЕЛЬ НЕ ЗАРЕГИСТРИРОВАН -> БЛОКИРУЕМ ЭКРАН МОДАЛКОЙ
       isUserAdmin = false;
-      document.getElementById('registerBtn').style.display = 'inline-flex';
+      document.getElementById('registerBtn').style.display = 'none';
       document.getElementById('currentUserBadge').style.display = 'none';
       document.getElementById('userOnboardNickname').value = data.suggested_nickname || '';
       document.getElementById('onboardingModal').style.display = 'flex';
     }
   } catch (e) {
-    document.getElementById('registerBtn').style.display = 'inline-flex';
-    document.getElementById('currentUserBadge').style.display = 'none';
+    document.getElementById('onboardingModal').style.display = 'flex';
   }
 }
 
 async function submitOnboardingNickname() {
   const nick = document.getElementById('userOnboardNickname').value.trim();
   if (!nick || nick.length < 2) {
-    alert('Введите позывной (минимум 2 символа)');
+    alert('Пожалуйста, введите ваш позывной (минимум 2 символа)');
     return;
   }
 
   let tgUser = '';
   let tgName = '';
-  const tg = window.Telegram?.WebApp;
   if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
     tgUser = tg.initDataUnsafe.user.username || '';
     tgName = `${tg.initDataUnsafe.user.first_name || ''} ${tg.initDataUnsafe.user.last_name || ''}`.trim();
@@ -535,16 +494,8 @@ async function submitOnboardingNickname() {
   try {
     const res = await fetch('/api/user/profile', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgUserId
-      },
-      body: JSON.stringify({
-        tg_id: tgUserId,
-        tg_username: tgUser,
-        tg_name: tgName,
-        nickname: nick
-      })
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
+      body: JSON.stringify({ tg_id: tgUserId, tg_username: tgUser, tg_name: tgName, nickname: nick })
     });
     const data = await res.json();
     if (data.ok) {
@@ -560,15 +511,12 @@ async function submitOnboardingNickname() {
         document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-check';
         document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
       }
+    } else {
+      alert('Ошибка регистрации: ' + (data.error || 'Попробуйте другой позывной'));
     }
   } catch (e) {
-    alert('Ошибка: ' + e.message);
+    alert('Ошибка соединения: ' + e.message);
   }
-}
-
-function openAdminPanel() {
-  if (!isUserAdmin) return;
-  showView('usersAdminView');
 }
 
 // УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ВНЕШНИХ ССЫЛОК (TELEGRAM WEBAPP + BROWSER)
@@ -697,27 +645,10 @@ function runMainQuickScan() {
     document.getElementById('tvTargetInput').value = target;
   } else {
     openToolPage('sherlock');
-    document.getElementById('tvTargetInput').value = target;
   }
 
   runCurrentToolScan();
 }
-
-function openToolPage(toolId) {
-  let selected = null;
-  for (let g of FULL_CATALOG) {
-    for (let t of g.tools) {
-      if (t.id === toolId) { selected = t; break; }
-    }
-  }
-  if (!selected) {
-    selected = {
-      id: 'sherlock',
-      name: 'Sherlock Project Engine',
-      purpose: 'Поиск открытых аккаунтов по 480+ официальным базам данных.',
-      scan_type: 'username',
-      input: 'username'
-    };
   }
 
   activeTool = selected;
