@@ -46,7 +46,7 @@ def is_admin(user_id: int) -> bool:
 def get_webapp_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⚡ Запустить OSINT WebApp", web_app=WebAppInfo(url=DOMAIN))]
+            [InlineKeyboardButton(text="⚡ Открыть Cyber Hub", web_app=WebAppInfo(url=DOMAIN))]
         ]
     )
 
@@ -56,23 +56,11 @@ def get_webapp_keyboard() -> InlineKeyboardMarkup:
 async def cmd_start(message: types.Message):
     admin_text = ""
     if is_admin(message.from_user.id):
-        admin_text = (
-            "\n\n👑 <b>Администрирование:</b>\n"
-            "├ <code>/users</code> — Список аккаунтов\n"
-            "├ <code>/adduser &lt;login&gt; &lt;pass&gt; &lt;role&gt;</code> — Создать аккаунт\n"
-            "├ <code>/banuser &lt;login&gt;</code> — Блокировка\n"
-            "└ <code>/visits</code> — Журнал визитов"
-        )
+        admin_text = "\n\n👑 <b>Админ-панель:</b> <code>/users</code> | <code>/adduser</code> | <code>/banuser</code> | <code>/visits</code>"
 
     text = (
-        "🕵️ <b>OSINT Cyber Hub & Recon Center</b>\n\n"
-        "Все инструменты разведки и поиска доступны эксклюзивно в едином графическом приложении **WebApp**:\n\n"
-        "• 🔍 <b>Sherlock Engine:</b> поиск никнеймов по 480+ официальным базам\n"
-        "• 🕵️ <b>Детектор виртов:</b> атрибуция основного аккаунта и возраста ID\n"
-        "• 📱 <b>Phone Recon:</b> оператор, регион, WhatsApp, Telegram, дорки\n"
-        "• 📸 <b>Фото & EXIF:</b> камера, дата и точные координаты GPS\n"
-        "• 🌐 <b>Инфраструктура:</b> субдомены, SSL, DNS и GeoIP\n\n"
-        "👇 Нажмите кнопку ниже для запуска панели:"
+        "<b>OSINT CYBER HUB</b>\n"
+        "Система цифровой разведки и аналитики данных."
         f"{admin_text}"
     )
     await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
