@@ -46,7 +46,7 @@ def is_admin(user_id: int) -> bool:
 def get_webapp_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⚡ Открыть Cyber Hub", web_app=WebAppInfo(url=DOMAIN))]
+            [InlineKeyboardButton(text="⚡ peace of the island of sor/ber peoples", web_app=WebAppInfo(url=DOMAIN))]
         ]
     )
 
@@ -58,7 +58,7 @@ async def cmd_start(message: types.Message):
     if is_admin(message.from_user.id):
         admin_text = "\n\n👑 <b>Админ:</b> <code>/users</code> | <code>/adduser</code> | <code>/banuser</code> | <code>/visits</code>"
     text = (
-        "<b>OSINT CYBER HUB</b>"
+        "<b>peace of the island of sor/ber peoples</b>"
         f"{admin_text}"
     )
     await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
@@ -86,7 +86,7 @@ async def cmd_users(message: types.Message):
             await message.answer("👥 Список пользователей пуст.")
             return
 
-        lines = ["👥 <b>Пользователи OSINT Hub:</b>\n"]
+        lines = ["👥 <b>Пользователи peace of the island of sor/ber peoples:</b>\n"]
         for u in users:
             st = "🟢" if u.get("status") == "active" else "🔴"
             tg_info = f"@{u.get('tg_username')}" if u.get("tg_username") else f"ID:{u.get('tg_id')}"
@@ -186,7 +186,7 @@ async def cmd_visits(message: types.Message):
 
 @dp.message()
 async def fallback_any_message(message: types.Message):
-    await message.answer("<b>OSINT CYBER HUB</b>", reply_markup=get_webapp_keyboard(), parse_mode="HTML")
+    await message.answer("<b>peace of the island of sor/ber peoples</b>", reply_markup=get_webapp_keyboard(), parse_mode="HTML")
 
 
 import sys

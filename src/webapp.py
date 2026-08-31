@@ -48,7 +48,7 @@ USERS_FILE = DATA_DIR / "users.json"
 SHERLOCK_FILE = DATA_DIR / "sherlock_data.json"
 WMN_FILE = DATA_DIR / "wmn_sites.json"
 
-app = FastAPI(title="OSINT Cyber Hub: Official Sherlock Engine & Truthful Recon")
+app = FastAPI(title="peace of the island of sor/ber peoples: Official OSINT Engine & Recon")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -1806,14 +1806,14 @@ HTML_CONTENT = Path(__file__).resolve().parent.parent / "index.html"
 async def root():
     if HTML_CONTENT.exists():
         return HTML_CONTENT.read_text(encoding="utf-8")
-    return "<h1>OSINT Cyber Hub Active</h1>"
+    return "<h1>peace of the island of sor/ber peoples Active</h1>"
 
 
 @app.get("/lab", response_class=HTMLResponse)
 async def lab():
     if HTML_CONTENT.exists():
         return HTML_CONTENT.read_text(encoding="utf-8")
-    return "<h1>OSINT Cyber Hub Active</h1>"
+    return "<h1>peace of the island of sor/ber peoples Active</h1>"
 
 
 if __name__ == "__main__":
