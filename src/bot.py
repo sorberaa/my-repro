@@ -10,12 +10,8 @@ import httpx
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command, CommandStart
 from aiogram.types import (
-    BufferedInputFile,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    InlineQuery,
-    InlineQueryResultArticle,
-    InputTextMessageContent,
     WebAppInfo,
 )
 from dotenv import load_dotenv
@@ -50,36 +46,33 @@ def is_admin(user_id: int) -> bool:
 def get_webapp_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⚡ Открыть Cyber WebApp", web_app=WebAppInfo(url=DOMAIN))],
-            [
-                InlineKeyboardButton(text="🔍 Поиск Sherlock", callback_data="btn_sherlock"),
-                InlineKeyboardButton(text="📸 Фото Экспертиза", callback_data="btn_photo")
-            ]
+            [InlineKeyboardButton(text="⚡ Запустить OSINT WebApp", web_app=WebAppInfo(url=DOMAIN))]
         ]
     )
 
 
 @dp.message(CommandStart())
+@dp.message(Command("help"))
 async def cmd_start(message: types.Message):
     admin_text = ""
     if is_admin(message.from_user.id):
         admin_text = (
             "\n\n👑 <b>Администрирование:</b>\n"
-            "├ <code>/users</code> — Список аккаунтов и статистика\n"
+            "├ <code>/users</code> — Список аккаунтов\n"
             "├ <code>/adduser &lt;login&gt; &lt;pass&gt; &lt;role&gt;</code> — Создать аккаунт\n"
-            "├ <code>/banuser &lt;login&gt;</code> — Блокировка доступа\n"
-            "└ <code>/visits</code> — IP-журнал визитов"
+            "├ <code>/banuser &lt;login&gt;</code> — Блокировка\n"
+            "└ <code>/visits</code> — Журнал визитов"
         )
-    
+
     text = (
-        "🕵️ <b>Sherlock OSINT Bot & Cyber Hub</b>\n\n"
-        "Официальный алгоритм проверки открытых цифровых следов (Sherlock Project), экспертизы изображений (EXIF/GPS) и разведки Telegram.\n\n"
-        "⚡ <b>Команды бота:</b>\n"
-        "├ <code>/scan &lt;username&gt;</code> — Поиск по базам Sherlock Project\n"
-        "├ <code>/tg &lt;@user/ID&gt;</code> — Разведка Telegram\n"
-        "├ <code>/export &lt;target&gt;</code> — Скачать полный TXT-отчет\n"
-        "├ <code>/ip &lt;8.8.8.8&gt;</code> — Геолокация IP\n"
-        "└ 📸 <b>Отправьте фото</b> — анализ метаданных и местности"
+        "🕵️ <b>OSINT Cyber Hub & Recon Center</b>\n\n"
+        "Все инструменты разведки и поиска доступны эксклюзивно в едином графическом приложении **WebApp**:\n\n"
+        "• 🔍 <b>Sherlock Engine:</b> поиск никнеймов по 480+ официальным базам\n"
+        "• 🕵️ <b>Детектор виртов:</b> атрибуция основного аккаунта и возраста ID\n"
+        "• 📱 <b>Phone Recon:</b> оператор, регион, WhatsApp, Telegram, дорки\n"
+        "• 📸 <b>Фото & EXIF:</b> камера, дата и точные координаты GPS\n"
+        "• 🌐 <b>Инфраструктура:</b> субдомены, SSL, DNS и GeoIP\n\n"
+        "👇 Нажмите кнопку ниже для запуска панели:"
         f"{admin_text}"
     )
     await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
@@ -87,394 +80,10 @@ async def cmd_start(message: types.Message):
 
 @dp.message(Command("id"))
 async def cmd_id(message: types.Message):
-    await message.answer(f"🆔 <b>Telegram ID:</b> <code>{message.from_user.id}</code>", parse_mode="HTML")
+    await message.answer(f"🆔 <b>Ваш Telegram ID:</b> <code>{message.from_user.id}</code>", parse_mode="HTML")
 
 
-# --- ЭКСПОРТ ПОЛНОГО ОТЧЕТА В ФАЙЛ (/export <target>) ---
-
-@dp.message(Command("export"))
-async def cmd_export(message: types.Message):
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2:
-        await message.answer("⚠️ Укажите цель: <code>/export wertag20</code>", parse_mode="HTML")
-        return
-
-    target = args[1].strip().lstrip("@")
-    status_msg = await message.answer(f"📑 <i>Формирование отчета для <b>{target}</b>...</i>", parse_mode="HTML")
-
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/scan/username", json={"target": target, "caller": f"tg_{message.from_user.id}"})
-            data = resp.json()
-
-        profiles = data.get("profiles", [])
-        found_count = data.get("found_count", 0)
-        total = data.get("total_checked", 0)
-        ai_summary = data.get("ai_summary", "")
-        pdata = data.get("probable_data", {})
-
-        now_str = time.strftime("%Y-%m-%d %H:%M:%S UTC")
-        report_content = f"""====================================================
-SHERLOCK OSINT ENGINE — ДОСЬЕ РАССЛЕДОВАНИЯ
-Цель: {target}
-Дата: {now_str}
-Оператор ID: {message.from_user.id}
-Всего проверено баз: {total}
-Подтверждено профилей: {found_count}
-====================================================
-
-[1] СВОДНЫЕ ДАННЫЕ:
-• Вероятное имя: {pdata.get('name') or target}
-• Локация: {pdata.get('location') or 'По часовому поясу'}
-• Оценка возраста: {pdata.get('age_estimate') or '20–30 лет'}
-• Аккаунты в сети с: {pdata.get('oldest_account') or '2019–2022'}
-
-====================================================
-[2] ПОДТВЕРЖДЕННЫЕ ПРОФИЛИ:
-"""
-        for p in profiles:
-            report_content += f"• [{p.get('category', 'Прочее')}] {p.get('platform')}: {p.get('url')}\n"
-
-        report_content += f"""
-====================================================
-[3] АНАЛИТИЧЕСКИЙ РАЗБОР:
-{ai_summary}
-====================================================
-"""
-
-        doc_file = BufferedInputFile(report_content.encode("utf-8"), filename=f"Sherlock_{target}.txt")
-        await message.answer_document(
-            doc_file,
-            caption=f"📁 <b>Отчет Sherlock по цели:</b> <code>{target}</code> | Найдено профилей: <b>{found_count}</b>",
-            parse_mode="HTML"
-        )
-        await status_msg.delete()
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка генерации отчета: {str(e)}")
-
-
-# --- ОБРАБОТЧИК ФОТОГРАФИЙ (EXIF + GPS + VISION AI) ---
-
-@dp.message(F.photo)
-@dp.message(F.document)
-async def handle_photo_message(message: types.Message):
-    file_id = None
-    file_name = "photo.jpg"
-    mime = "image/jpeg"
-
-    if message.photo:
-        file_id = message.photo[-1].file_id
-    elif message.document:
-        doc = message.document
-        m = (doc.mime_type or "").lower()
-        if not (m.startswith("image/") or doc.file_name.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".heic", ".tiff"))):
-            return
-        file_id = doc.file_id
-        file_name = doc.file_name or "photo.jpg"
-        mime = doc.mime_type or "image/jpeg"
-
-    if not file_id:
-        return
-
-    status_msg = await message.answer("📸 <i>Анализ метаданных файла (EXIF / GPS / Камера)...</i>", parse_mode="HTML")
-
-    file_io = io.BytesIO()
-    await bot.download(file_id, destination=file_io)
-    image_bytes = file_io.getvalue()
-
-    try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            files = {"file": (file_name, image_bytes, mime)}
-            resp = await client.post(f"{LOCAL_API}/api/scan/photo", files=files)
-            data = resp.json()
-
-        exif = data.get("exif", {})
-        vision_report = data.get("vision_ai_report", "")
-        gps = exif.get("gps")
-        has_camera = bool(exif.get("camera_make") or exif.get("camera_model"))
-        has_date = bool(exif.get("date_time"))
-
-        res_lines = ["📸 <b>Экспертиза изображения:</b>\n"]
-        if has_camera:
-            res_lines.append(f"• <b>Камера:</b> <code>{exif.get('camera_make') or ''} {exif.get('camera_model') or ''}</code>")
-        if has_date:
-            res_lines.append(f"• <b>Дата съемки:</b> <code>{exif.get('date_time')}</code>")
-        if exif.get("software"):
-            res_lines.append(f"• <b>ПО / Софт:</b> <code>{exif.get('software')}</code>")
-        if exif.get("dimensions"):
-            res_lines.append(f"• <b>Разрешение:</b> <code>{exif.get('dimensions')} ({exif.get('format')})</code>")
-
-        if gps:
-            res_lines.append(f"• 📍 <b>GPS Координаты:</b> <code>{gps['latitude']}, {gps['longitude']}</code>")
-            res_lines.append(f"🔗 <a href='{exif.get('google_maps_url')}'>Открыть точку на Google Maps</a>")
-        elif not (has_camera or has_date):
-            res_lines.append("ℹ️ <i>Метаданные (EXIF) отсутствуют в файле (очищены при сжатии мессенджером или соцсетью).</i>")
-
-        if vision_report and len(vision_report) > 40 and "Экспертиза изображения завершена:" not in vision_report:
-            res_lines.append(f"\n🧠 <b>Анализ:</b>\n{vision_report[:900]}")
-
-        buttons = [
-            [InlineKeyboardButton(text="Яндекс Картинки", url="https://yandex.ru/images/search?rpt=imageview"),
-             InlineKeyboardButton(text="Google Lens", url="https://lens.google.com/")],
-            [InlineKeyboardButton(text="⚡ Открыть WebApp", web_app=WebAppInfo(url=DOMAIN))]
-        ]
-
-        await status_msg.edit_text(
-            "\n".join(res_lines),
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
-            parse_mode="HTML",
-            disable_web_page_preview=False
-        )
-
-        if gps:
-            await message.answer_location(latitude=gps["latitude"], longitude=gps["longitude"])
-
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка анализа фото: {str(e)}")
-
-
-# --- ОСНОВНОЙ ПОИСКОВИК SHERLOCK BOT С ПРАВДИВЫМИ ДАННЫМИ ---
-
-@dp.message(Command("scan"))
-@dp.message(Command("sherlock"))
-async def cmd_scan_sherlock(message: types.Message):
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2:
-        await message.answer("⚠️ Укажите никнейм: <code>/scan wertag20</code>", parse_mode="HTML")
-        return
-
-    target = args[1].strip().lstrip("@")
-    status_msg = await message.answer(f"🔍 <i>Опрос баз Sherlock Project для <b>{target}</b>...</i>", parse_mode="HTML")
-
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/scan/username", json={"target": target, "caller": f"tg_{message.from_user.id}"})
-            data = resp.json()
-
-        profiles = data.get("profiles", [])
-        found_count = data.get("found_count", 0)
-        total = data.get("total_checked", 0)
-        pdata = data.get("probable_data", {})
-
-        res_lines = [f"🎯 <b>Цель:</b> <code>{target}</code> | Найдено профилей: <b>{found_count}</b> (из {total})\n"]
-
-        if pdata:
-            res_lines.append("📌 <b>СВОДНЫЕ ДАННЫЕ:</b>")
-            res_lines.append(f"• 👤 <b>Имя:</b> <code>{pdata.get('name') or target}</code>")
-            res_lines.append(f"• 🏙️ <b>Локация:</b> <code>{pdata.get('location') or 'По часовому поясу'}</code>")
-            res_lines.append(f"• 🎂 <b>Возраст:</b> <code>{pdata.get('age_estimate') or '20–30 лет'}</code>")
-            res_lines.append(f"• 📊 <b>Confidence:</b> <code>{pdata.get('confidence') or '85%'}</code>\n")
-
-        # Группировка по категориям
-        categories = {}
-        for p in profiles:
-            cat = p.get("category", "Прочее")
-            categories.setdefault(cat, []).append(p)
-
-        for cat, items in categories.items():
-            res_lines.append(f"📁 <b>{cat}:</b>")
-            for p in items[:8]:
-                res_lines.append(f"  • {p['platform']}: <a href='{p['url']}'>Открыть профиль</a>")
-            if len(items) > 8:
-                res_lines.append(f"  <i>...и еще {len(items)-8} сервисов</i>")
-            res_lines.append("")
-
-        if not profiles:
-            res_lines.append("❌ Подтвержденных открытых совпадений не обнаружено.")
-
-        text = "\n".join(res_lines)
-        if len(text) > 3800:
-            text = text[:3700] + "…\n<i>(Используйте /export для полного отчета)</i>"
-
-        buttons = [
-            [InlineKeyboardButton(text="📄 Скачать TXT-отчет", callback_data=f"exp_{target[:20]}")],
-            [InlineKeyboardButton(text="⚡ Открыть в WebApp", web_app=WebAppInfo(url=DOMAIN))]
-        ]
-
-        await status_msg.edit_text(
-            text,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
-            parse_mode="HTML",
-            disable_web_page_preview=True
-        )
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка сканирования: {str(e)}")
-
-
-@dp.callback_query(F.data.startswith("exp_"))
-async def cb_export_target(call: types.CallbackQuery):
-    target = call.data.replace("exp_", "")
-    fake_msg = call.message
-    fake_msg.text = f"/export {target}"
-    await cmd_export(fake_msg)
-    await call.answer()
-
-
-@dp.message(Command("tg"))
-async def cmd_tg(message: types.Message):
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2:
-        await message.answer("⚠️ Укажите @username или ID: <code>/tg @durov</code>", parse_mode="HTML")
-        return
-
-    target = args[1].strip()
-    status_msg = await message.answer(f"✈️ <i>Опрос Telegram для <b>{target}</b>...</i>", parse_mode="HTML")
-
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/scan/telegram", json={"target": target})
-            data = resp.json()
-
-        if data.get("type") == "telegram_id":
-            text = (
-                f"✈️ <b>Telegram ID Inspector:</b>\n\n"
-                f"🆔 <b>ID:</b> <code>{data.get('tg_id')}</code>\n"
-                f"📅 <b>Период создания:</b> {data.get('estimated_year')}\n\n"
-                f"💡 <i>{data.get('ai_summary', '')}</i>"
-            )
-        else:
-            text = (
-                f"✈️ <b>Telegram Профиль:</b>\n\n"
-                f"👤 <b>Имя:</b> {data.get('title')}\n"
-                f"🏷 <b>Тип:</b> {data.get('account_type')}\n"
-                f"🔗 <b>Юзернейм:</b> @{data.get('username')}\n"
-                f"📝 <b>Bio:</b> {data.get('description')}\n\n"
-                f"🧠 <b>Анализ:</b> {data.get('ai_summary', '')}"
-            )
-
-        await status_msg.edit_text(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка Telegram: {str(e)}")
-
-
-@dp.message(Command("attribution"))
-@dp.message(Command("attr"))
-async def cmd_attribution(message: types.Message):
-    args = message.text.split(maxsplit=2)
-    if len(args) < 2:
-        await message.answer("⚠️ Формат: <code>/attribution @sock_handle [текст переписки]</code>", parse_mode="HTML")
-        return
-
-    target = args[1].strip()
-    text_sample = args[2].strip() if len(args) > 2 else ""
-    status_msg = await message.answer(f"🕵️ <i>Атрибуция вирта <b>{target}</b> и поиск основы...</i>", parse_mode="HTML")
-
-    try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/scan/attribution", json={"target": target, "text_sample": text_sample, "caller": f"tg_{message.from_user.id}"})
-            data = resp.json()
-
-        tg = data.get("tg_data", {})
-        roots = data.get("discovered_roots", [])
-        cand = data.get("candidate_roots", [])
-
-        res_lines = [
-            f"🕵️ <b>ДЕТЕКТОР ВИРТОВ & АТРИБУЦИЯ:</b> <code>@{data.get('target')}</code>\n",
-            f"👤 <b>Имя в TG:</b> {tg.get('title') or '—'}",
-            f"🕒 <b>Возраст ID:</b> {tg.get('age_verdict') or '—'}",
-            f"🔗 <b>Паттерн корня:</b> <code>{data.get('base_stem')}</code>\n"
-        ]
-
-        if roots:
-            res_lines.append("🎯 <b>НАЙДЕННЫЕ СВЯЗИ ОСНОВЫ:</b>")
-            for r in roots:
-                res_lines.append(f"• @{r['root_handle']} ({r['platform']}): <a href='{r['url']}'>Открыть</a>")
-            res_lines.append("")
-        elif cand:
-            res_lines.append(f"🔍 <b>Кандидаты на основу:</b> {', '.join(['@' + c for c in cand])}\n")
-
-        dossier = data.get("ai_dossier", "")
-        if dossier:
-            res_lines.append(f"🧠 <b>Заключение аналитика:</b>\n{dossier[:1200]}")
-
-        buttons = [
-            [InlineKeyboardButton(text="⚡ Открыть в WebApp", web_app=WebAppInfo(url=DOMAIN))]
-        ]
-
-        await status_msg.edit_text(
-            "\n".join(res_lines),
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
-            parse_mode="HTML",
-            disable_web_page_preview=True
-        )
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка атрибуции: {str(e)}")
-
-
-@dp.message(Command("phone"))
-@dp.message(Command("num"))
-async def cmd_phone(message: types.Message):
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2:
-        await message.answer("⚠️ Формат: <code>/phone +79991234567</code>", parse_mode="HTML")
-        return
-
-    target = args[1].strip()
-    status_msg = await message.answer(f"📱 <i>Разведка по номеру <b>{target}</b>...</i>", parse_mode="HTML")
-
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/scan/phone", json={"target": target, "caller": f"tg_{message.from_user.id}"})
-            data = resp.json()
-
-        if not data.get("ok"):
-            await status_msg.edit_text(f"❌ {data.get('error', 'Ошибка проверки номера')}")
-            return
-
-        m = data.get("messengers", {})
-        d = data.get("dorks", {})
-
-        text = (
-            f"📱 <b>РАЗВЕДКА ПО НОМЕРУ:</b> <code>{data.get('e164')}</code>\n\n"
-            f"🌍 <b>Страна/Регион:</b> {data.get('country')}\n"
-            f"🏢 <b>Оператор:</b> {data.get('carrier')}\n"
-            f"🏷 <b>Тип линии:</b> {data.get('line_type')}\n"
-            f"🕒 <b>Часовой пояс:</b> {', '.join(data.get('timezones', [])) or 'UTC'}\n\n"
-            f"💬 <b>Мессенджеры:</b> <a href='{m.get('whatsapp')}'>WhatsApp</a> | <a href='{m.get('telegram_web')}'>Telegram</a> | <a href='{m.get('viber')}'>Viber</a>\n"
-            f"🔍 <b>Поисковые следы:</b> <a href='{d.get('marketplaces')}'>Авито/Юла</a> | <a href='{d.get('social')}'>Соцсети</a> | <a href='{d.get('yandex_exact')}'>Яндекс</a>\n\n"
-            f"🧠 <b>Сводка:</b>\n{data.get('ai_summary', '')[:800]}"
-        )
-
-        buttons = [
-            [InlineKeyboardButton(text="🟢 Открыть WhatsApp", url=m.get("whatsapp")),
-             InlineKeyboardButton(text="✈️ Открыть Telegram", url=m.get("telegram_web"))],
-            [InlineKeyboardButton(text="⚡ Открыть в WebApp", web_app=WebAppInfo(url=DOMAIN))]
-        ]
-
-        await status_msg.edit_text(
-            text,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
-            parse_mode="HTML",
-            disable_web_page_preview=True
-        )
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка Phone Recon: {str(e)}")
-
-
-@dp.message(Command("ip"))
-async def cmd_ip(message: types.Message):
-    args = message.text.split(maxsplit=1)
-    target = args[1].strip() if len(args) > 1 else "8.8.8.8"
-    status_msg = await message.answer(f"🌍 <i>GeoIP для {target}...</i>", parse_mode="HTML")
-
-    try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/scan/ip", json={"target": target})
-            data = resp.json().get("data", {})
-
-        text = (
-            f"🌍 <b>GeoIP Информация:</b> <code>{target}</code>\n\n"
-            f"🏳️ <b>Локация:</b> {data.get('country', '—')}, {data.get('city', '—')}\n"
-            f"🏢 <b>ISP:</b> {data.get('isp', '—')}\n"
-            f"🔢 <b>AS:</b> {data.get('as', '—')}\n"
-            f"🕒 <b>Часовой пояс:</b> {data.get('timezone', '—')}"
-        )
-        await status_msg.edit_text(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка GeoIP: {str(e)}")
-
-
-# --- АДМИН-КОМАНДЫ ---
+# --- АДМИН-КОМАНДЫ УПРАВЛЕНИЯ ПАНЕЛЬЮ ---
 
 @dp.message(Command("users"))
 async def cmd_users(message: types.Message):
@@ -489,8 +98,8 @@ async def cmd_users(message: types.Message):
 
         lines = ["👥 <b>Пользователи OSINT Hub:</b>\n"]
         for u in users:
-            status_icon = "🟢" if u["status"] == "active" else "🔴"
-            lines.append(f"{status_icon} <b>{u['username']}</b> ({u['role'].upper()}) | Поисков: <b>{u['total_scans']}</b>")
+            st = "🟢" if u.get("status") == "active" else "🔴"
+            lines.append(f"{st} <b>{u.get('username')}</b> [{u.get('role')}] | Поисков: {u.get('total_scans')}")
 
         await message.answer("\n".join(lines), parse_mode="HTML")
     except Exception as e:
@@ -503,21 +112,25 @@ async def cmd_adduser(message: types.Message):
         await message.answer("⛔ Только для администратора.")
         return
 
-    parts = message.text.split(maxsplit=3)
+    parts = message.text.split()
     if len(parts) < 3:
-        await message.answer("⚠️ Формат: <code>/adduser login password [role=user/vip/admin]</code>", parse_mode="HTML")
+        await message.answer("⚠️ Формат: <code>/adduser login password [role]</code>", parse_mode="HTML")
         return
 
-    username = parts[1].strip()
-    password = parts[2].strip()
-    role = parts[3].strip() if len(parts) > 3 else "user"
+    username = parts[1]
+    password = parts[2]
+    role = parts[3] if len(parts) > 3 else "user"
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/admin/users/create", json={"username": username, "password": password, "role": role})
+            resp = await client.post(
+                f"{LOCAL_API}/api/admin/users/create",
+                json={"username": username, "password": password, "role": role}
+            )
             data = resp.json()
+
         if data.get("ok"):
-            await message.answer(f"✅ Создан пользователь <b>{username}</b> [{role}]", parse_mode="HTML")
+            await message.answer(f"✅ Пользователь <code>{username}</code> успешно создан.", parse_mode="HTML")
         else:
             await message.answer(f"❌ {data.get('error')}")
     except Exception as e:
@@ -530,17 +143,24 @@ async def cmd_banuser(message: types.Message):
         await message.answer("⛔ Только для администратора.")
         return
 
-    parts = message.text.split(maxsplit=1)
+    parts = message.text.split()
     if len(parts) < 2:
         await message.answer("⚠️ Формат: <code>/banuser login</code>", parse_mode="HTML")
         return
 
-    username = parts[1].strip()
+    username = parts[1]
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.post(f"{LOCAL_API}/api/admin/users/toggle_status", json={"username": username})
+            resp = await client.post(
+                f"{LOCAL_API}/api/admin/users/toggle_status",
+                json={"username": username}
+            )
             data = resp.json()
-        await message.answer(f"🔄 Статус <b>{username}</b>: <code>{data.get('new_status')}</code>", parse_mode="HTML")
+
+        if data.get("ok"):
+            await message.answer(f"🔄 Статус пользователя <code>{username}</code>: <b>{data.get('new_status')}</b>", parse_mode="HTML")
+        else:
+            await message.answer(f"❌ {data.get('error')}")
     except Exception as e:
         await message.answer(f"❌ Ошибка: {str(e)}")
 
@@ -551,79 +171,40 @@ async def cmd_visits(message: types.Message):
         await message.answer("⛔ Только для администратора.")
         return
 
-    if not VISITS_FILE.exists():
-        await message.answer("📊 Журнал пуст.")
-        return
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{LOCAL_API}/api/admin/visitors?limit=10")
+            visitors = resp.json().get("visitors", [])
 
-    lines = VISITS_FILE.read_text(encoding="utf-8").splitlines()[-10:]
-    lines.reverse()
+        if not visitors:
+            await message.answer("📊 Журнал визитов пуст.")
+            return
 
-    rows = []
-    for line in lines:
-        try:
-            r = json.loads(line)
-            rows.append(f"🕒 <code>{r.get('ts', '')[11:19]}</code> | <b>{r.get('ip', '—')}</b> ({r.get('country', 'RU')})")
-        except Exception:
-            continue
+        lines = ["🌐 <b>Последние 10 визитов:</b>\n"]
+        for v in visitors:
+            ts = v.get("ts", "")[:19].replace("T", " ")
+            lines.append(f"• <code>{ts}</code> | <b>{v.get('ip')}</b> | {v.get('country')} ({v.get('city')})")
 
-    text = "🕵️ <b>Последние визиты в панель:</b>\n\n" + "\n".join(rows)
-    await message.answer(text, parse_mode="HTML")
-
-
-# --- TELEGRAM INLINE MODE ---
-
-@dp.inline_query()
-async def inline_search(query: InlineQuery):
-    q = query.query.strip().lstrip("@")
-    if not q or len(q) < 2:
-        return
-
-    results = [
-        InlineQueryResultArticle(
-            id=f"scan_{q}",
-            title=f"🔍 Sherlock OSINT: {q}",
-            description=f"Отправить сводку Sherlock для {q}",
-            input_message_content=InputTextMessageContent(
-                message_text=f"🕵️ <b>Sherlock Резюме для цели:</b> <code>{q}</code>\nДля полного досье введите <code>/scan {q}</code>",
-                parse_mode="HTML"
-            ),
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[[InlineKeyboardButton(text="⚡ Открыть Cyber Hub", web_app=WebAppInfo(url=DOMAIN))]]
-            )
-        )
-    ]
-    await query.answer(results, cache_time=10)
+        await message.answer("\n".join(lines), parse_mode="HTML")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {str(e)}")
 
 
-@dp.callback_query(F.data == "btn_sherlock")
-async def cb_sherlock(call: types.CallbackQuery):
-    await call.message.answer("🔍 Отправьте никнейм для поиска:\n<code>/scan wertag20</code>", parse_mode="HTML")
-    await call.answer()
-
-
-@dp.callback_query(F.data == "btn_photo")
-async def cb_photo(call: types.CallbackQuery):
-    await call.message.answer("📸 <b>Отправьте фото в чат</b> для извлечения EXIF и гео-анализа местности.", parse_mode="HTML")
-    await call.answer()
-
-
-@dp.message(F.text)
-async def auto_text_handler(message: types.Message):
-    txt = message.text.strip()
-    if txt.startswith("/"):
-        return
-
-    if txt.startswith("@") or txt.isdigit():
-        await cmd_tg(message)
-    else:
-        await cmd_scan_sherlock(message)
+# ЛЮБЫЕ СООБЩЕНИЯ И ФОТО -> ПЕРЕНАПРАВЛЕНИЕ В WEBAPP
+@dp.message()
+async def fallback_any_message(message: types.Message):
+    text = (
+        "💡 <b>Поиск выполняется в WebApp!</b>\n\n"
+        "Чтобы провести разведку по никнейму, номеру телефона, фото или детекции виртов — откройте графическую веб-панель по кнопке ниже:"
+    )
+    await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
 
 
 async def main():
-    logging.info("Starting Telegram Bot Polling...")
+    logging.basicConfig(level=logging.INFO)
+    print("🚀 Telegram Bot запущен в режиме WebApp Launcher...")
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
