@@ -1317,83 +1317,47 @@ async function executeCliCommand() {{
     outputEl.innerText += `[+] Callsign: ${{currentSessionUser || 'Guest'}} | TG ID: ${{tgUserId || 'Browser'}} | Admin: ${{isUserAdmin ? 'YES' : 'NO'}}\\n`;
   }} else if (cmd === 'catalog' || cmd === 'exit') {{
     showView('catalogView');
-  }} else if (cmd === 'github' && arg) {{
-    outputEl.innerText += `[*] Probing GitHub user: ${{arg}}...\\n`;
+  }} else if (arg) {{
+    outputEl.innerText += `[*] Executing '${{cmd}} ${{arg}}' via OSINT Engine...\\n`;
     try {{
-      const res = await fetch('/api/scan/github', {{
+      const res = await fetch('/api/scan/universal', {{
         method: 'POST',
         headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
-        body: JSON.stringify({{ target: arg, caller: currentSessionUser }})
+        body: JSON.stringify({{ tool_id: cmd, target: arg, caller: currentSessionUser }})
       }});
       const data = await res.json();
-      outputEl.innerText += `[+] Name: ${{data.name}} | Location: ${{data.location}} | Repos: ${{data.public_repos_count}}\\n`;
-      if (data.emails_discovered && data.emails_discovered.length > 0) {{
-        outputEl.innerText += `[!] DISCOVERED EMAILS (FROM COMMITS): ${{data.emails_discovered.join(', ')}}\\n`;
+      if (data.raw_cli_output) {{
+        outputEl.innerText += data.raw_cli_output + '\\n';
+      }} else if (data.type === 'username') {{
+        outputEl.innerText += `[+] Matches verified: ${{data.found_count}} of ${{data.total_checked}} platforms.\\n`;
+        (data.profiles || []).forEach(p => {{
+          outputEl.innerText += `  [+] ${{p.platform.padEnd(16)}}: ${{p.url}}\\n`;
+        }});
+        if ((data.profiles || []).length === 0) {{
+          outputEl.innerText += `  [-] No verified open profiles found for '${{arg}}'.\\n`;
+        }}
+      }} else if (data.type === 'github') {{
+        outputEl.innerText += `[+] Name: ${{data.name}} | Repos: ${{data.public_repos_count}} | Followers: ${{data.followers}}\\n`;
+        if (data.emails_discovered && data.emails_discovered.length > 0) {{
+          outputEl.innerText += `[!] COMMITS UNMASKED EMAILS: ${{data.emails_discovered.join(', ')}}\\n`;
+        }}
+      }} else if (data.type === 'phone') {{
+        outputEl.innerText += `[+] E.164: ${{data.e164}} | Region: ${{data.country}} | Carrier: ${{data.carrier}} | Line: ${{data.line_type}}\\n`;
+      }} else if (data.type === 'domain') {{
+        outputEl.innerText += `[+] Target Domain: ${{data.target}} | IPs: ${{(data.data?.ip_addresses || []).join(', ')}}\\n`;
+        (data.data?.subdomains_found || []).forEach(s => {{
+          outputEl.innerText += `  --> ${{s.subdomain.padEnd(25)}} [${{s.ip}}]\\n`;
+        }});
+      }} else if (data.type === 'crypto') {{
+        outputEl.innerText += `[+] Network: ${{data.network}} (${{data.symbol}})\\n[+] Explorers: ${{data.explorers.map(e => e.name).join(', ')}}\\n`;
       }} else {{
-        outputEl.innerText += `[-] No public commit emails discovered.\\n`;
+        outputEl.innerText += `[✓] Execution completed for '${{arg}}'.\\n`;
       }}
     }} catch (e) {{
       outputEl.innerText += `[-] Error: ${{e.message}}\\n`;
     }}
-  }} else if (cmd === 'crypto' && arg) {{
-    outputEl.innerText += `[*] Analyzing crypto wallet: ${{arg}}...\\n`;
-    try {{
-      const res = await fetch('/api/scan/crypto', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
-        body: JSON.stringify({{ target: arg, caller: currentSessionUser }})
-      }});
-      const data = await res.json();
-      outputEl.innerText += `[+] Network: ${{data.network}} (${{data.symbol}})\\n[+] Explorers: ${{data.explorers.map(e => e.name).join(', ')}}\\n`;
-    }} catch (e) {{
-      outputEl.innerText += `[-] Error: ${{e.message}}\\n`;
-    }}
-  }} else if ((cmd === 'sherlock' || cmd === 'scan' || cmd === 'user') && arg) {{
-    outputEl.innerText += `[*] Querying Sherlock Project database for: ${{arg}}...\\n`;
-    try {{
-      const res = await fetch('/api/scan/username', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
-        body: JSON.stringify({{ target: arg, caller: currentSessionUser }})
-      }});
-      const data = await res.json();
-      outputEl.innerText += `[+] Matches found: ${{data.found_count}} of ${{data.total_checked}} platforms.\\n`;
-      (data.profiles || []).slice(0, 10).forEach(p => {{
-        outputEl.innerText += `  • [${{p.platform}}] -> ${{p.url}}\\n`;
-      }});
-      if ((data.profiles || []).length > 10) outputEl.innerText += `  ... and ${{data.profiles.length - 10}} more.\\n`;
-    }} catch (e) {{
-      outputEl.innerText += `[-] Error: ${{e.message}}\\n`;
-    }}
-  }} else if (cmd === 'phone' && arg) {{
-    outputEl.innerText += `[*] Probing phone: ${{arg}}...\\n`;
-    try {{
-      const res = await fetch('/api/scan/phone', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
-        body: JSON.stringify({{ target: arg, caller: currentSessionUser }})
-      }});
-      const data = await res.json();
-      outputEl.innerText += `[+] Number: ${{data.e164}} | Region: ${{data.country}} | Carrier: ${{data.carrier}} | Line: ${{data.line_type}}\\n`;
-    }} catch (e) {{
-      outputEl.innerText += `[-] Error: ${{e.message}}\\n`;
-    }}
-  }} else if (cmd === 'ip' && arg) {{
-    outputEl.innerText += `[*] Geolocation lookup for: ${{arg}}...\\n`;
-    try {{
-      const res = await fetch('/api/scan/ip', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
-        body: JSON.stringify({{ target: arg, caller: currentSessionUser }})
-      }});
-      const data = await res.json();
-      const d = data.data || {{}};
-      outputEl.innerText += `[+] Country: ${{d.country}}, City: ${{d.city}} | ISP: ${{d.isp}} | AS: ${{d.as}}\\n`;
-    }} catch (e) {{
-      outputEl.innerText += `[-] Error: ${{e.message}}\\n`;
-    }}
   }} else {{
-    outputEl.innerText += `[-] Unknown command: '${{cmd}}'. Type 'help' for command list.\\n`;
+    outputEl.innerText += `[-] Unknown command or missing target: '${{cmd}}'. Type 'help' for command list.\\n`;
   }}
 
   outputEl.scrollTop = outputEl.scrollHeight;

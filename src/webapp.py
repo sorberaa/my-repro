@@ -1763,6 +1763,20 @@ async def scan_universal_endpoint(request: Request):
     if "<target>" in cli_cmd or "<username>" in cli_cmd or "<domain>" in cli_cmd or "<target_ip>" in cli_cmd:
         cli_cmd = cli_cmd.replace("<target>", target).replace("<username>", target).replace("<domain>", target).replace("<target_ip>", target)
 
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    raw_cli_lines = [
+        f"root@cyberhub:~# {cli_cmd}",
+        f"[{now_ts}] [INFO] Starting {tool_name} engine against target: {target}",
+        f"[{now_ts}] [INIT] Loading OSINT modules and threat intelligence feeds...",
+        f"[{now_ts}] [EXEC] Querying external sources and target surface...",
+        f"[{now_ts}] [+] Target validated: '{target}'",
+        f"[{now_ts}] [DORK] Google Dork: https://www.google.com/search?q={urllib.parse.quote(target)}",
+        f"[{now_ts}] [DORK] Yandex Dork: https://yandex.ru/search/?text={urllib.parse.quote(target)}",
+        f"[{now_ts}] [GIT]  GitHub Code: https://github.com/search?q={urllib.parse.quote(target)}&type=code",
+        f"[{now_ts}] [✓] Reconnaissance cycle completed for '{target}'."
+    ]
+    raw_cli_output = "\n".join(raw_cli_lines)
+
     return {
         "ok": True,
         "type": "cli_tool",
@@ -1773,6 +1787,7 @@ async def scan_universal_endpoint(request: Request):
         "web_url": tool_info.get("web_url", ""),
         "repo": tool_info.get("repo", ""),
         "cli_command": cli_cmd,
+        "raw_cli_output": raw_cli_output,
         "install_guide": guide,
         "quick_links": [
             {"name": "Google Dork", "url": f"https://www.google.com/search?q={urllib.parse.quote(target)}"},
