@@ -732,6 +732,79 @@ CATALOG = [
                 }
             }
         ]
+    },
+    {
+        "id": "hacker_crypto_git",
+        "title": "💻 GitHub, Блокчейн & Deep OSINT",
+        "desc": "Глубокая разведка по исходному коду, коммитам, криптокошелькам и утечкам.",
+        "tools": [
+            {
+                "id": "github_recon",
+                "name": "GitHub Deep Recon & Commit Email Finder",
+                "repo": "https://github.com/techgaun/github-dorks",
+                "web_url": "https://github.com/",
+                "purpose": "🔍 Деанонимизация разработчика: извлечение скрытых email-адресов и реального имени из открытых git-коммитов, анализ SSH/GPG ключей и активности.",
+                "input": "github username",
+                "web_runnable": True,
+                "scan_type": "github",
+                "install_guide": {
+                    "git": "# Встроенный в систему веб-сканер GitHub API",
+                    "pip_or_pkg": "pip install httpx",
+                    "docker": "# Работает автономно в Cyber Hub",
+                    "usage": "Введите GitHub юзернейм (например: torvalds)",
+                    "notes": "Находит реальный email автора из истории PushEvent событий."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Анализ GitHub",
+                    "action": "scan_github"
+                }
+            },
+            {
+                "id": "crypto_tracker",
+                "name": "Crypto Wallet & Blockchain Explorer",
+                "repo": "https://github.com/blockchair",
+                "web_url": "https://blockchair.com/",
+                "purpose": "💰 Разведка по криптокошелькам: определение сети (BTC, ETH, TRON/USDT-TRC20, Solana), баланса, истории транзакций и ссылок на AML-проверку.",
+                "input": "crypto wallet address",
+                "web_runnable": True,
+                "scan_type": "crypto",
+                "install_guide": {
+                    "git": "# Встроенный мультичейн анализатор блокчейна",
+                    "pip_or_pkg": "pip install httpx",
+                    "docker": "# Работает автономно в Cyber Hub",
+                    "usage": "Введите адрес кошелька (например: 0x... или T...)",
+                    "notes": "Позволяет быстро отследить движение средств и биржевые транзакции."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Проверить кошелек",
+                    "action": "scan_crypto"
+                }
+            },
+            {
+                "id": "holehe_osint",
+                "name": "Holehe Multi-Service Email Presence",
+                "repo": "https://github.com/megadose/holehe",
+                "web_url": "https://github.com/megadose/holehe",
+                "purpose": "📧 Проверка привязки Email к 120+ сайтам (Instagram, Twitter, Discord, Amazon, GitHub и др.) без отправки уведомлений жертве.",
+                "input": "email",
+                "web_runnable": True,
+                "scan_type": "email",
+                "install_guide": {
+                    "git": "git clone https://github.com/megadose/holehe.git\ncd holehe",
+                    "pip_or_pkg": "pip install holehe",
+                    "docker": "docker run -it --rm megadose/holehe holehe target@email.com",
+                    "usage": "holehe target@email.com",
+                    "notes": "Позволяет составить полный цифровой профиль человека по его почте."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Проверить Email",
+                    "action": "scan_email"
+                }
+            }
+        ]
     }
 ]
 

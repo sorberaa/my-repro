@@ -21,3 +21,4 @@ else:
     new_content = re.sub(r"let FULL_CATALOG = .*?;", replacement, content, count=1, flags=re.DOTALL)
     index_path.write_text(new_content, encoding="utf-8")
     print("Catalog updated via regex in index.html!")
+

@@ -1513,6 +1513,178 @@ async def ai_deduce_persona(request: Request):
     return {"ok": True, "target": target, "dossier": ai_text}
 
 
+# --- 9. GITHUB DEEP RECON & PUBLIC COMMIT EMAIL FINDER ---
+
+@app.post("/api/scan/github")
+async def scan_github_recon(request: Request):
+    """
+    Глубокая разведка по профилю GitHub:
+    - Извлечение скрытых/публичных email через историю git-коммитов и публичные события
+    - Информация о компании, геолокации, SSH/GPG ключах
+    - Анализ репозиториев и цифрового следа разработчика.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    target_user = str(body.get("target", "")).strip().lstrip("@").replace("https://github.com/", "").split("/")[0]
+    caller_user = str(body.get("caller", "guest")).strip()
+    increment_user_scan(caller_user)
+
+    if not target_user:
+        return JSONResponse({"ok": False, "error": "Укажите GitHub логин (например: torvalds)"}, status_code=400)
+
+    headers = {
+        "User-Agent": "OSINT-Cyber-Hub/2.0",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    profile_data = {}
+    emails_found = set()
+    names_found = set()
+    repos_list = []
+
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        # 1. Запрос профиля
+        try:
+            r_user = await client.get(f"https://api.github.com/users/{target_user}", headers=headers)
+            if r_user.status_code == 200:
+                profile_data = r_user.json()
+                if profile_data.get("email"):
+                    emails_found.add(profile_data["email"])
+                if profile_data.get("name"):
+                    names_found.add(profile_data["name"])
+        except Exception:
+            pass
+
+        # 2. Поиск скрытых email в публичных коммитах через GitHub Events API
+        try:
+            r_events = await client.get(f"https://api.github.com/users/{target_user}/events/public", headers=headers)
+            if r_events.status_code == 200:
+                events = r_events.json()
+                for ev in events:
+                    if ev.get("type") == "PushEvent":
+                        commits = ev.get("payload", {}).get("commits", [])
+                        for c in commits:
+                            author = c.get("author", {})
+                            em = author.get("email", "")
+                            nm = author.get("name", "")
+                            if em and "users.noreply.github.com" not in em and "@" in em:
+                                emails_found.add(em)
+                            if nm and nm.lower() != target_user.lower():
+                                names_found.add(nm)
+        except Exception:
+            pass
+
+        # 3. Список топовых репозиториев
+        try:
+            r_repos = await client.get(f"https://api.github.com/users/{target_user}/repos?sort=updated&per_page=6", headers=headers)
+            if r_repos.status_code == 200:
+                for rep in r_repos.json():
+                    repos_list.append({
+                        "name": rep.get("name"),
+                        "stars": rep.get("stargazers_count", 0),
+                        "forks": rep.get("forks_count", 0),
+                        "language": rep.get("language") or "Other",
+                        "url": rep.get("html_url")
+                    })
+        except Exception:
+            pass
+
+    return {
+        "ok": True,
+        "type": "github",
+        "username": target_user,
+        "name": profile_data.get("name") or (list(names_found)[0] if names_found else target_user),
+        "bio": profile_data.get("bio") or "—",
+        "company": profile_data.get("company") or "—",
+        "location": profile_data.get("location") or "—",
+        "blog": profile_data.get("blog") or "",
+        "twitter": profile_data.get("twitter_username") or "",
+        "created_at": (profile_data.get("created_at") or "")[:10],
+        "public_repos_count": profile_data.get("public_repos", len(repos_list)),
+        "followers": profile_data.get("followers", 0),
+        "avatar_url": profile_data.get("avatar_url") or f"https://github.com/{target_user}.png",
+        "profile_url": f"https://github.com/{target_user}",
+        "emails_discovered": list(emails_found),
+        "names_discovered": list(names_found),
+        "keys_url": f"https://github.com/{target_user}.keys",
+        "gpg_url": f"https://github.com/{target_user}.gpg",
+        "recent_repos": repos_list
+    }
+
+
+# --- 10. CRYPTO & BLOCKCHAIN WALLET INTEL ---
+
+@app.post("/api/scan/crypto")
+async def scan_crypto_wallet(request: Request):
+    """
+    Разведка по криптокошелькам:
+    - Автоопределение сети (Bitcoin, Ethereum, Tron/USDT TRC20, Solana, Litecoin)
+    - Ссылки на блокчейн-эксплореры и AML-аналитику
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    addr = str(body.get("target", "")).strip()
+    caller_user = str(body.get("caller", "guest")).strip()
+    increment_user_scan(caller_user)
+
+    if not addr or len(addr) < 14:
+        return JSONResponse({"ok": False, "error": "Введите валидный адрес кошелька (BTC, ETH, TRX, SOL)"}, status_code=400)
+
+    network = "Unknown / Multi-chain"
+    symbol = "CRYPTO"
+    explorers = []
+
+    if addr.startswith("0x") and len(addr) == 42:
+        network = "Ethereum (ERC-20 / BNB / Polygon / Arbitrum)"
+        symbol = "ETH / EVM"
+        explorers = [
+            {"name": "Etherscan", "url": f"https://etherscan.io/address/{addr}"},
+            {"name": "DeBank (Портфолио)", "url": f"https://debank.com/profile/{addr}"},
+            {"name": "BscScan (BNB Chain)", "url": f"https://bscscan.com/address/{addr}"},
+            {"name": "PolygonScan", "url": f"https://polygonscan.com/address/{addr}"}
+        ]
+    elif addr.startswith("T") and len(addr) == 34:
+        network = "TRON (USDT TRC-20 / TRX)"
+        symbol = "TRX / USDT"
+        explorers = [
+            {"name": "TronScan (Официальный)", "url": f"https://tronscan.org/#/address/{addr}"},
+            {"name": "OKX Explorer", "url": f"https://www.okx.com/ru/web3/explorer/trx/address/{addr}"}
+        ]
+    elif (addr.startswith("1") or addr.startswith("3") or addr.startswith("bc1")) and (26 <= len(addr) <= 62):
+        network = "Bitcoin (BTC)"
+        symbol = "BTC"
+        explorers = [
+            {"name": "Blockchair (BTC)", "url": f"https://blockchair.com/bitcoin/address/{addr}"},
+            {"name": "Blockchain.com", "url": f"https://www.blockchain.com/explorer/addresses/btc/{addr}"},
+            {"name": "Mempool Space", "url": f"https://mempool.space/address/{addr}"}
+        ]
+    elif len(addr) in [43, 44] and not addr.startswith("0x"):
+        network = "Solana (SOL)"
+        symbol = "SOL"
+        explorers = [
+            {"name": "Solscan", "url": f"https://solscan.io/account/{addr}"},
+            {"name": "Solana Explorer", "url": f"https://explorer.solana.com/address/{addr}"}
+        ]
+    else:
+        explorers = [
+            {"name": "Blockchair Universal", "url": f"https://blockchair.com/search?q={addr}"}
+        ]
+
+    return {
+        "ok": True,
+        "type": "crypto",
+        "address": addr,
+        "network": network,
+        "symbol": symbol,
+        "explorers": explorers,
+        "aml_check_url": f"https://amlbot.com/"
+    }
+
+
 # --- FRONTEND ИНТЕРФЕЙС WEBAPP PRO ---
 
 HTML_CONTENT = Path(__file__).resolve().parent.parent / "index.html"
