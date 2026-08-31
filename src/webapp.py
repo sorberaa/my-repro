@@ -38,12 +38,13 @@ DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 VISITS_FILE = DATA_DIR / "visits.jsonl"
 USERS_FILE = DATA_DIR / "users.json"
+WMN_FILE = DATA_DIR / "wmn_sites.json"
 
 # In-memory LRU Cache
 SCAN_CACHE = {}
 CACHE_TTL = 600
 
-app = FastAPI(title="OSINT Cyber Hub: Sherlock 75+, Hacker Terminal & Deep Recon")
+app = FastAPI(title="OSINT Cyber Hub: 750+ Global & CIS Reconnaissance Engine")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -174,10 +175,10 @@ async def run_gemini_prompt(prompt: str, image_bytes: Optional[bytes] = None, mi
     return ""
 
 
-# --- РАСШИРЕННАЯ БАЗА ПЛАТФОРМ SHERLOCK (75+ СЕРВИСОВ СНГ И МИРА) ---
+# --- ОСНОВНЫЕ ПЛАТФОРМЫ С ГЛУБОКИМ ИЗВЛЕЧЕНИЕМ МЕТАДАННЫХ ---
 
-SHERLOCK_SITES = [
-    # Мессенджеры и социальные сети СНГ / Мир
+CORE_ENRICHED_SITES = [
+    # Соцсети & Мессенджеры СНГ и Мира
     {"name": "Telegram", "cat": "Социальные сети", "icon": "fa-telegram", "url": "https://t.me/{u}", "check": "https://t.me/{u}", "type": "tg"},
     {"name": "VKontakte", "cat": "Социальные сети", "icon": "fa-vk", "url": "https://vk.com/{u}", "check": "https://vk.com/{u}", "type": "status"},
     {"name": "Odnoklassniki", "cat": "Социальные сети", "icon": "fa-odnoklassniki", "url": "https://ok.ru/{u}", "check": "https://ok.ru/{u}", "type": "status"},
@@ -190,8 +191,8 @@ SHERLOCK_SITES = [
     {"name": "Bluesky", "cat": "Социальные сети", "icon": "fa-cloud", "url": "https://bsky.app/profile/{u}.bsky.social", "check": "https://bsky.app/profile/{u}.bsky.social", "type": "status"},
     {"name": "TenChat", "cat": "Социальные сети", "icon": "fa-briefcase", "url": "https://tenchat.ru/{u}", "check": "https://tenchat.ru/{u}", "type": "status"},
     {"name": "Tumblr", "cat": "Социальные сети", "icon": "fa-tumblr", "url": "https://{u}.tumblr.com", "check": "https://{u}.tumblr.com", "type": "status"},
-    
-    # IT, Разработка, Репозитории и Дизайн
+
+    # IT, Разработка, Репозитории
     {"name": "GitHub", "cat": "IT & Разработка", "icon": "fa-github", "url": "https://github.com/{u}", "check": "https://api.github.com/users/{u}", "type": "github_api"},
     {"name": "GitLab", "cat": "IT & Разработка", "icon": "fa-gitlab", "url": "https://gitlab.com/{u}", "check": "https://gitlab.com/api/v4/users?username={u}", "type": "gitlab_api"},
     {"name": "Bitbucket", "cat": "IT & Разработка", "icon": "fa-bitbucket", "url": "https://bitbucket.org/{u}/", "check": "https://bitbucket.org/{u}/", "type": "status"},
@@ -209,7 +210,7 @@ SHERLOCK_SITES = [
     {"name": "Dribbble", "cat": "IT & Разработка", "icon": "fa-dribbble", "url": "https://dribbble.com/{u}", "check": "https://dribbble.com/{u}", "type": "status"},
     {"name": "ArtStation", "cat": "IT & Разработка", "icon": "fa-palette", "url": "https://www.artstation.com/{u}", "check": "https://www.artstation.com/{u}", "type": "status"},
 
-    # Гейминг и Киберспорт
+    # Гейминг & Киберспорт
     {"name": "Steam", "cat": "Гейминг", "icon": "fa-steam", "url": "https://steamcommunity.com/id/{u}", "check": "https://steamcommunity.com/id/{u}", "type": "steam_page"},
     {"name": "Roblox", "cat": "Гейминг", "icon": "fa-gamepad", "url": "https://www.roblox.com/user.aspx?username={u}", "check": "https://www.roblox.com/user.aspx?username={u}", "type": "status"},
     {"name": "Twitch", "cat": "Гейминг", "icon": "fa-twitch", "url": "https://www.twitch.tv/{u}", "check": "https://www.twitch.tv/{u}", "type": "status"},
@@ -221,7 +222,7 @@ SHERLOCK_SITES = [
     {"name": "Speedrun.com", "cat": "Гейминг", "icon": "fa-stopwatch", "url": "https://www.speedrun.com/user/{u}", "check": "https://www.speedrun.com/user/{u}", "type": "status"},
     {"name": "Tracker.gg", "cat": "Гейминг", "icon": "fa-chart-simple", "url": "https://tracker.gg/profile/{u}", "check": "https://tracker.gg/profile/{u}", "type": "status"},
 
-    # Медиа, Музыка и Видео
+    # Медиа & Стриминг
     {"name": "YouTube", "cat": "Медиа & Музыка", "icon": "fa-youtube", "url": "https://www.youtube.com/@{u}", "check": "https://www.youtube.com/@{u}", "type": "status"},
     {"name": "Rutube", "cat": "Медиа & Музыка", "icon": "fa-play", "url": "https://rutube.ru/channel/{u}/", "check": "https://rutube.ru/channel/{u}/", "type": "status"},
     {"name": "Spotify", "cat": "Медиа & Музыка", "icon": "fa-spotify", "url": "https://open.spotify.com/user/{u}", "check": "https://open.spotify.com/user/{u}", "type": "status"},
@@ -230,7 +231,7 @@ SHERLOCK_SITES = [
     {"name": "Last.fm", "cat": "Медиа & Музыка", "icon": "fa-lastfm", "url": "https://www.last.fm/user/{u}", "check": "https://www.last.fm/user/{u}", "type": "status"},
     {"name": "Vimeo", "cat": "Медиа & Музыка", "icon": "fa-vimeo", "url": "https://vimeo.com/{u}", "check": "https://vimeo.com/{u}", "type": "status"},
 
-    # Блоги, Форумы и Сообщества СНГ / Мир
+    # Блоги & Форумы
     {"name": "Pikabu", "cat": "Блоги & Форумы", "icon": "fa-comments", "url": "https://pikabu.ru/@{u}", "check": "https://pikabu.ru/@{u}", "type": "status"},
     {"name": "DTF.ru", "cat": "Блоги & Форумы", "icon": "fa-gamepad", "url": "https://dtf.ru/u/{u}", "check": "https://dtf.ru/u/{u}", "type": "status"},
     {"name": "VC.ru", "cat": "Блоги & Форумы", "icon": "fa-chart-line", "url": "https://vc.ru/u/{u}", "check": "https://vc.ru/u/{u}", "type": "status"},
@@ -242,7 +243,7 @@ SHERLOCK_SITES = [
     {"name": "MyAnimeList", "cat": "Блоги & Форумы", "icon": "fa-tv", "url": "https://myanimelist.net/profile/{u}", "check": "https://myanimelist.net/profile/{u}", "type": "status"},
     {"name": "Duolingo", "cat": "Блоги & Форумы", "icon": "fa-language", "url": "https://www.duolingo.com/profile/{u}", "check": "https://www.duolingo.com/profile/{u}", "type": "status"},
 
-    # Маркетплейсы, Донаты и Фриланс
+    # Донаты, Контакты & Фриланс
     {"name": "Boosty", "cat": "Контакты & Донаты", "icon": "fa-bolt", "url": "https://boosty.to/{u}", "check": "https://boosty.to/{u}", "type": "status"},
     {"name": "Patreon", "cat": "Контакты & Донаты", "icon": "fa-patreon", "url": "https://www.patreon.com/{u}", "check": "https://www.patreon.com/{u}", "type": "status"},
     {"name": "Linktree", "cat": "Контакты & Донаты", "icon": "fa-link", "url": "https://linktr.ee/{u}", "check": "https://linktr.ee/{u}", "type": "status"},
@@ -251,6 +252,27 @@ SHERLOCK_SITES = [
     {"name": "FL.ru", "cat": "Контакты & Донаты", "icon": "fa-laptop", "url": "https://www.fl.ru/users/{u}", "check": "https://www.fl.ru/users/{u}", "type": "status"},
     {"name": "Freelance.ru", "cat": "Контакты & Донаты", "icon": "fa-user-tie", "url": "https://freelance.ru/{u}", "check": "https://freelance.ru/{u}", "type": "status"},
 ]
+
+
+def load_wmn_sites() -> list:
+    """Загружает базу WhatsMyName (716+ платформ) из локального кэша или GitHub."""
+    if WMN_FILE.exists():
+        try:
+            return json.loads(WMN_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    try:
+        import urllib.request
+        url = "https://raw.githubusercontent.com/WebBreacher/WhatsMyName/main/wmn-data.json"
+        with urllib.request.urlopen(url, timeout=6.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            sites = data.get("sites", [])
+            if sites:
+                WMN_FILE.write_text(json.dumps(sites, ensure_ascii=False, indent=2), encoding="utf-8")
+                return sites
+    except Exception:
+        pass
+    return []
 
 
 # --- ИЗВЛЕЧЕНИЕ EXIF МЕТАДАННЫХ ИЗ ФОТО ---
@@ -326,7 +348,6 @@ def extract_exif_data(image_bytes: bytes) -> dict:
 # --- СИНТЕЗ И ДЕДУКЦИЯ НАИВЕРОЯТНЕЙШИХ ДАННЫХ ---
 
 def synthesize_heuristic_dossier(username: str, found_profiles: list, intel_signals: dict) -> tuple[dict, str]:
-    """Формирует структурированное аналитическое досье и вероятность на основе собранных сигналов."""
     names = intel_signals.get("names", [])
     locations = intel_signals.get("locations", [])
     bios = intel_signals.get("bios", [])
@@ -342,7 +363,7 @@ def synthesize_heuristic_dossier(username: str, found_profiles: list, intel_sign
     # 2. Наивероятнейшая локация
     best_loc = locations[0].split(" (")[0] if locations else "Определяется по часовому поясу / СНГ"
 
-    # 3. Реалистичная оценка возраста (с исправлением бага 20020)
+    # 3. Реалистичная оценка возраста
     current_year = datetime.now().year
     oldest_yr_str = reg_years[0].split(" ")[0] if reg_years else ""
     est_age = "20–30 лет (активный цифровой возраст)"
@@ -369,8 +390,8 @@ def synthesize_heuristic_dossier(username: str, found_profiles: list, intel_sign
             elif 14 <= num <= 40:
                 est_age = f"~{num}–{num+4} лет (маркер возраста '{num}' в никнейме)"
 
-    confidence = min(98, 45 + len(found_profiles) * 3 + (15 if names else 0) + (10 if locations else 0))
-    cats = [p["category"] for p in found_profiles]
+    confidence = min(98, 45 + len(found_profiles) * 2 + (15 if names else 0) + (10 if locations else 0))
+    cats = [p.get("category", "Прочее") for p in found_profiles]
 
     probable_data = {
         "name": best_name,
@@ -540,13 +561,13 @@ async def get_admin_visitors(limit: int = 50):
     }
 
 
-# --- ГЛУБОКИЙ КРОСС-ПОИСК И СОПОСТАВЛЕНИЕ ДАННЫХ (CROSS-CORRELATION SHERLOCK ENGINE) ---
+# --- ГЛОБАЛЬНЫЙ КРОСС-ПОИСК SHERLOCK + WHATSMYNAME (750+ БАЗ ДАННЫХ) ---
 
 @app.post("/api/scan/username")
 async def scan_username_sherlock(request: Request):
     """
-    Глубокий поиск по 75+ платформам с извлечением метаданных (GitHub, Telegram, Steam, Dev.to, Chess.com),
-    связыванием зацепок и формированием агрегированных НАИВЕРОЯТНЕЙШИХ данных.
+    Глобальный высокоскоростной поиск по 750+ мировым и СНГ базам данных (Sherlock + WhatsMyName),
+    извлечение метаданных и сопоставление цифрового следа.
     """
     try:
         body = await request.json()
@@ -567,6 +588,8 @@ async def scan_username_sherlock(request: Request):
             return {**cached_data, "cached": True}
 
     found = []
+    found_names_set = set()
+
     intel_signals = {
         "names": [],
         "locations": [],
@@ -577,28 +600,24 @@ async def scan_username_sherlock(request: Request):
         "interests": []
     }
     
-    checked_count = 0
-    sem = asyncio.Semaphore(25)
-
+    sem = asyncio.Semaphore(45)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    async def check_and_enrich(client: httpx.AsyncClient, site: dict):
-        nonlocal checked_count
+    # 1. Проверка основных обогащенных сервисов (GitHub, Telegram, Steam, Chess, Reddit, VK, Habr...)
+    async def check_core_site(client: httpx.AsyncClient, site: dict):
         target_url = site["check"].format(u=username)
         profile_url = site["url"].format(u=username)
         stype = site.get("type", "status")
 
         async with sem:
             try:
-                r = await client.get(target_url, headers=headers, timeout=4.0, follow_redirects=True)
-                checked_count += 1
-                
+                r = await client.get(target_url, headers=headers, timeout=3.5, follow_redirects=True)
                 if r.status_code == 200:
                     extra_meta = {}
 
-                    # 1. GitHub API
+                    # GitHub API
                     if stype == "github_api":
                         js = r.json()
                         if js.get("id"):
@@ -610,9 +629,9 @@ async def scan_username_sherlock(request: Request):
                             if loc: intel_signals["locations"].append(f"{loc} (GitHub)")
                             if bio: intel_signals["bios"].append(f"{bio} (GitHub)")
                             if created: intel_signals["reg_years"].append(f"{created} г. (GitHub)")
-                            extra_meta = {"name": real_name, "location": loc, "bio": bio, "created": created}
+                            extra_meta = {"name": real_name, "location": loc, "bio": bio}
 
-                    # 2. Telegram Web Gateway
+                    # Telegram Web
                     elif stype == "tg":
                         if "tgme_page_extra" not in r.text and "@" not in r.text:
                             return
@@ -625,7 +644,7 @@ async def scan_username_sherlock(request: Request):
                         if d_bio and "If you have Telegram" not in d_bio: intel_signals["bios"].append(f"{d_bio} (Telegram)")
                         extra_meta = {"name": t_name, "bio": d_bio}
 
-                    # 3. Chess.com API
+                    # Chess.com API
                     elif stype == "chess_api":
                         js = r.json()
                         c_name = js.get("name")
@@ -634,7 +653,7 @@ async def scan_username_sherlock(request: Request):
                         if c_country: intel_signals["locations"].append(f"Страна: {c_country} (Chess.com)")
                         extra_meta = {"name": c_name, "country": c_country}
 
-                    # 4. Dev.to API
+                    # Dev.to API
                     elif stype == "devto_api":
                         js = r.json()
                         d_name = js.get("name")
@@ -645,14 +664,13 @@ async def scan_username_sherlock(request: Request):
                         if d_summary: intel_signals["bios"].append(f"{d_summary} (Dev.to)")
                         extra_meta = {"name": d_name, "location": d_loc}
 
-                    # 5. Reddit API
+                    # Reddit API
                     elif stype == "reddit_api":
                         js = r.json()
                         sub = js.get("data", {}).get("subreddit", {})
                         r_title = sub.get("title")
                         if r_title and r_title != username: intel_signals["names"].append(f"{r_title} (Reddit)")
 
-                    # 6. Стандартный чекер
                     else:
                         if "user not found" in r.text.lower() or "страница не найдена" in r.text.lower() or "404 not found" in r.text.lower():
                             return
@@ -665,22 +683,65 @@ async def scan_username_sherlock(request: Request):
                         "status": "Активен",
                         "meta": extra_meta
                     })
+                    found_names_set.add(site["name"].lower())
+            except Exception:
+                pass
+
+    # 2. Проверка WhatsMyName Registry (716+ платформ)
+    wmn_sites = load_wmn_sites()
+
+    async def check_wmn_site(client: httpx.AsyncClient, site: dict):
+        sname = site.get("name", "")
+        if sname.lower() in found_names_set:
+            return
+
+        check_url = site.get("uri_check", "").replace("{account}", username)
+        if not check_url or not check_url.startswith("http"):
+            return
+
+        e_code = site.get("e_code", 200)
+        m_str = (site.get("m_string") or "").lower()
+        e_str = (site.get("e_string") or "").lower()
+        cat = site.get("cat", "Прочее").capitalize()
+
+        async with sem:
+            try:
+                r = await client.get(check_url, headers=headers, timeout=2.8, follow_redirects=True)
+                if r.status_code == e_code:
+                    txt = r.text.lower()
+                    if m_str and m_str in txt:
+                        return
+                    if e_str and e_str not in txt:
+                        return
+                    
+                    found.append({
+                        "platform": sname,
+                        "category": cat,
+                        "icon": "fa-globe",
+                        "url": check_url,
+                        "status": "Активен",
+                        "meta": {}
+                    })
             except Exception:
                 pass
 
     async with httpx.AsyncClient() as client:
-        tasks = [check_and_enrich(client, s) for s in SHERLOCK_SITES]
-        await asyncio.gather(*tasks)
+        core_tasks = [check_core_site(client, s) for s in CORE_ENRICHED_SITES]
+        await asyncio.gather(*core_tasks)
+
+        wmn_tasks = [check_wmn_site(client, s) for s in wmn_sites]
+        await asyncio.gather(*wmn_tasks)
 
     # --- ИИ-СИНТЕЗ И ДЕДУКЦИЯ НАИВЕРОЯТНЕЙШИХ ДАННЫХ ---
+    total_db_count = len(CORE_ENRICHED_SITES) + len(wmn_sites)
     probable_data, default_markdown = synthesize_heuristic_dossier(username, found, intel_signals)
 
     if GEMINI_API_KEY:
         categories_found = list(set(p["category"] for p in found))
-        platforms_str = ", ".join([p["platform"] for p in found])
+        platforms_str = ", ".join([p["platform"] for p in found[:30]])
 
         prompt = f"""Ты — главный аналитик расследований OSINT.
-Проведен автоматизированный сбор по 75+ сервисам для цели: '{username}'.
+Проведен автоматизированный сбор по 750+ базам данных для цели: '{username}'.
 
 СОБРАННЫЕ ДАННЫЕ И СИГНАЛЫ:
 - Найденные платформы ({len(found)} шт.): {platforms_str}
@@ -714,7 +775,7 @@ async def scan_username_sherlock(request: Request):
         "type": "username",
         "username": username,
         "found_count": len(found),
-        "total_checked": len(SHERLOCK_SITES),
+        "total_checked": total_db_count,
         "probable_data": probable_data,
         "intelligence_signals": intel_signals,
         "profiles": found,
@@ -995,7 +1056,7 @@ async def ai_deduce_persona(request: Request):
         ai_text = (
             f"💜 **Аналитическое досье на цель:** `{target}`\n\n"
             f"1. 👤 **Цифровой идентификатор:** `{target}`\n"
-            f"2. 🔍 **Векторы анализа:** Рекомендуется запустить перекрестный поиск по базам Sherlock 75+ через основную панель.\n"
+            f"2. 🔍 **Векторы анализа:** Рекомендуется запустить перекрестный поиск по 750+ базам через основную панель.\n"
             f"3. 🌐 **Telegram и мессенджеры:** Проверьте публичный статус через `/tg @{target}`."
         )
     return {"ok": True, "target": target, "dossier": ai_text}

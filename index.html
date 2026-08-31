@@ -844,18 +844,25 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       `;
     }
 
-    // 4. СЕТКА НАЙДЕННЫХ ПРОФИЛЕЙ
+    // 4. СЕТКА НАЙДЕННЫХ ПРОФИЛЕЙ С ФИЛЬТРАМИ
     if (profiles.length > 0) {
+      window._lastProfiles = profiles;
+      const categories = ['Все', ...new Set(profiles.map(p => p.category))];
+      let catButtons = categories.map((c, i) => `
+        <button class="chip ${i === 0 ? 'active' : ''}" style="padding:4px 9px; font-size:10px;" onclick="filterResultProfiles('${c}', this)">${c} (${c === 'Все' ? profiles.length : profiles.filter(p => p.category === c).length})</button>
+      `).join('');
+
       html += `
-        <div style="font-size:12px; font-weight:800; color:#fff; margin-bottom:6px;">
-          Обнаруженные профили (${data.found_count}):
+        <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+          <span>Обнаруженные профили (${data.found_count}):</span>
         </div>
-        <div class="profiles-grid">
+        <div class="filter-chips" style="margin-bottom:8px;">${catButtons}</div>
+        <div class="profiles-grid" id="scanProfilesGrid">
       `;
       profiles.forEach(p => {
         const metaStr = p.meta?.name ? `<div style="font-size:9px; color:#cbd5e1;">Имя: ${p.meta.name}</div>` : '';
         html += `
-          <div class="profile-card">
+          <div class="profile-card" data-cat="${p.category}">
             <div class="profile-left">
               <i class="fa-brands ${p.icon || 'fa-globe'} profile-icon"></i>
               <div>
@@ -969,6 +976,21 @@ function formatMarkdownText(text) {
     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
     .replace(/\*(.*?)\*/g, '<i>$1</i>')
     .replace(/`(.*?)`/g, '<code style="background:#101726; padding:1px 4px; border-radius:4px; color:var(--primary);">$1</code>');
+}
+
+function filterResultProfiles(cat, btn) {
+  if (btn && btn.parentElement) {
+    btn.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const cards = document.querySelectorAll('#scanProfilesGrid .profile-card');
+  cards.forEach(c => {
+    if (cat === 'Все' || c.getAttribute('data-cat') === cat) {
+      c.style.display = 'flex';
+    } else {
+      c.style.display = 'none';
+    }
+  });
 }
 
 loadCatalog();

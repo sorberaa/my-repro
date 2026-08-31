@@ -55,7 +55,7 @@ def get_webapp_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text="⚡ Открыть Cyber WebApp", web_app=WebAppInfo(url=DOMAIN))],
             [
-                InlineKeyboardButton(text="🔍 Поиск 75+", callback_data="btn_sherlock"),
+                InlineKeyboardButton(text="🔍 Поиск 750+", callback_data="btn_sherlock"),
                 InlineKeyboardButton(text="📸 Фото Экспертиза", callback_data="btn_photo")
             ]
         ]
@@ -76,9 +76,9 @@ async def cmd_start(message: types.Message):
     
     text = (
         "🕵️ <b>OSINT Cyber Hub</b>\n\n"
-        "Автоматизированный комплекс разведки по открытым источникам (Sherlock 75+ баз), экспертизы фото (EXIF/GPS) и сопоставления связей.\n\n"
+        "Автоматизированный комплекс разведки по открытым источникам (Sherlock 750+ баз), экспертизы фото (EXIF/GPS) и сопоставления связей.\n\n"
         "⚡ <b>Команды:</b>\n"
-        "├ <code>/scan &lt;username&gt;</code> — Кросс-поиск по 75+ базам\n"
+        "├ <code>/scan &lt;username&gt;</code> — Кросс-поиск по 750+ базам\n"
         "├ <code>/tg &lt;@user/ID&gt;</code> — Разведка Telegram\n"
         "├ <code>/export &lt;target&gt;</code> — Скачать полный TXT-отчет\n"
         "├ <code>/ip &lt;8.8.8.8&gt;</code> — Геолокация IP\n"
@@ -221,7 +221,7 @@ async def cmd_scan_sherlock(message: types.Message):
         return
 
     target = args[1].strip().lstrip("@")
-    status_msg = await message.answer(f"🔍 <i>Опрос 75+ баз данных для <b>{target}</b>...</i>", parse_mode="HTML")
+    status_msg = await message.answer(f"🔍 <i>Опрос 750+ мировых и СНГ баз данных для <b>{target}</b>...</i>", parse_mode="HTML")
 
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
