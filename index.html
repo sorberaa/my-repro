@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OSINT Cyber Hub · Sherlock & Recon Center</title>
+<title>OSINT Cyber Hub · Sherlock & Sockpuppet Attribution</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
@@ -164,8 +164,8 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       <div class="user-badge" id="currentUserBadge" onclick="showView('usersAdminView')">
         <i class="fa-solid fa-user-shield"></i> <span id="currentUsernameSpan">admin</span>
       </div>
+      <button class="btn btn-purple" onclick="showView('attributionView')"><i class="fa-solid fa-user-secret"></i> Детектор виртов</button>
       <button class="btn btn-secondary" onclick="showView('photoView')"><i class="fa-solid fa-camera"></i> Фото</button>
-      <button class="btn btn-purple" onclick="showView('aiView')"><i class="fa-solid fa-brain"></i> AI Досье</button>
     </div>
   </div>
 
@@ -190,12 +190,11 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
     <div class="filter-chips">
       <div class="chip active" onclick="setFilter('all', this)">Все утилиты</div>
+      <div class="chip" onclick="setFilter('telegram_osint', this)">✈️ Детектор виртов & TG</div>
       <div class="chip" onclick="setFilter('username_osint', this)">🔍 Sherlock Engine</div>
-      <div class="chip" onclick="setFilter('telegram_osint', this)">✈️ Telegram Разведка</div>
       <div class="chip" onclick="setFilter('social_google_instagram', this)">📱 Google & Instagram</div>
       <div class="chip" onclick="setFilter('web_infra_secrets', this)">🔑 Краулеры & Ключи</div>
       <div class="chip" onclick="setFilter('amazing_osint', this)">🌟 GeoINT & Спутники</div>
-      <div class="chip" onclick="setFilter('mapping_investigation', this)">🗺️ Фреймворки</div>
       <div class="chip" onclick="setFilter('email_checks', this)">📧 Почта & IP</div>
     </div>
 
@@ -246,7 +245,41 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     </div>
   </div>
 
-  <!-- ВЬЮ 3: ФОТО & ЭКСПЕРТИЗА МЕТАДАННЫХ -->
+  <!-- ВЬЮ 3: СПЕЦИАЛИЗИРОВАННЫЙ МОДУЛЬ АТРИБУЦИИ ВИРТОВ -->
+  <div class="view-page" id="attributionView">
+    <div class="back-btn" onclick="showView('catalogView')">
+      <i class="fa-solid fa-arrow-left"></i> Назад в каталог
+    </div>
+
+    <div class="workspace-box">
+      <div class="workspace-title" style="color:var(--purple);">
+        <i class="fa-solid fa-user-secret"></i> Детектор виртов & Поиск основного аккаунта (Sockpuppet Attribution)
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; line-height:1.4;">
+        Выявление реального владельца, основы и цифровых связей, когда вам пишут с купленного или виртуального аккаунта.
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <input class="tool-input" id="attrTargetInput" placeholder="Юзернейм или ID вирта (например: @alex_temp или 6834920194)">
+      </div>
+      <div style="margin-bottom:8px;">
+        <textarea class="tool-input" id="attrTextSample" style="height:65px; resize:none;" placeholder="Текст сообщений вирта (для стилометрии и выявления сленга/опечаток)..."></textarea>
+      </div>
+
+      <button class="btn btn-purple" style="width:100%; justify-content:center; padding:10px;" onclick="runAttributionScanDirect()">
+        <i class="fa-solid fa-crosshairs"></i> Рассчитать атрибуцию и найти основу
+      </button>
+
+      <div class="loader" id="attrLoader">
+        <div class="spinner" style="border-top-color:var(--purple);"></div>
+        <span style="font-size:11px; color:var(--purple);">Корреляция мутаций никнеймов, ID и баз данных...</span>
+      </div>
+
+      <div id="attrResultBox" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- ВЬЮ 4: ФОТО & ЭКСПЕРТИЗА МЕТАДАННЫХ -->
   <div class="view-page" id="photoView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -257,7 +290,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       <div class="upload-dropzone" onclick="document.getElementById('directPhotoInput').click()">
         <i class="fa-solid fa-image" style="font-size:32px; color:var(--cyan); margin-bottom:6px;"></i>
         <div style="font-weight:700; color:#fff; font-size:12px;">Загрузить фото для анализа метаданных</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">JPG, PNG, WEBP, HEIC</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">JPG, PNG, WEBP, HEIC (без сжатия)</div>
         <input type="file" id="directPhotoInput" accept="image/*" style="display:none;" onchange="processDirectPhoto(this)">
       </div>
 
@@ -272,7 +305,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     </div>
   </div>
 
-  <!-- ВЬЮ 4: УПРАВЛЕНИЕ АККАУНТАМИ -->
+  <!-- ВЬЮ 5: УПРАВЛЕНИЕ АККАУНТАМИ -->
   <div class="view-page" id="usersAdminView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -333,30 +366,8 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     </div>
   </div>
 
-  <!-- ВЬЮ 5: AI ДОСЬЕ -->
-  <div class="view-page" id="aiView">
-    <div class="back-btn" onclick="showView('catalogView')">
-      <i class="fa-solid fa-arrow-left"></i> Назад в каталог
-    </div>
-
-    <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--purple);"><i class="fa-solid fa-brain"></i> Аналитический ИИ-детектив</div>
-      <div class="input-row">
-        <input class="tool-input" id="aiSearchTarget" placeholder="Введите никнейм или @username...">
-        <button class="btn btn-purple" onclick="runAiDossierDirect()"><i class="fa-solid fa-wand-magic-sparkles"></i> Анализ</button>
-      </div>
-
-      <div class="loader" id="aiLoader">
-        <div class="spinner" style="border-top-color:var(--purple);"></div>
-        <span style="font-size:11px; color:var(--purple);">Синтез цифрового профиля...</span>
-      </div>
-
-      <div id="aiDossierResultDirect"></div>
-    </div>
-  </div>
-
   <div class="footer-info">
-    OSINT Cyber Hub · Official Sherlock Engine · Direct Links · Mobile Optimized
+    OSINT Cyber Hub · Official Sherlock Engine · Sockpuppet Attribution · Mobile Optimized
   </div>
 </div>
 
@@ -495,7 +506,6 @@ function openToolPage(toolId) {
     }
   }
   if (!selected) {
-    // fallback на sherlock
     selected = {
       id: 'sherlock',
       name: 'Sherlock Project Engine',
@@ -531,7 +541,9 @@ function openToolPage(toolId) {
 
   const input = document.getElementById('tvTargetInput');
   input.value = '';
-  if (selected.scan_type === 'telegram' || selected.id === 'tg_inspector') {
+  if (selected.scan_type === 'attribution' || selected.id === 'sockpuppet_attribution') {
+    input.placeholder = `Telegram юзернейм или ID вирта (например: @alex_temp)`;
+  } else if (selected.scan_type === 'telegram' || selected.id === 'tg_inspector') {
     input.placeholder = `Telegram username или ID (например: durov)`;
   } else if (selected.input === 'username' || selected.scan_type === 'username') {
     input.placeholder = `Никнейм для Sherlock (например: wertag20)`;
@@ -558,6 +570,109 @@ function openToolPage(toolId) {
   if (guide.usage) cmdsDiv.appendChild(createCmdBox('4. Пример запуска', guide.usage));
 
   showView('toolView');
+}
+
+// ЗАПУСК АТРИБУЦИИ ВИРТОВ
+async function runAttributionScanDirect() {
+  const target = document.getElementById('attrTargetInput').value.trim();
+  const text_sample = document.getElementById('attrTextSample').value.trim();
+  const loader = document.getElementById('attrLoader');
+  const outBox = document.getElementById('attrResultBox');
+
+  if (!target) {
+    alert('Введите юзернейм или ID вирта');
+    return;
+  }
+
+  loader.style.display = 'block';
+  outBox.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/scan/attribution', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target, text_sample, caller: currentSessionUser })
+    });
+    const data = await res.json();
+    loader.style.display = 'none';
+
+    renderAttributionOutput(data, outBox);
+  } catch (err) {
+    loader.style.display = 'none';
+    outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${err.message}</div>`;
+  }
+}
+
+function renderAttributionOutput(data, container) {
+  const tg = data.tg_data || {};
+  const roots = data.discovered_roots || [];
+  const cand = data.candidate_roots || [];
+  const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
+
+  let rootsHtml = '';
+  if (roots.length > 0) {
+    rootsHtml = roots.map(r => `
+      <div class="profile-card" style="margin-bottom:4px;">
+        <div class="profile-left">
+          <i class="fa-solid fa-link profile-icon"></i>
+          <div>
+            <div class="profile-name">@${r.root_handle}</div>
+            <span class="profile-tag">✅ ${r.platform}</span>
+          </div>
+        </div>
+        <button onclick="openExternalUrl('${r.url}')" class="btn btn-secondary" style="padding:3px 7px; font-size:9px;">🔗 Профиль</button>
+      </div>
+    `).join('');
+  } else {
+    rootsHtml = `<div style="font-size:11px; color:var(--text-muted);">Кандидаты на основу: ${cand.map(c=>'@'+c).join(', ') || 'Паттерны не выявлены'}</div>`;
+  }
+
+  let html = `
+    <div class="hacker-terminal">
+      <div class="term-topbar">
+        <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+        <span>ATTRIBUTION-ENGINE@STATION:~# ./sockpuppet-recon @${data.target}</span>
+      </div>
+      <div class="term-log-content">[${nowStr}] [TARGET] INVESTIGATING SOCKPUPPET: @${data.target}
+[${nowStr}] [TG] RESOLVED NAME: "${tg.title}" | ID AGE: ${tg.age_verdict}
+[${nowStr}] [MUTATIONS] ROOT PATTERN: "${data.base_stem}" -> PROBING CANDIDATES: ${cand.join(', ')}
+[${nowStr}] [CORRELATION] DISCOVERED ${roots.length} DIGITAL ROOTS IN REPOSITORIES.</div>
+    </div>
+
+    <div style="background:#090d16; border:1px solid #1e293b; border-radius:10px; padding:12px; margin-bottom:10px; display:flex; gap:12px; align-items:center;">
+      <img style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--purple);" src="${tg.photo_url || 'https://telegram.org/img/t_logo.png'}" alt="Avatar">
+      <div style="flex:1;">
+        <div style="font-weight:700; color:#fff; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+          <span>${tg.title || data.target}</span>
+          <span class="badge badge-api">SOCKPUPPET</span>
+        </div>
+        <div style="color:var(--cyan); font-size:11px;">@${tg.username || data.target}</div>
+        <div style="color:var(--text-muted); font-size:10px; margin-top:2px;"><b>Возраст:</b> ${tg.age_verdict}</div>
+      </div>
+    </div>
+
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-network-wired" style="color:var(--primary);"></i> Обнаруженные родительские аккаунты (Основа)</div>
+      ${rootsHtml}
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <div style="font-size:10px; font-weight:700; color:var(--cyan); margin-bottom:4px; text-transform:uppercase;">
+        🔍 Реверс-поиск аватара на личные профили:
+      </div>
+      <div class="btn-group">
+        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс</button>
+        <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
+      </div>
+    </div>
+
+    <div class="ai-dossier-card">
+      <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Заключение Атрибуции & План проверки</div>
+      <div class="ai-dossier-text">${formatMarkdownText(data.ai_dossier)}</div>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
 
 // УПРАВЛЕНИЕ АККАУНТАМИ
@@ -748,7 +863,6 @@ async function processDirectPhoto(input) {
   reader.readAsDataURL(file);
 }
 
-// КОМПАКТНАЯ И ПОНЯТНАЯ КАРТОЧКА ФОТО МЕТАДАННЫХ
 function renderPhotoSpecificCard(data, container) {
   const exif = data.exif || {};
   let hasGps = !!exif.gps;
@@ -804,15 +918,6 @@ function renderPhotoSpecificCard(data, container) {
     </div>
   `;
 
-  if (data.vision_ai_report && data.vision_ai_report.length > 50 && !data.vision_ai_report.includes('Экспертиза изображения завершена:')) {
-    html += `
-      <div class="ai-dossier-card">
-        <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> GeoINT Заключение</div>
-        <div class="ai-dossier-text">${formatMarkdownText(data.vision_ai_report)}</div>
-      </div>
-    `;
-  }
-
   container.innerHTML = html;
 }
 
@@ -835,7 +940,11 @@ async function runCurrentToolScan() {
   let endpoint = '/api/scan/username';
   let cleanTarget = rawTarget;
 
-  if (activeTool.scan_type === 'telegram' || activeTool.id === 'tg_inspector') {
+  if (activeTool.scan_type === 'attribution' || activeTool.id === 'sockpuppet_attribution') {
+    endpoint = '/api/scan/attribution';
+    cleanTarget = rawTarget.replace(/^@+/, '');
+    loaderText.innerText = 'Корреляция мутаций псевдонимов и поиск основы...';
+  } else if (activeTool.scan_type === 'telegram' || activeTool.id === 'tg_inspector') {
     endpoint = '/api/scan/telegram';
     cleanTarget = rawTarget.replace(/^@+/, '');
     loaderText.innerText = 'Опрос Telegram Gateway и извлечение профиля...';
@@ -866,7 +975,11 @@ async function runCurrentToolScan() {
     loader.style.display = 'none';
     outBox.style.display = 'block';
 
-    renderToolSpecificOutput(data, cleanTarget);
+    if (data.type === 'attribution') {
+      renderAttributionOutput(data, outBox);
+    } else {
+      renderToolSpecificOutput(data, cleanTarget);
+    }
   } catch (err) {
     loader.style.display = 'none';
     outBox.style.display = 'block';
@@ -1155,41 +1268,6 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
   }
 
   outBox.innerHTML = html;
-}
-
-// ПРЯМОЙ ЗАПУСК AI ДОСЬЕ
-async function runAiDossierDirect() {
-  const target = document.getElementById('aiSearchTarget').value.trim();
-  const loader = document.getElementById('aiLoader');
-  const resultDiv = document.getElementById('aiDossierResultDirect');
-
-  if (!target) {
-    alert('Введите цель для анализа');
-    return;
-  }
-
-  loader.style.display = 'block';
-  resultDiv.innerHTML = '';
-
-  try {
-    const res = await fetch('/api/ai/deduce', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target: target, tool: 'Sherlock OSINT' })
-    });
-    const data = await res.json();
-    loader.style.display = 'none';
-
-    resultDiv.innerHTML = `
-      <div class="ai-dossier-card">
-        <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> Досье по цели: ${target}</div>
-        <div class="ai-dossier-text">${formatMarkdownText(data.dossier)}</div>
-      </div>
-    `;
-  } catch (err) {
-    loader.style.display = 'none';
-    resultDiv.innerHTML = `<div style="color:var(--danger); font-size:12px;">Ошибка: ${err.message}</div>`;
-  }
 }
 
 function createCmdBox(label, cmd) {

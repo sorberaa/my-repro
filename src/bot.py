@@ -347,6 +347,60 @@ async def cmd_tg(message: types.Message):
         await status_msg.edit_text(f"❌ Ошибка Telegram: {str(e)}")
 
 
+@dp.message(Command("attribution"))
+@dp.message(Command("attr"))
+async def cmd_attribution(message: types.Message):
+    args = message.text.split(maxsplit=2)
+    if len(args) < 2:
+        await message.answer("⚠️ Формат: <code>/attribution @sock_handle [текст переписки]</code>", parse_mode="HTML")
+        return
+
+    target = args[1].strip()
+    text_sample = args[2].strip() if len(args) > 2 else ""
+    status_msg = await message.answer(f"🕵️ <i>Атрибуция вирта <b>{target}</b> и поиск основы...</i>", parse_mode="HTML")
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(f"{LOCAL_API}/api/scan/attribution", json={"target": target, "text_sample": text_sample, "caller": f"tg_{message.from_user.id}"})
+            data = resp.json()
+
+        tg = data.get("tg_data", {})
+        roots = data.get("discovered_roots", [])
+        cand = data.get("candidate_roots", [])
+
+        res_lines = [
+            f"🕵️ <b>ДЕТЕКТОР ВИРТОВ & АТРИБУЦИЯ:</b> <code>@{data.get('target')}</code>\n",
+            f"👤 <b>Имя в TG:</b> {tg.get('title') or '—'}",
+            f"🕒 <b>Возраст ID:</b> {tg.get('age_verdict') or '—'}",
+            f"🔗 <b>Паттерн корня:</b> <code>{data.get('base_stem')}</code>\n"
+        ]
+
+        if roots:
+            res_lines.append("🎯 <b>НАЙДЕННЫЕ СВЯЗИ ОСНОВЫ:</b>")
+            for r in roots:
+                res_lines.append(f"• @{r['root_handle']} ({r['platform']}): <a href='{r['url']}'>Открыть</a>")
+            res_lines.append("")
+        elif cand:
+            res_lines.append(f"🔍 <b>Кандидаты на основу:</b> {', '.join(['@' + c for c in cand])}\n")
+
+        dossier = data.get("ai_dossier", "")
+        if dossier:
+            res_lines.append(f"🧠 <b>Заключение аналитика:</b>\n{dossier[:1200]}")
+
+        buttons = [
+            [InlineKeyboardButton(text="⚡ Открыть в WebApp", web_app=WebAppInfo(url=DOMAIN))]
+        ]
+
+        await status_msg.edit_text(
+            "\n".join(res_lines),
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Ошибка атрибуции: {str(e)}")
+
+
 @dp.message(Command("ip"))
 async def cmd_ip(message: types.Message):
     args = message.text.split(maxsplit=1)

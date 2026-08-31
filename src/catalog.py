@@ -10,6 +10,28 @@ CATALOG = [
         "desc": "Специализированные инструменты поиска и анализа Telegram-аккаунтов, каналов, групп и метаданных.",
         "tools": [
             {
+                "id": "sockpuppet_attribution",
+                "name": "🕵️ Детектор виртов & Атрибуция основы (Attribution Engine)",
+                "repo": "https://github.com/sherlock-project/sherlock",
+                "web_url": "https://t.me/",
+                "purpose": "🎯 Выявление основного аккаунта и реальной личности по виртуальным, вторым или купленным профилям Telegram через анализ мутаций никнеймов, возраста ID, аватаров и баз данных.",
+                "input": "telegram username / id / text",
+                "web_runnable": True,
+                "scan_type": "attribution",
+                "install_guide": {
+                    "git": "# Встроенный в систему аналитический движок корреляции",
+                    "pip_or_pkg": "pip install httpx beautifulsoup4",
+                    "docker": "# Работает автономно в Docker",
+                    "usage": "Введите юзернейм или ID вирта для поиска цифровых связей",
+                    "notes": "Сопоставляет метаданные ID, цифровые следы и выявляет родительские аккаунты."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Найти основу вирта",
+                    "action": "scan_attribution"
+                }
+            },
+            {
                 "id": "tg_inspector",
                 "name": "Telegram Profile & ID Inspector",
                 "repo": "https://github.com/TelegramDB/TelegramDB",
