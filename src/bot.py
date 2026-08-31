@@ -61,6 +61,7 @@ async def cmd_start(message: types.Message):
         "<b>OSINT CYBER HUB</b>"
         f"{admin_text}"
     )
+    await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
 
 
 @dp.message(Command("id"))
@@ -78,13 +79,18 @@ async def cmd_users(message: types.Message):
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{LOCAL_API}/api/admin/users")
+            resp = await client.get(f"{LOCAL_API}/api/admin/users", headers={"X-Telegram-User-Id": str(message.from_user.id)})
             users = resp.json().get("users", [])
+
+        if not users:
+            await message.answer("👥 Список пользователей пуст.")
+            return
 
         lines = ["👥 <b>Пользователи OSINT Hub:</b>\n"]
         for u in users:
             st = "🟢" if u.get("status") == "active" else "🔴"
-            lines.append(f"{st} <b>{u.get('username')}</b> [{u.get('role')}] | Поисков: {u.get('total_scans')}")
+            tg_info = f"@{u.get('tg_username')}" if u.get("tg_username") else f"ID:{u.get('tg_id')}"
+            lines.append(f"{st} <b>{u.get('nickname') or u.get('username')}</b> ({tg_info}) | IP: <code>{u.get('last_ip')}</code> | Поисков: {u.get('total_scans')}")
 
         await message.answer("\n".join(lines), parse_mode="HTML")
     except Exception as e:
@@ -98,18 +104,19 @@ async def cmd_adduser(message: types.Message):
         return
 
     parts = message.text.split()
-    if len(parts) < 3:
-        await message.answer("⚠️ Формат: <code>/adduser login password [role]</code>", parse_mode="HTML")
+    if len(parts) < 2:
+        await message.answer("⚠️ Формат: <code>/adduser позывной [пароль] [роль]</code>", parse_mode="HTML")
         return
 
     username = parts[1]
-    password = parts[2]
+    password = parts[2] if len(parts) > 2 else "12345"
     role = parts[3] if len(parts) > 3 else "user"
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(
                 f"{LOCAL_API}/api/admin/users/create",
+                headers={"X-Telegram-User-Id": str(message.from_user.id)},
                 json={"username": username, "password": password, "role": role}
             )
             data = resp.json()
@@ -130,7 +137,7 @@ async def cmd_banuser(message: types.Message):
 
     parts = message.text.split()
     if len(parts) < 2:
-        await message.answer("⚠️ Формат: <code>/banuser login</code>", parse_mode="HTML")
+        await message.answer("⚠️ Формат: <code>/banuser позывной_или_tg_id</code>", parse_mode="HTML")
         return
 
     username = parts[1]
@@ -138,6 +145,7 @@ async def cmd_banuser(message: types.Message):
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(
                 f"{LOCAL_API}/api/admin/users/toggle_status",
+                headers={"X-Telegram-User-Id": str(message.from_user.id)},
                 json={"username": username}
             )
             data = resp.json()
@@ -158,7 +166,7 @@ async def cmd_visits(message: types.Message):
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get(f"{LOCAL_API}/api/admin/visitors?limit=10")
+            resp = await client.get(f"{LOCAL_API}/api/admin/visitors?limit=10", headers={"X-Telegram-User-Id": str(message.from_user.id)})
             visitors = resp.json().get("visitors", [])
 
         if not visitors:
@@ -168,7 +176,8 @@ async def cmd_visits(message: types.Message):
         lines = ["🌐 <b>Последние 10 визитов:</b>\n"]
         for v in visitors:
             ts = v.get("ts", "")[:19].replace("T", " ")
-            lines.append(f"• <code>{ts}</code> | <b>{v.get('ip')}</b> | {v.get('country')} ({v.get('city')})")
+            user_lbl = v.get("user") or v.get("tg_username") or v.get("tg_id") or "Гость"
+            lines.append(f"• <code>{ts}</code> | <b>{user_lbl}</b> | IP: <code>{v.get('ip')}</code> | {v.get('country')} ({v.get('city')})")
 
         await message.answer("\n".join(lines), parse_mode="HTML")
     except Exception as e:
@@ -182,8 +191,9 @@ async def fallback_any_message(message: types.Message):
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    print("🚀 Telegram Bot запущен в режиме WebApp Launcher...")
+    print("🚀 Telegram Bot запущен и слушает команды...")
     await dp.start_polling(bot)
 
 
+if __name__ == "__main__":
     asyncio.run(main())
