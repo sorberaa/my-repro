@@ -736,16 +736,6 @@ async def scan_photo_endpoint(request: Request, file: Optional[UploadFile] = Fil
     )
 
     vision_ai_report = await run_gemini_prompt(prompt, image_bytes=image_bytes, mime_type=mime_type)
-    if not vision_ai_report:
-        gps = exif_result.get("gps")
-        gps_txt = f"Координаты: {gps['latitude']}, {gps['longitude']}" if gps else "GPS метки отсутствуют в EXIF."
-        vision_ai_report = (
-            f"📸 **Экспертиза изображения завершена:**\n\n"
-            f"• **Метаданные камеры:** {exif_result.get('camera_make') or '—'} {exif_result.get('camera_model') or ''}\n"
-            f"• **Дата и время:** {exif_result.get('date_time') or 'Скрыто'}\n"
-            f"• **GPS статус:** {gps_txt}\n\n"
-            "💡 **Рекомендация:** Для определения точной геолокации используйте обратный поиск по картинкам в Google Lens и Яндекс Картинках."
-        )
 
     return {
         "ok": True,

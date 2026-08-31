@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OSINT Cyber Hub · Sherlock Project Engine</title>
+<title>OSINT Cyber Hub · Sherlock & Recon Center</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
 :root {
   --bg: #05070a;
   --card-bg: #0b0f17;
-  --card-border: #162235;
+  --card-border: #182234;
   --primary: #00ff66;
-  --primary-glow: rgba(0, 255, 102, 0.22);
+  --primary-glow: rgba(0, 255, 102, 0.25);
   --cyan: #00e5ff;
-  --cyan-glow: rgba(0, 229, 255, 0.18);
+  --cyan-glow: rgba(0, 229, 255, 0.2);
   --purple: #a855f7;
   --danger: #ff3366;
   --text: #e2e8f0;
   --text-muted: #8492a6;
-  --term-bg: #03060a;
-  --term-border: #00ff6644;
+  --term-bg: #020408;
+  --term-border: #00ff6633;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -39,7 +39,14 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 .view-page { display:none; }
 .view-page.active { display:block; }
 
-/* Поиск */
+/* Главный быстрый поиск на первой странице */
+.quick-recon-box { background:linear-gradient(135deg, #09121f, #0d1a2d); border:1px solid #1e3557; border-radius:12px; padding:14px; margin-bottom:14px; box-shadow:0 4px 20px rgba(0,0,0,0.5); }
+.quick-title { font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:10px; text-transform:uppercase; }
+.quick-input-group { display:flex; gap:6px; }
+.quick-input { flex:1; padding:11px 13px; background:#04070c; border:1px solid #1e293b; border-radius:8px; color:#fff; font-size:13px; outline:none; transition:border .2s; }
+.quick-input:focus { border-color:var(--primary); }
+
+/* Поиск по каталогу */
 .search-box { position:relative; margin-bottom:10px; }
 .search-box i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px; }
 .search-box input { width:100%; padding:11px 14px 11px 38px; background:#080c14; border:1px solid var(--card-border); border-radius:10px; color:#fff; font-size:13px; outline:none; transition:all .2s; }
@@ -49,7 +56,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 .filter-chips { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
 .filter-chips::-webkit-scrollbar { display:none; }
 .chip { padding:6px 11px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:16px; font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap; cursor:pointer; }
-.chip.active, .chip:hover { background:rgba(0,255,102,0.1); border-color:var(--primary); color:var(--primary); }
+.chip.active, .chip:hover { background:rgba(0,255,102,0.12); border-color:var(--primary); color:var(--primary); }
 
 /* Каталог */
 .group-title { font-size:13px; font-weight:800; color:var(--cyan); margin:14px 0 6px; display:flex; align-items:center; gap:6px; text-transform:uppercase; }
@@ -71,6 +78,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 .btn-group { display:flex; flex-wrap:wrap; gap:6px; }
 .btn { padding:7px 12px; font-size:11px; font-weight:700; border-radius:7px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; text-decoration:none; }
 .btn-primary { background:var(--primary); color:#000; }
+.btn-primary:hover { filter:brightness(1.1); }
 .btn-secondary { background:#111927; color:var(--text); border:1px solid #1e293b; }
 .btn-purple { background:linear-gradient(135deg, #7c3aed, #9333ea); color:#fff; }
 .btn-danger { background:rgba(255,51,102,0.15); color:var(--danger); border:1px solid var(--danger); }
@@ -89,25 +97,29 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
 /* Загрузка фото */
 .upload-dropzone { border:2px dashed #1e293b; border-radius:10px; padding:18px; text-align:center; cursor:pointer; background:#04070c; margin-bottom:10px; }
-.upload-preview { max-width:100%; max-height:200px; border-radius:8px; margin:8px auto; display:none; }
+.upload-dropzone:hover { border-color:var(--cyan); }
+.upload-preview { max-width:100%; max-height:220px; border-radius:8px; margin:8px auto; display:none; object-fit:contain; }
 
 /* ХАКЕРСКАЯ КОНСОЛЬ В СТИЛЕ КИБЕРПАНК */
-.hacker-terminal { background:var(--term-bg); border:1px solid var(--term-border); border-radius:9px; padding:12px; margin-bottom:12px; box-shadow:0 0 15px rgba(0,255,102,0.08); position:relative; overflow:hidden; }
+.hacker-terminal { background:var(--term-bg); border:1px solid var(--term-border); border-radius:9px; padding:12px; margin-bottom:12px; box-shadow:0 0 15px rgba(0,255,102,0.06); position:relative; overflow:hidden; }
 .term-topbar { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #14281c; padding-bottom:6px; margin-bottom:8px; font-size:11px; font-family:'Courier New', monospace; font-weight:700; color:var(--primary); }
 .term-dots { display:flex; gap:4px; }
 .term-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
 .term-dot-red { background:#ff3366; }
 .term-dot-yellow { background:#ffaa00; }
 .term-dot-green { background:#00ff66; box-shadow:0 0 6px #00ff66; }
-.term-log-content { font-family:'Courier New', Consolas, monospace; font-size:11px; line-height:1.45; color:#38ef7d; word-break:break-all; white-space:pre-wrap; max-height:220px; overflow-y:auto; scrollbar-width:thin; }
+.term-log-content { font-family:'Courier New', Consolas, monospace; font-size:11px; line-height:1.45; color:#38ef7d; word-break:break-all; white-space:pre-wrap; max-height:200px; overflow-y:auto; scrollbar-width:thin; }
 
-/* БЛОК ДЕДУКЦИИ И ДАННЫХ */
+/* БЛОК ДАННЫХ */
 .custom-card { background:linear-gradient(135deg, #091322, #0d1e34); border:1px solid #1e3a5f; border-radius:10px; padding:12px; margin-bottom:12px; }
 .custom-card-title { font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:10px; text-transform:uppercase; }
 .custom-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .custom-item { background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:7px; border:1px solid rgba(0,229,255,0.15); }
 .custom-label { font-size:10px; font-weight:700; color:var(--cyan); text-transform:uppercase; margin-bottom:2px; }
 .custom-val { font-size:12px; font-weight:700; color:#fff; word-break:break-all; }
+
+/* Информационная плашка */
+.info-banner { background:#0a1322; border:1px solid #1a2f4c; border-radius:8px; padding:10px 12px; font-size:11px; color:#cbd5e1; line-height:1.5; margin-bottom:10px; }
 
 /* AI Досье Блок */
 .ai-dossier-card { background:#090e18; border:1px solid #1a2942; border-radius:10px; padding:12px; margin-bottom:12px; }
@@ -123,12 +135,12 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 .profiles-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:6px; margin-top:8px; }
 .profile-card { background:#080c14; border:1px solid #162235; border-radius:8px; padding:9px; display:flex; align-items:center; justify-content:space-between; }
 .profile-left { display:flex; align-items:center; gap:8px; }
-.profile-icon { font-size:16px; color:var(--cyan); width:18px; text-align:center; }
+.profile-icon { font-size:15px; color:var(--cyan); width:18px; text-align:center; }
 .profile-name { font-size:12px; font-weight:700; color:#fff; }
 .profile-tag { font-size:9px; color:var(--primary); }
 
-.loader { display:none; text-align:center; padding:12px 0; }
-.spinner { border:2px solid rgba(255,255,255,0.1); border-top:2px solid var(--primary); border-radius:50%; width:20px; height:20px; animation:spin 0.8s linear infinite; margin:0 auto 6px; }
+.loader { display:none; text-align:center; padding:14px 0; }
+.spinner { border:2px solid rgba(255,255,255,0.1); border-top:2px solid var(--primary); border-radius:50%; width:22px; height:22px; animation:spin 0.8s linear infinite; margin:0 auto 8px; }
 @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
 
 .code-wrap { position:relative; background:#04060a; border:1px solid #162235; border-radius:7px; padding:8px 10px; font-family:'Courier New', monospace; font-size:11px; color:var(--primary); word-break:break-all; white-space:pre-wrap; }
@@ -157,15 +169,27 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     </div>
   </div>
 
-  <!-- ВЬЮ 1: ГЛАВНЫЙ КАТАЛОГ -->
+  <!-- ВЬЮ 1: ГЛАВНЫЙ КАТАЛОГ & БЫСТРЫЙ ПОИСК -->
   <div class="view-page active" id="catalogView">
+    
+    <!-- БЫСТРЫЙ СКАНЕР ПРЯМО НА ГЛАВНОЙ -->
+    <div class="quick-recon-box">
+      <div class="quick-title">
+        <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Экспресс-поиск по 480+ базам Sherlock
+      </div>
+      <div class="quick-input-group">
+        <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм или цель (например: wertag20)..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
+        <button class="btn btn-primary" onclick="runMainQuickScan()"><i class="fa-solid fa-bolt"></i> Найти</button>
+      </div>
+    </div>
+
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="searchInput" placeholder="Поиск по базам Sherlock, никнеймам, Telegram, доменам..." oninput="renderCatalog()">
+      <input type="text" id="searchInput" placeholder="Фильтр программ: Telegram, Subfinder, EXIF, GeoIP, GHunt..." oninput="renderCatalog()">
     </div>
 
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)">Все базы (Sherlock Engine)</div>
+      <div class="chip active" onclick="setFilter('all', this)">Все утилиты</div>
       <div class="chip" onclick="setFilter('username_osint', this)">🔍 Sherlock Engine</div>
       <div class="chip" onclick="setFilter('telegram_osint', this)">✈️ Telegram Разведка</div>
       <div class="chip" onclick="setFilter('social_google_instagram', this)">📱 Google & Instagram</div>
@@ -197,7 +221,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
         <div class="upload-dropzone" onclick="document.getElementById('tvFileInput').click()">
           <i class="fa-solid fa-cloud-arrow-up" style="font-size:28px; color:var(--cyan); margin-bottom:6px;"></i>
           <div style="font-weight:700; color:#fff; font-size:12px;">Выбрать фото для экспертизы</div>
-          <div style="font-size:11px; color:var(--text-muted);">EXIF, GPS, камера и AI Vision анализ местности</div>
+          <div style="font-size:11px; color:var(--text-muted);">EXIF, GPS, камера и поиск по картинкам</div>
           <input type="file" id="tvFileInput" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
         </div>
         <img id="tvPhotoPreview" class="upload-preview">
@@ -222,17 +246,18 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     </div>
   </div>
 
-  <!-- ВЬЮ 3: ФОТО & VISION AI -->
+  <!-- ВЬЮ 3: ФОТО & ЭКСПЕРТИЗА МЕТАДАННЫХ -->
   <div class="view-page" id="photoView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
     </div>
 
     <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--cyan);"><i class="fa-solid fa-camera"></i> Экспертиза изображений (GeoINT + EXIF)</div>
+      <div class="workspace-title" style="color:var(--cyan);"><i class="fa-solid fa-camera"></i> Экспертиза снимка (EXIF, GPS, Камера)</div>
       <div class="upload-dropzone" onclick="document.getElementById('directPhotoInput').click()">
         <i class="fa-solid fa-image" style="font-size:32px; color:var(--cyan); margin-bottom:6px;"></i>
-        <div style="font-weight:700; color:#fff; font-size:12px;">Загрузить фото для гео-анализа</div>
+        <div style="font-weight:700; color:#fff; font-size:12px;">Загрузить фото для анализа метаданных</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">JPG, PNG, WEBP, HEIC</div>
         <input type="file" id="directPhotoInput" accept="image/*" style="display:none;" onchange="processDirectPhoto(this)">
       </div>
 
@@ -240,7 +265,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 
       <div class="loader" id="photoLoader">
         <div class="spinner" style="border-top-color:var(--cyan);"></div>
-        <span style="font-size:11px; color:var(--cyan);">Распознавание ориентиров, координат и теней...</span>
+        <span style="font-size:11px; color:var(--cyan);">Чтение тегов EXIF и геолокации...</span>
       </div>
 
       <div id="photoResultBox"></div>
@@ -347,7 +372,7 @@ if (tg) {
   tg.ready();
 }
 
-// УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ВНЕШНИХ ССЫЛОК (ДЛЯ РАБОТЫ В TELEGRAM WEBAPP И БРАУЗЕРЕ)
+// УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ВНЕШНИХ ССЫЛОК (TELEGRAM WEBAPP + BROWSER)
 function openExternalUrl(url) {
   if (!url) return;
   try {
@@ -450,6 +475,18 @@ function renderCatalog() {
   }
 }
 
+// БЫСТРЫЙ ЗАПУСК С ГЛАВНОЙ СТРАНИЦЫ
+function runMainQuickScan() {
+  const target = document.getElementById('mainQuickTargetInput').value.trim();
+  if (!target) {
+    alert('Введите никнейм или цель');
+    return;
+  }
+  openToolPage('sherlock');
+  document.getElementById('tvTargetInput').value = target;
+  runCurrentToolScan();
+}
+
 function openToolPage(toolId) {
   let selected = null;
   for (let g of FULL_CATALOG) {
@@ -457,7 +494,16 @@ function openToolPage(toolId) {
       if (t.id === toolId) { selected = t; break; }
     }
   }
-  if (!selected) return;
+  if (!selected) {
+    // fallback на sherlock
+    selected = {
+      id: 'sherlock',
+      name: 'Sherlock Project Engine',
+      purpose: 'Поиск открытых аккаунтов по 480+ официальным базам данных.',
+      scan_type: 'username',
+      input: 'username'
+    };
+  }
 
   activeTool = selected;
   document.getElementById('tvTitle').innerHTML = `<i class="fa-solid fa-cube" style="color:var(--primary);"></i> ${selected.name}`;
@@ -633,7 +679,7 @@ async function loadAdminVisitors() {
   }
 }
 
-// ОБРАБОТКА ЗАГРУЗКИ ФОТО
+// ОБРАБОТКА ФОТО И ВЫВОД МЕТАДАННЫХ
 async function handlePhotoUpload(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
@@ -702,45 +748,63 @@ async function processDirectPhoto(input) {
   reader.readAsDataURL(file);
 }
 
+// КОМПАКТНАЯ И ПОНЯТНАЯ КАРТОЧКА ФОТО МЕТАДАННЫХ
 function renderPhotoSpecificCard(data, container) {
   const exif = data.exif || {};
-  let gpsHtml = '<span style="color:var(--text-muted); font-size:11px;">Метки отсутствуют</span>';
+  let hasGps = !!exif.gps;
+  let hasCamera = !!(exif.camera_make || exif.camera_model);
+  let hasDate = !!exif.date_time;
 
-  if (exif.gps) {
-    gpsHtml = `
-      <span style="color:var(--primary); font-weight:700;">📍 ${exif.gps.latitude}, ${exif.gps.longitude}</span>
-      <button onclick="openExternalUrl('${exif.google_maps_url}')" class="btn btn-primary" style="padding:2px 6px; font-size:9px; margin-left:6px;">Google Maps</button>
+  let html = '';
+
+  if (hasCamera || hasDate || hasGps) {
+    html += `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Найденные метаданные (EXIF)</div>
+        <div class="custom-grid">
+          <div class="custom-item">
+            <div class="custom-label">📷 Камера</div>
+            <div class="custom-val">${exif.camera_make || ''} ${exif.camera_model || '—'}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🕒 Дата съемки</div>
+            <div class="custom-val">${exif.date_time || 'Скрыта'}</div>
+          </div>
+          <div class="custom-item" style="grid-column: span 2;">
+            <div class="custom-label">📍 Геолокация (GPS)</div>
+            <div class="custom-val">
+              ${hasGps ? `
+                <span style="color:var(--primary);">📍 ${exif.gps.latitude}, ${exif.gps.longitude}</span>
+                <button onclick="openExternalUrl('${exif.google_maps_url}')" class="btn btn-primary" style="padding:2px 7px; font-size:9px; margin-left:6px;">Google Maps</button>
+              ` : '<span style="color:var(--text-muted);">Метки GPS отсутствуют в снимке</span>'}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="info-banner">
+        <b>ℹ️ Метаданные (EXIF) очищены:</b><br>
+        В этом изображении отсутствуют встроенные теги камеры и координаты. Мессенджеры (Telegram, WhatsApp, VK) и соцсети автоматически удаляют EXIF при сжатии фото.
+      </div>
     `;
   }
 
-  let html = `
-    <div class="custom-card">
-      <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Метаданные снимка (EXIF)</div>
-      <div class="custom-grid">
-        <div class="custom-item">
-          <div class="custom-label">📷 Камера</div>
-          <div class="custom-val">${exif.camera_make || '—'} ${exif.camera_model || ''}</div>
-        </div>
-        <div class="custom-item">
-          <div class="custom-label">🕒 Дата съемки</div>
-          <div class="custom-val">${exif.date_time || 'Скрыта'}</div>
-        </div>
-        <div class="custom-item" style="grid-column: span 2;">
-          <div class="custom-label">📍 GPS Координаты</div>
-          <div class="custom-val">${gpsHtml}</div>
-        </div>
+  html += `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px; font-weight:700; color:var(--cyan); margin-bottom:6px; text-transform:uppercase;">
+        🔍 Обратный поиск оригинала в поисковиках:
       </div>
-    </div>
-
-    <div style="margin-bottom:10px;">
       <div class="btn-group">
         <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс Картинки</button>
         <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
+        <button onclick="openExternalUrl('https://tineye.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> TinEye</button>
       </div>
     </div>
   `;
 
-  if (data.vision_ai_report) {
+  if (data.vision_ai_report && data.vision_ai_report.length > 50 && !data.vision_ai_report.includes('Экспертиза изображения завершена:')) {
     html += `
       <div class="ai-dossier-card">
         <div class="ai-dossier-title"><i class="fa-solid fa-brain"></i> GeoINT Заключение</div>
@@ -752,7 +816,7 @@ function renderPhotoSpecificCard(data, container) {
   container.innerHTML = html;
 }
 
-// ЗАПУСК СКАНИРОВАНИЯ С ТОЧНОЙ МАРШРУТИЗАЦИЕЙ
+// ЗАПУСК СКАНИРОВАНИЯ
 async function runCurrentToolScan() {
   if (!activeTool) return;
   const rawTarget = document.getElementById('tvTargetInput').value.trim();
@@ -771,7 +835,6 @@ async function runCurrentToolScan() {
   let endpoint = '/api/scan/username';
   let cleanTarget = rawTarget;
 
-  // 1. Точная маршрутизация в зависимости от открытого инструмента
   if (activeTool.scan_type === 'telegram' || activeTool.id === 'tg_inspector') {
     endpoint = '/api/scan/telegram';
     cleanTarget = rawTarget.replace(/^@+/, '');
@@ -787,9 +850,9 @@ async function runCurrentToolScan() {
     endpoint = '/api/scan/ip';
     loaderText.innerText = 'Определение геопозиции IP и провайдера...';
   } else {
-    // ДЛЯ SHERLOCK, MAIGRET, WHATSMYNAME И ВСЕХ ЮЗЕРНЕЙМ СКАНЕРОВ:
+    // ДЛЯ SHERLOCK И ВСЕХ ПОИСКОВИКОВ НИКНЕЙМОВ:
     endpoint = '/api/scan/username';
-    cleanTarget = rawTarget.replace(/^@+/, ''); // Убираем @ если пользователь ввел @юзернейм
+    cleanTarget = rawTarget.replace(/^@+/, '');
     loaderText.innerText = 'Опрос официальных баз Sherlock Project...';
   }
 
@@ -811,7 +874,7 @@ async function runCurrentToolScan() {
   }
 }
 
-// СПЕЦИАЛИЗИРОВАННЫЙ, ЛАКОНИЧНЫЙ ВЫВОД ПОД КАЖДЫЙ ИНСТРУМЕНТ
+// ПОНЯТНЫЙ, КРАСИВЫЙ И УДОБНЫЙ ВЫВОД РЕЗУЛЬТАТОВ
 function renderToolSpecificOutput(data, target) {
   const outBox = document.getElementById('tvOutputBox');
   const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
@@ -845,7 +908,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
 
       <div class="custom-card">
         <div class="custom-card-title">
-          <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сводная дедукция
+          <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сводная дедукция по цели "${target}"
         </div>
         <div class="custom-grid">
           <div class="custom-item">
@@ -897,6 +960,12 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
         `;
       });
       html += '</div>';
+    } else {
+      html += `
+        <div class="info-banner" style="text-align:center; padding:14px;">
+          ❌ Прямых открытых совпадений по никнейму <b>${target}</b> не найдено.
+        </div>
+      `;
     }
 
   // 2. ТИП: TELEGRAM (Telegram Inspector)
