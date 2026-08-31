@@ -161,8 +161,11 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       <i class="fa-solid fa-terminal"></i> OSINT Cyber Hub
     </div>
     <div class="nav-actions">
-      <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="openAdminPanel()">
-        <i class="fa-solid fa-user-shield"></i> <span id="currentUsernameSpan">Админ</span>
+      <button class="btn btn-primary" id="registerBtn" onclick="openOnboardingModal()" style="display:none; padding:6px 12px; font-size:11px;">
+        <i class="fa-solid fa-user-plus"></i> Создать позывной
+      </button>
+      <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="handleUserBadgeClick()">
+        <i id="userBadgeIcon" class="fa-solid fa-user"></i> <span id="currentUsernameSpan">Гость</span>
       </div>
       <button class="btn btn-purple" onclick="showView('attributionView')"><i class="fa-solid fa-user-secret"></i> Детектор виртов</button>
       <button class="btn btn-secondary" onclick="showView('photoView')"><i class="fa-solid fa-camera"></i> Фото</button>
@@ -366,17 +369,18 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     </div>
   </div>
 
-  <!-- МОДАЛКА ПЕРВОГО ВХОДА (ОНБОРДИНГ - ВЫБОР НИКНЕЙМА) -->
+  <!-- МОДАЛКА РЕГИСТРАЦИИ И УПРАВЛЕНИЯ ПОЗЫВНЫМ -->
   <div id="onboardingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:9999; backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:16px;">
-    <div style="background:linear-gradient(135deg, #091322, #0d1e34); border:1px solid var(--cyan); border-radius:14px; padding:22px; max-width:380px; width:100%; box-shadow:0 0 30px rgba(0,229,255,0.25); text-align:center;">
+    <div style="background:linear-gradient(135deg, #091322, #0d1e34); border:1px solid var(--cyan); border-radius:14px; padding:22px; max-width:380px; width:100%; box-shadow:0 0 30px rgba(0,229,255,0.25); text-align:center; position:relative;">
+      <button onclick="closeOnboardingModal()" style="position:absolute; right:12px; top:12px; background:none; border:none; color:#64748b; font-size:16px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
       <i class="fa-solid fa-user-astronaut" style="font-size:42px; color:var(--cyan); margin-bottom:12px;"></i>
-      <div style="font-size:16px; font-weight:800; color:#fff; margin-bottom:6px;">Добро пожаловать в Cyber Hub</div>
-      <div style="font-size:12px; color:#94a3b8; margin-bottom:16px; line-height:1.45;">
-        Создайте ваш постоянный позывной (никнейм) для работы с системой разведки:
+      <div style="font-size:16px; font-weight:800; color:#fff; margin-bottom:6px;" id="onboardTitle">Позывной в Cyber Hub</div>
+      <div style="font-size:12px; color:#94a3b8; margin-bottom:16px; line-height:1.45;" id="onboardDesc">
+        Придумайте ваш постоянный позывной (никнейм) для работы в системе:
       </div>
-      <input type="text" id="userOnboardNickname" class="tool-input" style="text-align:center; font-weight:700; font-size:14px; margin-bottom:14px; border-color:var(--cyan);" placeholder="Ваш никнейм...">
+      <input type="text" id="userOnboardNickname" class="tool-input" style="text-align:center; font-weight:700; font-size:14px; margin-bottom:14px; border-color:var(--cyan);" placeholder="Ваш никнейм (например: Ghost_OSINT)" onkeydown="if(event.key==='Enter') submitOnboardingNickname()">
       <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:13px;" onclick="submitOnboardingNickname()">
-        <i class="fa-solid fa-check"></i> Зарегистрироваться и войти
+        <i class="fa-solid fa-check"></i> Сохранить и войти
       </button>
     </div>
   </div>
@@ -413,6 +417,26 @@ if (tg) {
     tgUserId = String(tg.initDataUnsafe.user.id);
     currentSessionUser = tg.initDataUnsafe.user.username || ('tg_' + tgUserId);
   }
+}
+
+function openOnboardingModal() {
+  const currentNick = (currentSessionUser && currentSessionUser !== 'guest' && !currentSessionUser.startsWith('tg_') && !currentSessionUser.startsWith('browser_')) ? currentSessionUser : '';
+  document.getElementById('userOnboardNickname').value = currentNick;
+  document.getElementById('onboardingModal').style.display = 'flex';
+}
+
+function closeOnboardingModal() {
+  document.getElementById('onboardingModal').style.display = 'none';
+}
+
+function handleUserBadgeClick() {
+  if (isUserAdmin) {
+    showView('usersAdminView');
+  } else {
+    openOnboardingModal();
+  }
+}
+
 // ИНИЦИАЛИЗАЦИЯ ПОЛЬЗОВАТЕЛЯ И ОНБОРДИНГ
 async function initUserProfile() {
   let tgId = '';
@@ -469,20 +493,26 @@ async function initUserProfile() {
 
     if (data.is_admin) {
       isUserAdmin = true;
+      document.getElementById('registerBtn').style.display = 'none';
       document.getElementById('currentUserBadge').style.display = 'inline-flex';
+      document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-shield';
       document.getElementById('currentUsernameSpan').innerText = data.nickname || 'Админ';
+    } else if (data.registered) {
+      isUserAdmin = false;
+      document.getElementById('registerBtn').style.display = 'none';
+      document.getElementById('currentUserBadge').style.display = 'inline-flex';
+      document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-check';
+      document.getElementById('currentUsernameSpan').innerText = data.nickname;
+      currentSessionUser = data.nickname;
     } else {
       isUserAdmin = false;
+      document.getElementById('registerBtn').style.display = 'inline-flex';
       document.getElementById('currentUserBadge').style.display = 'none';
-    }
-
-    if (!data.registered) {
       document.getElementById('userOnboardNickname').value = data.suggested_nickname || '';
       document.getElementById('onboardingModal').style.display = 'flex';
-    } else {
-      currentSessionUser = data.nickname || 'guest';
     }
   } catch (e) {
+    document.getElementById('registerBtn').style.display = 'inline-flex';
     document.getElementById('currentUserBadge').style.display = 'none';
   }
 }
@@ -520,9 +550,14 @@ async function submitOnboardingNickname() {
     if (data.ok) {
       document.getElementById('onboardingModal').style.display = 'none';
       currentSessionUser = data.nickname || nick;
+      document.getElementById('registerBtn').style.display = 'none';
+      document.getElementById('currentUserBadge').style.display = 'inline-flex';
       if (data.is_admin) {
         isUserAdmin = true;
-        document.getElementById('currentUserBadge').style.display = 'inline-flex';
+        document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-shield';
+        document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
+      } else {
+        document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-check';
         document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
       }
     }
@@ -646,11 +681,25 @@ function renderCatalog() {
 function runMainQuickScan() {
   const target = document.getElementById('mainQuickTargetInput').value.trim();
   if (!target) {
-    alert('Введите никнейм или цель');
+    alert('Введите никнейм, телефон или цель для анализа');
     return;
   }
-  openToolPage('sherlock');
-  document.getElementById('tvTargetInput').value = target;
+
+  // Умный авто-роутинг по формату ввода
+  if (target.startsWith('+') || /^\d{10,15}$/.test(target.replace(/[\s\-\(\)]/g, ''))) {
+    openToolPage('phoneinfoga_recon');
+    document.getElementById('tvTargetInput').value = target;
+  } else if (target.startsWith('@') || target.includes('_temp') || target.includes('_alt') || target.includes('_work')) {
+    openToolPage('sockpuppet_attribution');
+    document.getElementById('tvTargetInput').value = target;
+  } else if (target.includes('.') && !target.includes(' ') && (target.endsWith('.com') || target.endsWith('.ru') || target.endsWith('.org') || target.endsWith('.io') || target.startsWith('http'))) {
+    openToolPage('subfinder');
+    document.getElementById('tvTargetInput').value = target;
+  } else {
+    openToolPage('sherlock');
+    document.getElementById('tvTargetInput').value = target;
+  }
+
   runCurrentToolScan();
 }
 
