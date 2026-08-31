@@ -56,11 +56,10 @@ def get_webapp_keyboard() -> InlineKeyboardMarkup:
 async def cmd_start(message: types.Message):
     admin_text = ""
     if is_admin(message.from_user.id):
-        admin_text = "\n\n👑 <b>Админ-панель:</b> <code>/users</code> | <code>/adduser</code> | <code>/banuser</code> | <code>/visits</code>"
+        admin_text = "\n\n👑 <b>Админ:</b> <code>/users</code> | <code>/adduser</code> | <code>/banuser</code> | <code>/visits</code>"
 
     text = (
-        "<b>OSINT CYBER HUB</b>\n"
-        "Система цифровой разведки и аналитики данных."
+        "<b>OSINT CYBER HUB</b>"
         f"{admin_text}"
     )
     await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
@@ -178,14 +177,9 @@ async def cmd_visits(message: types.Message):
         await message.answer(f"❌ Ошибка: {str(e)}")
 
 
-# ЛЮБЫЕ СООБЩЕНИЯ И ФОТО -> ПЕРЕНАПРАВЛЕНИЕ В WEBAPP
 @dp.message()
 async def fallback_any_message(message: types.Message):
-    text = (
-        "💡 <b>Поиск выполняется в WebApp!</b>\n\n"
-        "Чтобы провести разведку по никнейму, номеру телефона, фото или детекции виртов — откройте графическую веб-панель по кнопке ниже:"
-    )
-    await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
+    await message.answer("<b>OSINT CYBER HUB</b>", reply_markup=get_webapp_keyboard(), parse_mode="HTML")
 
 
 async def main():
