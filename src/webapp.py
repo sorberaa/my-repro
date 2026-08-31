@@ -40,10 +40,6 @@ VISITS_FILE = DATA_DIR / "visits.jsonl"
 USERS_FILE = DATA_DIR / "users.json"
 WMN_FILE = DATA_DIR / "wmn_sites.json"
 
-# In-memory LRU Cache
-SCAN_CACHE = {}
-CACHE_TTL = 600
-
 app = FastAPI(title="OSINT Cyber Hub: 750+ Global & CIS Reconnaissance Engine")
 app.add_middleware(
     CORSMiddleware,
@@ -565,10 +561,6 @@ async def get_admin_visitors(limit: int = 50):
 
 @app.post("/api/scan/username")
 async def scan_username_sherlock(request: Request):
-    """
-    Глобальный высокоскоростной поиск по 750+ мировым и СНГ базам данных (Sherlock + WhatsMyName),
-    извлечение метаданных и сопоставление цифрового следа.
-    """
     try:
         body = await request.json()
     except Exception:
@@ -725,7 +717,6 @@ async def scan_username_sherlock(request: Request):
         wmn_tasks = [check_wmn_site(client, s) for s in wmn_sites]
         await asyncio.gather(*wmn_tasks)
 
-    # --- ИИ-СИНТЕЗ И ДЕДУКЦИЯ НАИВЕРОЯТНЕЙШИХ ДАННЫХ ---
     total_db_count = len(CORE_ENRICHED_SITES) + len(wmn_sites)
     probable_data, default_markdown = synthesize_heuristic_dossier(username, found, intel_signals)
 
@@ -763,7 +754,7 @@ async def scan_username_sherlock(request: Request):
         if gemini_dossier:
             default_markdown = gemini_dossier
 
-    res = {
+    return {
         "ok": True,
         "type": "username",
         "username": username,
@@ -775,9 +766,6 @@ async def scan_username_sherlock(request: Request):
         "ai_summary": default_markdown,
         "cached": False
     }
-
-    SCAN_CACHE[cache_key] = (res, now_ts)
-    return res
 
 
 # --- СКАНИРОВАНИЕ И АНАЛИЗ ФОТОГРАФИЙ (EXIF + GEMINI VISION AI) ---
@@ -844,7 +832,7 @@ async def scan_photo_endpoint(request: Request, file: Optional[UploadFile] = Fil
     }
 
 
-# --- TELEGRAM, DOMAIN, EMAIL, IP СКАНЕРЫ ---
+# --- TELEGRAM, DOMAIN, EMAIL, IP СКАНЕРЫ (ИНДИВИДУАЛЬНЫЕ ПРОФИЛИРОВАННЫЕ ВЫВОДЫ) ---
 
 def estimate_telegram_creation_date(tg_id: int) -> str:
     if tg_id < 50_000_000:
@@ -923,7 +911,7 @@ async def scan_telegram(request: Request):
         f"Тип: {account_type}\n"
         f"Bio/Описание: {description}\n"
         f"Метаданные: {extra}\n\n"
-        "Сделай экспертный вывод о владельце/канале, ключевых темах и рекомендациях."
+        "Сделай краткий экспертный вывод о владельце/канале."
     )
     ai_dossier = await run_gemini_prompt(prompt)
 
@@ -943,6 +931,7 @@ async def scan_telegram(request: Request):
 
 @app.post("/api/scan/domain")
 async def scan_domain(request: Request):
+    """Глубокая разведка домена: DNS A, SSL, Заголовки, и пассивный поиск субдоменов."""
     try:
         body = await request.json()
     except Exception:
@@ -953,17 +942,25 @@ async def scan_domain(request: Request):
     if not target or "." not in target:
         return JSONResponse({"ok": False, "error": "Укажите корректное доменное имя (например, example.com)"}, status_code=400)
 
-    results = {"target": target, "dns": {}, "ssl": {}, "headers": {}, "server_info": {}}
+    results = {
+        "target": target,
+        "ip_addresses": [],
+        "ssl": {},
+        "headers": {},
+        "server_info": {},
+        "subdomains_found": []
+    }
 
     try:
         ip_list = socket.gethostbyname_ex(target)[2]
-        results["dns"]["A"] = ip_list
+        results["ip_addresses"] = ip_list
     except Exception as e:
-        results["dns"]["A_error"] = str(e)
+        results["dns_error"] = str(e)
 
+    # SSL Сертификат
     try:
         ctx = ssl.create_default_context()
-        with socket.create_connection((target, 443), timeout=3.5) as sock:
+        with socket.create_connection((target, 443), timeout=3.0) as sock:
             with ctx.wrap_socket(sock, server_hostname=target) as ssock:
                 cert = ssock.getpeercert()
                 subject = dict(x[0] for x in cert.get("subject", []))
@@ -972,27 +969,48 @@ async def scan_domain(request: Request):
                     "commonName": subject.get("commonName"),
                     "issuer": issuer.get("organizationName") or issuer.get("commonName"),
                     "notAfter": cert.get("notAfter"),
+                    "valid": True
                 }
     except Exception:
-        results["ssl"]["status"] = "SSL не получен"
+        results["ssl"] = {"valid": False, "status": "SSL не обнаружен или самоподписан"}
 
+    # HTTP Заголовки
     try:
-        async with httpx.AsyncClient(timeout=4.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=3.5, follow_redirects=True) as client:
             resp = await client.get(f"https://{target}", headers={"User-Agent": "Mozilla/5.0"})
             results["server_info"]["status_code"] = resp.status_code
             hdrs = resp.headers
             results["headers"] = {
                 "Server": hdrs.get("server", "Скрыт"),
-                "Strict-Transport-Security": hdrs.get("strict-transport-security", "Отсутствует"),
+                "HSTS": hdrs.get("strict-transport-security", "Отсутствует"),
+                "X-Frame-Options": hdrs.get("x-frame-options", "Не задан"),
+                "Content-Type": hdrs.get("content-type", "text/html")
             }
     except Exception:
         pass
+
+    # Быстрый поиск популярных субдоменов
+    common_subs = ["api", "dev", "mail", "admin", "vpn", "staging", "shop", "blog", "portal", "cpanel", "auth", "m", "cdn", "ws", "cloud", "git"]
+    
+    async def probe_subdomain(sub: str):
+        full_sub = f"{sub}.{target}"
+        try:
+            loop = asyncio.get_running_loop()
+            sub_ip = await loop.run_in_executor(None, socket.gethostbyname, full_sub)
+            if sub_ip:
+                results["subdomains_found"].append({"subdomain": full_sub, "ip": sub_ip})
+        except Exception:
+            pass
+
+    tasks = [probe_subdomain(s) for s in common_subs]
+    await asyncio.gather(*tasks)
 
     return {"ok": True, "type": "domain", "target": target, "data": results}
 
 
 @app.post("/api/scan/email")
 async def scan_email(request: Request):
+    """Разведка почтового адреса: MX-сервера, валидность, статус домена и Gravatar."""
     try:
         body = await request.json()
     except Exception:
@@ -1003,18 +1021,40 @@ async def scan_email(request: Request):
         return JSONResponse({"ok": False, "error": "Некорректный формат email"}, status_code=400)
 
     domain = email.split("@")[1]
-    res = {"email": email, "domain": domain, "syntax_valid": True, "status": "Почтовый домен активен"}
+    import hashlib
+    email_hash = hashlib.md5(email.encode('utf-8')).hexdigest()
+    gravatar_url = f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+
+    res = {
+        "email": email,
+        "domain": domain,
+        "syntax_valid": True,
+        "mx_found": False,
+        "domain_ips": [],
+        "gravatar": None
+    }
 
     try:
-        res["domain_ip"] = socket.gethostbyname_ex(domain)[2]
+        res["domain_ips"] = socket.gethostbyname_ex(domain)[2]
+        res["mx_found"] = True
     except Exception:
-        res["status"] = "Почтовый домен не отвечает"
+        res["mx_found"] = False
+
+    # Gravatar check
+    try:
+        async with httpx.AsyncClient(timeout=2.5) as client:
+            g_resp = await client.get(gravatar_url)
+            if g_resp.status_code == 200:
+                res["gravatar"] = gravatar_url
+    except Exception:
+        pass
 
     return {"ok": True, "type": "email", "target": email, "data": res}
 
 
 @app.post("/api/scan/ip")
 async def scan_ip(request: Request):
+    """GeoIP разведка IP-адреса: координаты, провайдер, AS, город, таймзона."""
     try:
         body = await request.json()
     except Exception:
@@ -1024,7 +1064,17 @@ async def scan_ip(request: Request):
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
             resp = await client.get(f"http://ip-api.com/json/{target_ip}?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query")
-            return {"ok": True, "type": "ip", "target": target_ip, "data": resp.json()}
+            js = resp.json()
+            lat = js.get("lat")
+            lon = js.get("lon")
+            maps_url = f"https://www.google.com/maps?q={lat},{lon}" if lat and lon else None
+            return {
+                "ok": True,
+                "type": "ip",
+                "target": target_ip,
+                "data": js,
+                "google_maps_url": maps_url
+            }
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
@@ -1040,17 +1090,16 @@ async def ai_deduce_persona(request: Request):
         return JSONResponse({"ok": False, "error": "Цель не указана"}, status_code=400)
 
     prompt = (
-        f"Ты — ведущий OSINT-аналитик. Составь подробное досье на цель: '{target}'.\n"
-        "Определи: 1) Вероятное имя 2) Возраст/даты 3) Интересы 4) Связи 5) Гео-следы.\n"
-        "Пиши структурированно, красиво с эмодзи."
+        f"Ты — ведущий OSINT-аналитик. Составь структурированное тактическое досье на цель: '{target}'.\n"
+        "Определи: 1) Цифровой профиль 2) Возрастной диапазон 3) Основные векторы связей 4) Рекомендации по дальнейшей проверке.\n"
+        "Пиши лаконично, строго, без лишнего текста."
     )
     ai_text = await run_gemini_prompt(prompt)
     if not ai_text:
         ai_text = (
-            f"💜 **Аналитическое досье на цель:** `{target}`\n\n"
-            f"1. 👤 **Цифровой идентификатор:** `{target}`\n"
-            f"2. 🔍 **Векторы анализа:** Рекомендуется запустить перекрестный поиск по 750+ базам через основную панель.\n"
-            f"3. 🌐 **Telegram и мессенджеры:** Проверьте публичный статус через `/tg @{target}`."
+            f"💜 **Аналитическое досье по цели:** `{target}`\n\n"
+            f"• **Идентификатор:** `{target}`\n"
+            f"• **Рекомендация:** Выполните поиск по 750+ базам через вкладку Sherlock Engine для построения графа активности."
         )
     return {"ok": True, "target": target, "dossier": ai_text}
 
