@@ -2400,7 +2400,93 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       html += '</div>';
     }
 
-  // 9. CLI TOOL DIRECT RUNNER
+  // 9. EMAIL (HOLEHE & GRAVATAR)
+  } else if (data.type === 'email') {
+    const ed = data.data || {};
+    const gp = ed.gravatar_profile || {};
+    const accounts = ed.linked_accounts || [];
+    let logLines = data.raw_cli_output || `[${nowStr}] [EMAIL] ${data.target}`;
+
+    html += `
+      <div class="hacker-terminal">
+        <div class="term-topbar">
+          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+          <span>HOLEHE@STATION:~# ./holehe ${data.target}</span>
+          <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
+        </div>
+        <div class="term-log-content">${logLines}</div>
+      </div>
+
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-envelope" style="color:var(--primary);"></i> Данные Email & Сервера</div>
+        <div class="custom-grid">
+          <div class="custom-item">
+            <div class="custom-label">📧 Email адрес</div>
+            <div class="custom-val" style="color:var(--primary); font-size:13px;">${data.target}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🏢 MX Почтовый сервер</div>
+            <div class="custom-val">${ed.mx_found ? '✅ Активен (Существует)' : '❌ Не найден'}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🌐 Почтовый домен</div>
+            <div class="custom-val">${ed.domain}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">👤 Привязан к Gravatar</div>
+            <div class="custom-val" style="color:${ed.gravatar ? 'var(--primary)' : 'var(--text-muted)'}; font-weight:700;">
+              ${ed.gravatar ? '✅ Обнаружен аватар' : '❌ Не привязан'}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (gp && gp.name) {
+      html += `
+        <div class="custom-card" style="border-color:var(--cyan);">
+          <div class="custom-card-title"><i class="fa-solid fa-id-card" style="color:var(--cyan);"></i> Извлеченный Gravatar Профиль</div>
+          <div class="custom-grid">
+            <div class="custom-item">
+              <div class="custom-label">👤 Отображаемое имя</div>
+              <div class="custom-val" style="color:var(--primary); font-size:13px;">${gp.name}</div>
+            </div>
+            <div class="custom-item">
+              <div class="custom-label">📍 Локация</div>
+              <div class="custom-val">${gp.location || 'Скрыта'}</div>
+            </div>
+            ${gp.bio ? `
+              <div class="custom-item" style="grid-column: span 2;">
+                <div class="custom-label">📝 Описание (Bio)</div>
+                <div class="custom-val">${gp.bio}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    if (accounts.length > 0) {
+      html += `
+        <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
+          Привязанные социальные профили (${accounts.length}):
+        </div>
+        <div class="profiles-grid">
+      `;
+      accounts.forEach(a => {
+        html += `
+          <div class="profile-card">
+            <div>
+              <div class="profile-name" style="font-size:11px;">${a.name}</div>
+            </div>
+            <button onclick="openExternalUrl('${a.url}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">🔗 Профиль</button>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+
+  // 10. CLI TOOL DIRECT RUNNER
   } else if (data.type === 'cli_tool') {
     let cliLog = data.raw_cli_output || `[${nowStr}] [MODULE] INITIALIZING: ${data.tool_name}
 [${nowStr}] [TARGET] "${data.target}"

@@ -876,6 +876,79 @@ async def core_scan_username(username: str, caller_user: str = "guest") -> dict:
         except Exception:
             pass
 
+        # 3. Keybase API (PGP Keys, Crypto, Verified Proofs)
+        try:
+            kb_res = await client.get(f"https://keybase.io/_/api/1.0/user/lookup.json?usernames={username}", headers=headers, timeout=3.5)
+            if kb_res.status_code == 200:
+                kb_js = kb_res.json()
+                them = kb_js.get("them", [])
+                if them and len(them) > 0 and them[0] is not None:
+                    u_obj = them[0]
+                    profile = u_obj.get("profile", {})
+                    fn = profile.get("full_name")
+                    bio = profile.get("bio")
+                    loc = profile.get("location")
+                    if fn: intel_signals["names"].append(f"{fn} (Keybase)")
+                    if bio: intel_signals["bios"].append(f"{bio} (Keybase)")
+                    if loc: intel_signals["locations"].append(f"{loc} (Keybase)")
+                    
+                    proofs = u_obj.get("proofs_summary", {}).get("all", [])
+                    for p in proofs:
+                        p_type = p.get("proof_type", "")
+                        p_name = p.get("nametag", "")
+                        p_url = p.get("service_url", "")
+                        if p_url:
+                            found.append({
+                                "platform": f"Keybase Verified ({p_type.capitalize()})",
+                                "category": "Подтвержденная связь",
+                                "icon": "fa-certificate",
+                                "url": p_url,
+                                "status": "Криптографически подтвержден",
+                                "meta": {"nametag": p_name}
+                            })
+                    if "keybase" not in found_names_set:
+                        found.append({
+                            "platform": "Keybase",
+                            "category": "Криптография & PGP",
+                            "icon": "fa-key",
+                            "url": f"https://keybase.io/{username}",
+                            "status": "Подтвержден",
+                            "meta": {}
+                        })
+                        found_names_set.add("keybase")
+        except Exception:
+            pass
+
+        # 4. Gravatar API
+        try:
+            grav_res = await client.get(f"https://en.gravatar.com/{username}.json", headers=headers, timeout=3.5)
+            if grav_res.status_code == 200:
+                grav_js = grav_res.json()
+                entries = grav_js.get("entry", [])
+                if entries:
+                    entry = entries[0]
+                    g_name = entry.get("displayName") or entry.get("name", {}).get("formatted")
+                    g_bio = entry.get("aboutMe")
+                    g_loc = entry.get("currentLocation")
+                    if g_name: intel_signals["names"].append(f"{g_name} (Gravatar)")
+                    if g_bio: intel_signals["bios"].append(f"{g_bio} (Gravatar)")
+                    if g_loc: intel_signals["locations"].append(f"{g_loc} (Gravatar)")
+                    
+                    for acc in entry.get("accounts", []):
+                        acc_name = acc.get("shortname", "Account")
+                        acc_url = acc.get("url")
+                        if acc_url:
+                            found.append({
+                                "platform": f"Gravatar ({acc_name.capitalize()})",
+                                "category": "Связанный профиль",
+                                "icon": "fa-link",
+                                "url": acc_url,
+                                "status": "Подтвержден через Gravatar",
+                                "meta": {}
+                            })
+        except Exception:
+            pass
+
     async with httpx.AsyncClient() as client:
         tasks = [probe_sherlock_site(client, k, v) for k, v in sherlock_db.items()]
         tasks.append(enrich_core_apis(client))
@@ -1341,7 +1414,9 @@ async def core_scan_email(email: str, caller_user: str = "guest") -> dict:
         "syntax_valid": True,
         "mx_found": False,
         "domain_ips": [],
-        "gravatar": None
+        "gravatar": None,
+        "gravatar_profile": None,
+        "linked_accounts": []
     }
 
     try:
@@ -1352,14 +1427,49 @@ async def core_scan_email(email: str, caller_user: str = "guest") -> dict:
         res["mx_found"] = False
 
     try:
-        async with httpx.AsyncClient(timeout=2.5) as client:
+        async with httpx.AsyncClient(timeout=3.5) as client:
+            # 1. Gravatar Avatar Check
             g_resp = await client.get(gravatar_url)
             if g_resp.status_code == 200:
                 res["gravatar"] = gravatar_url
+
+            # 2. Gravatar Full JSON Profile Lookup
+            p_resp = await client.get(f"https://en.gravatar.com/{email_hash}.json")
+            if p_resp.status_code == 200:
+                entries = p_resp.json().get("entry", [])
+                if entries:
+                    e = entries[0]
+                    res["gravatar_profile"] = {
+                        "name": e.get("displayName") or e.get("name", {}).get("formatted"),
+                        "bio": e.get("aboutMe"),
+                        "location": e.get("currentLocation"),
+                        "profile_url": e.get("profileUrl")
+                    }
+                    for acc in e.get("accounts", []):
+                        if acc.get("url"):
+                            res["linked_accounts"].append({
+                                "name": acc.get("shortname", "").capitalize() or "Account",
+                                "url": acc.get("url")
+                            })
     except Exception:
         pass
 
-    return {"ok": True, "type": "email", "target": email, "data": res}
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cli_lines = [
+        f"root@cyberhub:~# holehe_recon --email {email}",
+        f"[{now_ts}] [INIT] Validating RFC syntax and domain MX records...",
+        f"[{now_ts}] [+] Domain: {domain} | MX Resolved: {res['mx_found']} | IPs: {', '.join(res['domain_ips'])}",
+        f"[{now_ts}] [GRAVATAR] Avatar Found: {'YES' if res['gravatar'] else 'NO'}"
+    ]
+    if res.get("gravatar_profile"):
+        gp = res["gravatar_profile"]
+        cli_lines.append(f"[{now_ts}] [PROFILE] Identified Name: '{gp.get('name')}' | Loc: '{gp.get('location')}'")
+    if res.get("linked_accounts"):
+        cli_lines.append(f"[{now_ts}] [ACCOUNTS] Extracted {len(res['linked_accounts'])} linked profiles: {', '.join([a['name'] for a in res['linked_accounts']])}")
+    cli_lines.append(f"[{now_ts}] [✓] Email reconnaissance cycle completed.")
+    res["raw_cli_output"] = "\n".join(cli_lines)
+
+    return {"ok": True, "type": "email", "target": email, "data": res, "raw_cli_output": res["raw_cli_output"]}
 
 
 @app.post("/api/scan/email")
