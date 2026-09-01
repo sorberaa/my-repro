@@ -805,6 +805,152 @@ CATALOG = [
                 }
             }
         ]
+    },
+    {
+        "id": "deep_archive_recon",
+        "title": "🏛️ Архивы, Удаленные данные & Сквозной Auto-Recon",
+        "desc": "Сквозной сбор связей, поиск в Wayback Machine, история SSL-сертификатов и архивных копий.",
+        "tools": [
+            {
+                "id": "autorecon",
+                "name": "⚡ Сквозной Auto-Recon & Граф связей (Auto-Investigator)",
+                "repo": "https://github.com/sherlock-project/sherlock",
+                "web_url": "",
+                "purpose": "🕸️ Автоматическое сквозное расследование: сбор профилей, коммит-email, проверка серверов, построение интерактивного графа связей и тактического досье.",
+                "input": "username / email / domain / phone",
+                "web_runnable": True,
+                "scan_type": "autorecon",
+                "install_guide": {
+                    "git": "# Встроенный в систему авто-движок расследования",
+                    "pip_or_pkg": "# Работает автономно в WebApp",
+                    "docker": "# Встроенный модуль",
+                    "usage": "Введите любую цель для сквозного построения графа связей",
+                    "notes": "Объединяет Sherlock, GitHub коммиты, Holehe и Wayback в единый граф."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Запустить Auto-Recon",
+                    "action": "scan_autorecon"
+                }
+            },
+            {
+                "id": "wayback",
+                "name": "🏛️ Wayback Machine & Archive.org Inspector",
+                "repo": "https://github.com/internetarchive/wayback",
+                "web_url": "https://web.archive.org/",
+                "purpose": "⏳ Поиск удаленных страниц, старых версий профилей соцсетей, контактов и снимков сайтов за прошлые годы через Web Archive API.",
+                "input": "url / domain / profile link",
+                "web_runnable": True,
+                "scan_type": "wayback",
+                "install_guide": {
+                    "git": "# Встроенный модуль обращения к CDX API Archive.org",
+                    "pip_or_pkg": "pip install httpx",
+                    "docker": "# Доступно в веб-панели",
+                    "usage": "wayback_machine --target github.com/username",
+                    "notes": "Позволяет увидеть, что было написано на странице до ее удаления."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Проверить архивы",
+                    "action": "scan_wayback"
+                }
+            },
+            {
+                "id": "crtsh",
+                "name": "📜 Certificate Transparency Logs (crt.sh)",
+                "repo": "https://github.com/crtsh/crt.sh",
+                "web_url": "https://crt.sh/",
+                "purpose": "🔍 Поиск скрытых, тестовых и забытых поддоменов через глобальные журналы прозрачности SSL-сертификатов.",
+                "input": "domain",
+                "web_runnable": True,
+                "scan_type": "crtsh",
+                "install_guide": {
+                    "git": "# Встроенный парсер журналов сертификатов crt.sh",
+                    "pip_or_pkg": "curl https://crt.sh/?q=%.target.com&output=json",
+                    "docker": "# Работает через API",
+                    "usage": "crtsh --domain example.com",
+                    "notes": "Находит поддомены, которых нет в открытых записях DNS."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Анализ SSL журналов",
+                    "action": "scan_crtsh"
+                }
+            }
+        ]
+    },
+    {
+        "id": "cyber_tools_lab",
+        "title": "🧰 Лаборатория Декодеров & Dork Builder",
+        "desc": "Конструктор боевых дорков, автоопределение хешей (MD5/SHA256/bcrypt), JWT и мульти-декодеры.",
+        "tools": [
+            {
+                "id": "cyberchef_decoder",
+                "name": "🧰 Кибер-декодер (Base64, Hex, ROT13, URL)",
+                "repo": "https://github.com/gchq/CyberChef",
+                "web_url": "https://gchq.github.io/CyberChef/",
+                "purpose": "🔓 Универсальный швейцарский нож декодирования: Base64, Hex, URL, Binary, ROT13 прямо в интерфейсе.",
+                "input": "encoded string / payload",
+                "web_runnable": True,
+                "scan_type": "decoder",
+                "install_guide": {
+                    "git": "# Встроенная лаборатория декодеров",
+                    "pip_or_pkg": "# Доступно в WebApp",
+                    "docker": "# Не требуется",
+                    "usage": "Введите зашифрованную строку и выберите алгоритм",
+                    "notes": "Позволяет быстро разобрать полезную нагрузку."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Открыть декодер",
+                    "action": "open_decoder"
+                }
+            },
+            {
+                "id": "hash_identifier",
+                "name": "🔐 Hash Identifier & Analyzer",
+                "repo": "https://github.com/blackploit/hash-identifier",
+                "web_url": "https://hashes.com/",
+                "purpose": "🎯 Автоматическое определение алгоритма хеширования (MD5, SHA-1, SHA-256, NTLM, bcrypt, Argon2).",
+                "input": "hash string",
+                "web_runnable": True,
+                "scan_type": "decoder",
+                "install_guide": {
+                    "git": "# Встроенный анализатор хешей",
+                    "pip_or_pkg": "# Доступно в WebApp",
+                    "docker": "# Не требуется",
+                    "usage": "Вставьте хеш (например: e10adc3949ba59abbe56e057f20f883e)",
+                    "notes": "Определяет разрядность и вероятные алгоритмы."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Идентифицировать хеш",
+                    "action": "open_decoder"
+                }
+            },
+            {
+                "id": "jwt_decoder",
+                "name": "🛡️ JWT Token & Payload Inspector",
+                "repo": "https://jwt.io/",
+                "web_url": "https://jwt.io/",
+                "purpose": "🔑 Разбор структуры токенов авторизации (Header, Payload, claims, таймстампы) без отправки ключа.",
+                "input": "jwt token",
+                "web_runnable": True,
+                "scan_type": "decoder",
+                "install_guide": {
+                    "git": "# Встроенный инспектор JWT",
+                    "pip_or_pkg": "# Доступно в WebApp",
+                    "docker": "# Не требуется",
+                    "usage": "Вставьте токен eyJhbGciOi...",
+                    "notes": "Показывает права пользователя и время истечения токена."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Анализ JWT",
+                    "action": "open_decoder"
+                }
+            }
+        ]
     }
 ]
 

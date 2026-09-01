@@ -1705,7 +1705,450 @@ async def scan_crypto_wallet(request: Request):
     return res
 
 
-# --- 11. УНИВЕРСАЛЬНЫЙ ДВИЖОК МАРШРУТИЗАЦИИ ДЛЯ ВСЕХ ИНСТРУМЕНТОВ КАТАЛОГА ---
+# --- 11. WAYBACK MACHINE, CRT.SH, AUTO-RECON, DECODERS & DORKS ---
+
+async def core_scan_wayback(target: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    target = target.strip()
+    if not target:
+        return {"ok": False, "error": "Укажите цель (URL, домен или профиль, например: github.com/torvalds)"}
+
+    probe_url = target if target.startswith("http") else f"https://{target}"
+    clean_target = re.sub(r"^https?://", "", probe_url).rstrip("/")
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    snapshots = []
+    latest_snapshot = None
+
+    async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+        # 1. Проверка доступности в Wayback Machine API
+        try:
+            r_avail = await client.get(f"https://archive.org/wayback/available?url={urllib.parse.quote(clean_target)}")
+            if r_avail.status_code == 200:
+                js = r_avail.json()
+                closest = js.get("archived_snapshots", {}).get("closest", {})
+                if closest and closest.get("available"):
+                    latest_snapshot = {
+                        "url": closest.get("url"),
+                        "timestamp": closest.get("timestamp"),
+                        "status": closest.get("status")
+                    }
+        except Exception:
+            pass
+
+        # 2. Получение списка снимков через CDX Server API
+        try:
+            r_cdx = await client.get(
+                f"https://web.archive.org/cdx/search/cdx?url={urllib.parse.quote(clean_target)}&output=json&limit=8&fl=timestamp,original,mimetype,statuscode"
+            )
+            if r_cdx.status_code == 200:
+                rows = r_cdx.json()
+                if len(rows) > 1:
+                    for row in rows[1:]:
+                        ts = str(row[0])
+                        formatted_date = f"{ts[0:4]}-{ts[4:6]}-{ts[6:8]} {ts[8:10]}:{ts[10:12]}" if len(ts) >= 12 else ts
+                        wb_view_url = f"https://web.archive.org/web/{ts}/{row[1]}"
+                        snapshots.append({
+                            "timestamp": formatted_date,
+                            "raw_ts": ts,
+                            "original_url": row[1],
+                            "mimetype": row[2] if len(row) > 2 else "text/html",
+                            "status": row[3] if len(row) > 3 else "200",
+                            "view_url": wb_view_url
+                        })
+        except Exception:
+            pass
+
+    archive_links = {
+        "wayback_calendar": f"https://web.archive.org/web/*/{clean_target}",
+        "archive_today": f"https://archive.today/{clean_target}",
+        "google_cache": f"https://webcache.googleusercontent.com/search?q=cache:{clean_target}"
+    }
+
+    cli_lines = [
+        f"root@cyberhub:~# wayback_machine --target {clean_target}",
+        f"[{now_ts}] [INIT] Querying Archive.org CDX Server & Snapshot Indices...",
+        f"[{now_ts}] [+] Target URL: {clean_target}",
+        f"[{now_ts}] [SNAPSHOTS] Found {len(snapshots)} historical captures in public web archives."
+    ]
+    if latest_snapshot:
+        cli_lines.append(f"[{now_ts}] [LATEST] Snapshot: {latest_snapshot.get('timestamp')} -> {latest_snapshot.get('url')}")
+    for s in snapshots[:4]:
+        cli_lines.append(f"  --> [{s['timestamp']}] HTTP {s['status']} | {s['view_url']}")
+    cli_lines.append(f"[{now_ts}] [✓] Archive investigation complete.")
+    raw_cli_output = "\n".join(cli_lines)
+
+    return {
+        "ok": True,
+        "type": "wayback",
+        "target": clean_target,
+        "latest_snapshot": latest_snapshot,
+        "snapshots": snapshots,
+        "archive_links": archive_links,
+        "raw_cli_output": raw_cli_output
+    }
+
+
+@app.post("/api/scan/wayback")
+async def scan_wayback_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    target = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_wayback(target, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+async def core_scan_crtsh(domain: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    domain = domain.strip().lower()
+    domain = re.sub(r"^https?://", "", domain).split("/")[0].split(":")[0]
+
+    if not domain or "." not in domain:
+        return {"ok": False, "error": "Укажите доменное имя (например: example.com)"}
+
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    subdomains = set()
+    certs = []
+
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            r = await client.get(f"https://crt.sh/?q=%.{domain}&output=json")
+            if r.status_code == 200:
+                raw_certs = r.json()
+                for c in raw_certs:
+                    nv = c.get("name_value", "")
+                    for item in nv.split("\n"):
+                        item = item.strip().lower()
+                        if item.endswith(domain) and not item.startswith("*"):
+                            subdomains.add(item)
+                    if len(certs) < 10:
+                        certs.append({
+                            "id": c.get("id"),
+                            "logged_at": (c.get("entry_timestamp") or "")[:10],
+                            "issuer": c.get("issuer_name", "Unknown"),
+                            "common_name": c.get("common_name", "")
+                        })
+    except Exception:
+        pass
+
+    sub_list = sorted(list(subdomains))
+    cli_lines = [
+        f"root@cyberhub:~# crtsh --domain {domain} --ct-logs",
+        f"[{now_ts}] [INIT] Querying Certificate Transparency (CT) logs via crt.sh...",
+        f"[{now_ts}] [+] Target Domain: {domain}",
+        f"[{now_ts}] [DISCOVERY] Extracted {len(sub_list)} unique subdomains from issued SSL certs:"
+    ]
+    for s in sub_list[:8]:
+        cli_lines.append(f"  [+] {s}")
+    if len(sub_list) > 8:
+        cli_lines.append(f"  ... and {len(sub_list) - 8} more historical subdomains.")
+    cli_lines.append(f"[{now_ts}] [✓] Certificate Transparency log analysis completed.")
+    raw_cli_output = "\n".join(cli_lines)
+
+    return {
+        "ok": True,
+        "type": "crtsh",
+        "domain": domain,
+        "total_subdomains": len(sub_list),
+        "subdomains": sub_list,
+        "certificates": certs,
+        "raw_cli_output": raw_cli_output
+    }
+
+
+@app.post("/api/scan/crtsh")
+async def scan_crtsh_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    domain = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_crtsh(domain, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+async def core_scan_autorecon(target: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    target = target.strip()
+    if not target:
+        return {"ok": False, "error": "Введите цель для сквозного расследования"}
+
+    nodes = []
+    edges = []
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Корневой узел расследования
+    nodes.append({
+        "id": "target_root",
+        "label": f"🎯 {target}",
+        "group": "target",
+        "shape": "box",
+        "color": {"background": "#00ff66", "border": "#ffffff"},
+        "font": {"color": "#000000", "size": 16, "face": "monospace", "bold": True}
+    })
+
+    # Авто-классификация цели
+    is_email = "@" in target and "." in target
+    is_phone = target.startswith("+") or (re.sub(r"\D", "", target).isdigit() and len(re.sub(r"\D", "", target)) >= 10 and not target.startswith("0x"))
+    is_crypto = target.startswith("0x") or (target.startswith("T") and len(target) == 34) or (target.startswith("bc1") or target.startswith("1") and len(target) >= 26)
+    is_domain = "." in target and not is_email and not " " in target and not target.startswith("@")
+
+    intel_summary = {}
+
+    if is_crypto:
+        c_res = await core_scan_crypto(target, caller_user)
+        intel_summary["crypto"] = c_res
+        nodes.append({
+            "id": "crypto_net",
+            "label": f"🪙 {c_res.get('network', 'Crypto')}",
+            "group": "crypto",
+            "shape": "ellipse",
+            "color": {"background": "#a855f7", "border": "#ffffff"},
+            "font": {"color": "#ffffff"}
+        })
+        edges.append({"from": "target_root", "to": "crypto_net", "label": "network", "color": "#a855f7"})
+
+    elif is_phone:
+        p_res = await core_scan_phone(target, caller_user)
+        intel_summary["phone"] = p_res
+        nodes.append({
+            "id": "phone_carrier",
+            "label": f"📞 {p_res.get('carrier', 'Operator')} ({p_res.get('country', '')})",
+            "group": "phone",
+            "shape": "box",
+            "color": {"background": "#00e5ff", "border": "#ffffff"},
+            "font": {"color": "#000000"}
+        })
+        edges.append({"from": "target_root", "to": "phone_carrier", "label": "carrier", "color": "#00e5ff"})
+
+    elif is_domain:
+        d_res = await core_scan_domain(target, caller_user)
+        crt_res = await core_scan_crtsh(target, caller_user)
+        wb_res = await core_scan_wayback(target, caller_user)
+        intel_summary["domain"] = d_res
+        intel_summary["crtsh"] = crt_res
+        intel_summary["wayback"] = wb_res
+
+        # IP узел
+        ips = d_res.get("data", {}).get("ip_addresses", [])
+        for i, ip in enumerate(ips[:3]):
+            ip_id = f"ip_{i}"
+            nodes.append({"id": ip_id, "label": f"🌐 IP: {ip}", "group": "infra", "color": {"background": "#38ef7d", "border": "#fff"}, "font": {"color": "#000"}})
+            edges.append({"from": "target_root", "to": ip_id, "label": "resolves_to", "color": "#38ef7d"})
+
+        # Субдомены из CT логов
+        subs = crt_res.get("subdomains", [])
+        for i, sub in enumerate(subs[:5]):
+            sub_id = f"sub_{i}"
+            nodes.append({"id": sub_id, "label": f"🔗 {sub}", "group": "subdomain", "color": {"background": "#1e3a5f", "border": "#00e5ff"}, "font": {"color": "#fff"}})
+            edges.append({"from": "target_root", "to": sub_id, "label": "ssl_cert", "color": "#00e5ff"})
+
+    else:
+        # Username / Handle -> Сквозной сбор
+        clean_user = target.lstrip("@")
+        sh_res = await core_scan_username(clean_user, caller_user)
+        gh_res = await core_scan_github(clean_user, caller_user)
+        wb_res = await core_scan_wayback(f"github.com/{clean_user}", caller_user)
+        intel_summary["sherlock"] = sh_res
+        intel_summary["github"] = gh_res
+        intel_summary["wayback"] = wb_res
+
+        # 1. Профили
+        profiles = sh_res.get("profiles", [])
+        for i, p in enumerate(profiles[:8]):
+            p_id = f"prof_{i}"
+            nodes.append({
+                "id": p_id,
+                "label": f"👤 {p['platform']}",
+                "group": "profile",
+                "color": {"background": "#091a2e", "border": "#00e5ff"},
+                "font": {"color": "#fff"}
+            })
+            edges.append({"from": "target_root", "to": p_id, "label": "account", "color": "#00e5ff"})
+
+        # 2. GitHub коммиты и email
+        emails = gh_res.get("emails_discovered", [])
+        for i, em in enumerate(emails):
+            em_id = f"email_{i}"
+            nodes.append({
+                "id": em_id,
+                "label": f"✉️ {em}",
+                "group": "email",
+                "color": {"background": "#ff3366", "border": "#fff"},
+                "font": {"color": "#fff", "bold": True}
+            })
+            edges.append({"from": "target_root", "to": em_id, "label": "git_commit_email", "color": "#ff3366"})
+
+            # Если нашли email -> пробиваем домен почты
+            if "@" in em:
+                em_dom = em.split("@")[1]
+                dom_id = f"em_dom_{i}"
+                nodes.append({"id": dom_id, "label": f"🏢 @{em_dom}", "group": "domain", "color": {"background": "#1e293b", "border": "#fff"}, "font": {"color": "#fff"}})
+                edges.append({"from": em_id, "to": dom_id, "label": "mail_server", "color": "#94a3b8"})
+
+        # 3. Имя из GitHub
+        gh_name = gh_res.get("name")
+        if gh_name and gh_name != clean_user:
+            name_id = "real_name_node"
+            nodes.append({"id": name_id, "label": f"🪪 ФИО: {gh_name}", "group": "name", "color": {"background": "#a855f7", "border": "#fff"}, "font": {"color": "#fff", "bold": True}})
+            edges.append({"from": "target_root", "to": name_id, "label": "identified_name", "color": "#a855f7"})
+
+    prompt = f"""Ты — главный аналитик OSINT и киберрасследований.
+Составь структурированное тактическое досье по результатам комплексного сквозного сбора данных:
+- Объект расследования: '{target}'
+- Данные разведки: {json.dumps(intel_summary, ensure_ascii=False)[:3000]}
+
+Составь отчет по схеме:
+1. 🎯 Цифровой профиль и идентификация
+2. 🔍 Выявленные связанные каналы, почты и узлы
+3. ⚠️ Оценка рисков и уровень уверенности
+4. 💡 3 ключевых шага для дальнейшей проверки.
+"""
+    ai_dossier = await run_gemini_prompt(prompt)
+    if not ai_dossier:
+        ai_dossier = (
+            f"🎯 **Комплексное досье по цели:** `{target}`\n\n"
+            f"• **Обнаружено связанных узлов графа:** {len(nodes)}\n"
+            f"• **Цифровые связи:** Построена цепочка между платформами, инфраструктурой и цифровыми следами.\n"
+            f"• **Рекомендация:** Используйте интерактивный граф связей для детального анализа каждого узла."
+        )
+
+    return {
+        "ok": True,
+        "type": "autorecon",
+        "target": target,
+        "nodes": nodes,
+        "edges": edges,
+        "intel_summary": intel_summary,
+        "ai_dossier": ai_dossier,
+        "raw_cli_output": f"root@cyberhub:~# auto_recon --target {target}\n[{now_ts}] [CORRELATION] Chained multi-source investigation completed. Generated {len(nodes)} graph nodes and {len(edges)} cross-identity edges."
+    }
+
+
+@app.post("/api/scan/autorecon")
+async def scan_autorecon_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    target = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_autorecon(target, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+# --- ДЕКОДЕРЫ И ИНСТРУМЕНТЫ ЛАБОРАТОРИИ (CYBER TOOLS & DECODERS) ---
+
+def core_tool_decoder(action: str, text: str) -> dict:
+    text = text.strip()
+    if not text:
+        return {"ok": False, "error": "Введите текст или хеш для анализа"}
+
+    if action == "hash_id":
+        clean_h = text.lower().strip()
+        possible = []
+        l = len(clean_h)
+        if bool(re.match(r"^[0-9a-f]{32}$", clean_h)):
+            possible.extend(["MD5", "NTLM", "MD4", "MD2"])
+        elif bool(re.match(r"^[0-9a-f]{40}$", clean_h)):
+            possible.extend(["SHA-1", "RIPEMD-160", "MySQL 4.1+"])
+        elif bool(re.match(r"^[0-9a-f]{64}$", clean_h)):
+            possible.extend(["SHA-256", "Keccak-256", "SHA3-256"])
+        elif bool(re.match(r"^[0-9a-f]{96}$", clean_h)):
+            possible.append("SHA-384")
+        elif bool(re.match(r"^[0-9a-f]{128}$", clean_h)):
+            possible.extend(["SHA-512", "Whirlpool"])
+        elif clean_h.startswith("$2a$") or clean_h.startswith("$2b$") or clean_h.startswith("$2y$"):
+            possible.append("bcrypt")
+        elif clean_h.startswith("$argon2"):
+            possible.append("Argon2")
+        elif bool(re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", clean_h)):
+            possible.append("UUID / GUID")
+        else:
+            possible.append("Неизвестный формат / Произвольная строка")
+
+        return {"ok": True, "action": "hash_id", "input": text, "length": l, "possible_algorithms": possible}
+
+    elif action == "base64_decode":
+        try:
+            pad = len(text) % 4
+            if pad: text += "=" * (4 - pad)
+            dec = base64.b64decode(text).decode("utf-8", errors="replace")
+            return {"ok": True, "action": "base64_decode", "result": dec}
+        except Exception as e:
+            return {"ok": False, "error": f"Ошибка декодирования Base64: {str(e)}"}
+
+    elif action == "base64_encode":
+        enc = base64.b64encode(text.encode("utf-8")).decode("utf-8")
+        return {"ok": True, "action": "base64_encode", "result": enc}
+
+    elif action == "hex_decode":
+        try:
+            clean = re.sub(r"[^0-9a-fA-F]", "", text)
+            dec = bytes.fromhex(clean).decode("utf-8", errors="replace")
+            return {"ok": True, "action": "hex_decode", "result": dec}
+        except Exception as e:
+            return {"ok": False, "error": f"Ошибка Hex Decode: {str(e)}"}
+
+    elif action == "hex_encode":
+        enc = text.encode("utf-8").hex()
+        return {"ok": True, "action": "hex_encode", "result": enc}
+
+    elif action == "rot13":
+        import codecs
+        res = codecs.encode(text, "rot_13")
+        return {"ok": True, "action": "rot13", "result": res}
+
+    elif action == "jwt_decode":
+        parts = text.split(".")
+        if len(parts) < 2:
+            return {"ok": False, "error": "Неверный формат JWT (ожидается: header.payload.signature)"}
+        try:
+            def b64url_dec(s):
+                pad = len(s) % 4
+                if pad: s += "=" * (4 - pad)
+                return json.loads(base64.urlsafe_b64decode(s).decode("utf-8"))
+
+            header = b64url_dec(parts[0])
+            payload = b64url_dec(parts[1])
+            return {
+                "ok": True,
+                "action": "jwt_decode",
+                "header": header,
+                "payload": payload,
+                "signature_present": len(parts) >= 3
+            }
+        except Exception as e:
+            return {"ok": False, "error": f"Ошибка разбора структуры JWT: {str(e)}"}
+
+    return {"ok": False, "error": "Неизвестное действие декодера"}
+
+
+@app.post("/api/tools/decode")
+async def tools_decode_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    action = str(body.get("action", "")).strip()
+    data = str(body.get("data", "")).strip()
+    res = core_tool_decoder(action, data)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+# --- УНИВЕРСАЛЬНЫЙ ДВИЖОК МАРШРУТИЗАЦИИ ДЛЯ ВСЕХ ИНСТРУМЕНТОВ КАТАЛОГА ---
 
 @app.post("/api/scan/universal")
 async def scan_universal_endpoint(request: Request):
@@ -1720,41 +2163,53 @@ async def scan_universal_endpoint(request: Request):
     if not target:
         return JSONResponse({"ok": False, "error": "Введите цель для анализа"}, status_code=400)
 
-    # 1. GitHub Recon & Leaks
+    # 1. Автономный авто-рекон & Граф связей
+    if tool_id in ["autorecon", "auto_recon", "correlator"]:
+        return await core_scan_autorecon(target, caller)
+
+    # 2. Wayback Machine & Archive
+    if tool_id in ["wayback", "archive_org", "wayback_machine", "google_cache"]:
+        return await core_scan_wayback(target, caller)
+
+    # 3. Certificate Transparency (crt.sh)
+    if tool_id in ["crtsh", "cert_transparency", "ssl_history"]:
+        return await core_scan_crtsh(target, caller)
+
+    # 4. GitHub Recon & Leaks
     if tool_id in ["github_recon", "git_hound"]:
         return await core_scan_github(target, caller)
 
-    # 2. Crypto Wallet Intel
+    # 5. Crypto Wallet Intel
     if tool_id in ["crypto_tracker"]:
         return await core_scan_crypto(target, caller)
 
-    # 3. Phone Recon
+    # 6. Phone Recon
     if tool_id in ["phoneinfoga_recon", "ignorant"]:
         return await core_scan_phone(target, caller)
 
-    # 4. Telegram & Attribution
+    # 7. Telegram & Attribution
     if tool_id in ["sockpuppet_attribution"]:
         return await scan_attribution_endpoint(request)
     if tool_id in ["tg_inspector", "telepathy"]:
         return await scan_telegram_endpoint(request)
 
-    # 5. Domain / Subdomains
+    # 8. Domain / Subdomains
     if tool_id in ["subfinder", "amass", "finalrecon", "webcheck", "httpx"]:
         return await core_scan_domain(target, caller)
 
-    # 6. Email
+    # 9. Email
     if tool_id in ["holehe_osint", "ghunt"]:
         return await core_scan_email(target, caller)
 
-    # 7. IP / Shodan
+    # 10. IP / Shodan
     if tool_id in ["ipinfo", "shodan_search"]:
         return await core_scan_ip(target, caller)
 
-    # 8. Username scanners (Sherlock, Maigret, Blackbird, WhatsMyName)
+    # 11. Username scanners (Sherlock, Maigret, Blackbird, WhatsMyName)
     if tool_id in ["sherlock", "maigret", "blackbird", "whatsmyname", "social_analyzer"]:
         return await core_scan_username(target, caller)
 
-    # 9. Профильный запуск для всех остальных специализированных CLI утилит каталога
+    # 12. Профильный запуск для всех остальных специализированных CLI утилит каталога
     tool_info = find_tool(tool_id) or {"name": tool_id.upper(), "purpose": "Автоматизированная разведка", "install_guide": {}}
     guide = tool_info.get("install_guide", {})
     tool_name = tool_info.get("name", tool_id)

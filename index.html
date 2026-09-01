@@ -6,6 +6,7 @@
 <title>peace of the island of sor/ber peoples</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <style>
 :root {
   --bg: #04060a;
@@ -31,15 +32,15 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
 /* Canvas для эффекта матрицы */
 #matrixCanvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.18; display:none; }
 
-.container { max-width:860px; margin:0 auto; position:relative; z-index:1; }
+.container { max-width:880px; margin:0 auto; position:relative; z-index:1; }
 
 /* Навбар */
 .navbar { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--card-border); padding:8px 0 12px; margin-bottom:12px; background:rgba(4,6,10,0.9); backdrop-filter:blur(12px); }
-.brand { font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; }
+.brand { font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; }
 .brand i { color:var(--primary); text-shadow:0 0 12px var(--primary-glow); }
-.nav-actions { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.nav-actions { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
 
-.user-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; background:#0b1322; border-radius:8px; font-size:11px; font-weight:700; color:var(--cyan); border:1px solid #1a2942; cursor:pointer; }
+.user-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; background:#0b1322; border-radius:8px; font-size:11px; font-weight:700; color:var(--cyan); border:1px solid #1a2942; cursor:pointer; }
 .user-badge:hover { border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }
 
 .view-page { display:none; }
@@ -194,14 +195,16 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="handleUserBadgeClick()">
         <i id="userBadgeIcon" class="fa-solid fa-user-check"></i> <span id="currentUsernameSpan">Позывной</span>
       </div>
-      <button class="btn btn-primary" onclick="showView('terminalView')" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-terminal"></i> CLI</button>
-      <button class="btn btn-purple" id="navAttrBtn" onclick="showView('attributionView')" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-user-secret"></i> Вирты</button>
-      <button class="btn btn-secondary" id="navPhotoBtn" onclick="showView('photoView')" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-camera"></i> Фото</button>
-      <button class="btn btn-secondary" onclick="toggleMatrix()" style="padding:5px 9px; font-size:11px;" title="Матрица"><i class="fa-solid fa-code"></i></button>
+      <button class="btn btn-cyan" onclick="showView('graphView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-project-diagram"></i> Граф</button>
+      <button class="btn btn-primary" onclick="showView('terminalView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-terminal"></i> CLI</button>
+      <button class="btn btn-purple" id="navAttrBtn" onclick="showView('attributionView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-user-secret"></i> Вирты</button>
+      <button class="btn btn-secondary" id="navPhotoBtn" onclick="showView('photoView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-camera"></i> Фото</button>
+      <button class="btn btn-secondary" onclick="showView('decoderView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-wrench"></i> Лаб</button>
+      <button class="btn btn-secondary" onclick="toggleMatrix()" style="padding:5px 8px; font-size:11px;" title="Матрица"><i class="fa-solid fa-code"></i></button>
     </div>
   </div>
 
-  <!-- ВЬЮ 0: ОТДЕЛЬНАЯ СТРАНИЦА РЕГИСТРАЦИИ -->
+  <!-- ВЬЮ 0: СТРАНИЦА РЕГИСТРАЦИИ -->
   <div class="view-page" id="registerView">
     <div class="auth-container">
       <div class="auth-card">
@@ -224,15 +227,15 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     
     <!-- STATS HERO BANNER -->
     <div class="hero-stats-banner">
-      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 26 Утилит Онлайн</div>
-      <div class="stat-pill cyan"><i class="fa-solid fa-bolt"></i> Sherlock 480+ Баз</div>
-      <div class="stat-pill purple"><i class="fa-solid fa-user-secret"></i> Детектор Виртов</div>
+      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 29 Утилит Онлайн</div>
+      <div class="stat-pill cyan"><i class="fa-solid fa-bolt"></i> Auto-Recon & Граф</div>
+      <div class="stat-pill purple"><i class="fa-solid fa-clock-rotate-left"></i> Wayback & crt.sh</div>
     </div>
 
     <!-- БЫСТРЫЙ СКАНЕР ПРЯМО НА ГЛАВНОЙ -->
     <div class="quick-recon-box">
       <div class="quick-title">
-        <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Экспресс-поиск: Sherlock · GitHub Email · Phone · Crypto
+        <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сквозной Auto-Recon: Sherlock · GitHub Commits · Wayback · Crypto
       </div>
       <div class="quick-input-group">
         <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм, GitHub логин, телефон, домен или криптокошелек..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
@@ -243,20 +246,21 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     <div class="search-box-row">
       <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" placeholder="Поиск по программам: GitHub, Sherlock, Subfinder, EXIF, GeoIP..." oninput="renderCatalog()">
+        <input type="text" id="searchInput" placeholder="Поиск по программам: GitHub, Sherlock, Wayback, crt.sh, EXIF, GeoIP..." oninput="renderCatalog()">
       </div>
-      <div class="search-counter" id="searchCounterBadge">26 утилит</div>
+      <div class="search-counter" id="searchCounterBadge">29 утилит</div>
     </div>
 
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (26)</div>
+      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (29)</div>
+      <div class="chip" onclick="setFilter('deep_archive_recon', this)"><i class="fa-solid fa-clock-rotate-left"></i> Архивы & Auto-Recon</div>
       <div class="chip" onclick="setFilter('hacker_crypto_git', this)"><i class="fa-brands fa-github"></i> GitHub & Crypto</div>
       <div class="chip" onclick="setFilter('telegram_osint', this)"><i class="fa-brands fa-telegram"></i> Telegram & Вирты</div>
       <div class="chip" onclick="setFilter('username_osint', this)"><i class="fa-solid fa-magnifying-glass"></i> Sherlock Никнеймы</div>
       <div class="chip" onclick="setFilter('email_checks', this)"><i class="fa-solid fa-phone"></i> Телефон & Email</div>
       <div class="chip" onclick="setFilter('web_infra_secrets', this)"><i class="fa-solid fa-network-wired"></i> Домены & Серверы</div>
+      <div class="chip" onclick="setFilter('cyber_tools_lab', this)"><i class="fa-solid fa-wrench"></i> Декодеры & Dorks</div>
       <div class="chip" onclick="setFilter('amazing_osint', this)"><i class="fa-solid fa-camera"></i> Фото & GeoINT</div>
-      <div class="chip" onclick="setFilter('social_google_instagram', this)"><i class="fa-brands fa-instagram"></i> Соцсети</div>
     </div>
 
     <div id="catalogContainer"></div>
@@ -325,19 +329,61 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
       
       <div class="cli-output" id="cliOutputContent">peace of the island of sor/ber peoples · Terminal Console
 Type 'help' to see available commands, or execute any tool directly.
-Examples: 'sherlock wertag20', 'github torvalds', 'subfinder google.com', 'phone +79991234567', 'crypto 0x...'
+Examples: 'autorecon torvalds', 'wayback github.com/user', 'crtsh domain.com', 'hash 5d41402abc4b2a76b9719d911017c592'
 ----------------------------------------------------------------------
 </div>
 
       <div class="cli-prompt-row">
         <span class="cli-prompt-label">root@cyberhub:~#</span>
-        <input type="text" id="cliInputField" class="cli-input" placeholder="Введите команду (help, sherlock, github, subfinder, crypto, clear)..." autofocus onkeydown="handleCliKeyDown(event)">
+        <input type="text" id="cliInputField" class="cli-input" placeholder="Введите команду (help, autorecon, sherlock, wayback, crtsh, hash, clear)..." autofocus onkeydown="handleCliKeyDown(event)">
         <button class="btn btn-primary" style="padding:5px 12px; font-size:11px;" onclick="executeCliCommand()">RUN</button>
       </div>
     </div>
   </div>
 
-  <!-- ВЬЮ 4: АТРИБУЦИЯ ВИРТОВ -->
+  <!-- ВЬЮ 4: ИНТЕРАКТИВНЫЙ ГРАФ СВЯЗЕЙ (VIS.JS) -->
+  <div class="view-page" id="graphView">
+    <div class="back-btn" onclick="showView('catalogView')">
+      <i class="fa-solid fa-arrow-left"></i> Назад в каталог
+    </div>
+
+    <div class="workspace-box">
+      <div class="workspace-title" style="color:var(--cyan); display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-project-diagram"></i> Интерактивный Граф Связей Расследования</span>
+        <button class="btn btn-secondary" style="padding:3px 8px; font-size:10px;" onclick="exportCurrentGraph()"><i class="fa-solid fa-camera"></i> Сохранить PNG</button>
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
+        Визуализация цифровых связей между профилями, репозиториями, скрытыми email-адресами из коммитов, блокчейн-кошельками и доменами.
+      </div>
+
+      <div class="input-row">
+        <input class="tool-input" id="graphTargetInput" placeholder="Введите никнейм, логин GitHub, домен или кошелек..." onkeydown="if(event.key==='Enter') runGraphDirectScan()">
+        <button class="btn btn-cyan" onclick="runGraphDirectScan()"><i class="fa-solid fa-bolt"></i> Построить граф</button>
+      </div>
+
+      <div class="loader" id="graphLoader">
+        <div class="spinner" style="border-top-color:var(--cyan);"></div>
+        <span style="font-size:11px; color:var(--cyan);">Сквозной сбор узлов и построение графа связей...</span>
+      </div>
+
+      <div id="graphContainerBox" style="display:none;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px; font-size:10px; color:#cbd5e1;">
+          <span>🟢 Цель</span> · <span>🔵 Профиль</span> · <span>🔴 Commit Email</span> · <span>🟣 ФИО</span> · <span>🌐 Сервер/IP</span>
+        </div>
+        <div id="visNetworkCanvas" style="width:100%; height:400px; background:#020509; border:1px solid #162a44; border-radius:12px; margin-bottom:12px;"></div>
+        
+        <div class="custom-card" id="graphDossierBox" style="border-color:var(--primary);">
+          <div class="custom-card-title" style="color:var(--primary); display:flex; justify-content:space-between;">
+            <span><i class="fa-solid fa-file-shield"></i> Тактическое Досье по Графу</span>
+            <button class="btn btn-primary" style="padding:3px 8px; font-size:10px;" onclick="printDossierReport()"><i class="fa-solid fa-print"></i> Печать / PDF</button>
+          </div>
+          <div id="graphDossierContent" class="ai-dossier-text" style="color:#cbd5e1; font-size:12px; line-height:1.55; white-space:pre-wrap;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВЬЮ 5: АТРИБУЦИЯ ВИРТОВ -->
   <div class="view-page" id="attributionView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -371,7 +417,7 @@ Examples: 'sherlock wertag20', 'github torvalds', 'subfinder google.com', 'phone
     </div>
   </div>
 
-  <!-- ВЬЮ 5: ФОТО & ЭКСПЕРТИЗА МЕТАДАННЫХ -->
+  <!-- ВЬЮ 6: ФОТО & ЭКСПЕРТИЗА МЕТАДАННЫХ -->
   <div class="view-page" id="photoView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -397,7 +443,44 @@ Examples: 'sherlock wertag20', 'github torvalds', 'subfinder google.com', 'phone
     </div>
   </div>
 
-  <!-- ВЬЮ 6: УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (АДМИН) -->
+  <!-- ВЬЮ 7: ЛАБОРАТОРИЯ ДЕКОДЕРОВ & DORK BUILDER -->
+  <div class="view-page" id="decoderView">
+    <div class="back-btn" onclick="showView('catalogView')">
+      <i class="fa-solid fa-arrow-left"></i> Назад в каталог
+    </div>
+
+    <div class="workspace-box">
+      <div class="workspace-title" style="color:var(--primary);"><i class="fa-solid fa-wrench"></i> Лаборатория Декодеров & Hash Identifier</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
+        Мгновенный анализ хешей, декодирование Base64/Hex/URL, просмотр структуры JWT-токенов.
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <textarea class="tool-input" id="decoderInputData" style="height:80px; font-family:monospace; resize:none;" placeholder="Вставьте строку, хеш или токен (например: eyJhbGci... или e10adc3949ba59abbe56e057f20f883e)"></textarea>
+      </div>
+
+      <div class="btn-group" style="margin-bottom:12px;">
+        <button class="btn btn-primary" onclick="runDecoderAction('hash_id')"><i class="fa-solid fa-magnifying-glass"></i> Опознать Хеш</button>
+        <button class="btn btn-cyan" onclick="runDecoderAction('base64_decode')">Base64 Decode</button>
+        <button class="btn btn-secondary" onclick="runDecoderAction('base64_encode')">Base64 Encode</button>
+        <button class="btn btn-cyan" onclick="runDecoderAction('hex_decode')">Hex Decode</button>
+        <button class="btn btn-secondary" onclick="runDecoderAction('jwt_decode')"><i class="fa-solid fa-key"></i> Разобрать JWT</button>
+        <button class="btn btn-secondary" onclick="runDecoderAction('rot13')">ROT13</button>
+      </div>
+
+      <div id="decoderResultBox" style="display:none;">
+        <div class="custom-card">
+          <div class="custom-card-title" style="display:flex; justify-content:space-between;">
+            <span><i class="fa-solid fa-check"></i> Результат обработки</span>
+            <button class="copy-btn" style="position:static;" onclick="copyText(this, document.getElementById('decoderOutputPre').innerText)">Копировать</button>
+          </div>
+          <pre id="decoderOutputPre" class="code-wrap" style="font-size:12px; color:var(--primary);"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВЬЮ 8: УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (АДМИН) -->
   <div class="view-page" id="usersAdminView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -458,7 +541,7 @@ Examples: 'sherlock wertag20', 'github torvalds', 'subfinder google.com', 'phone
     </div>
   </div>
 
-  <!-- ВЬЮ 7: ЭКРАН БЛОКИРОВКИ -->
+  <!-- ВЬЮ 9: ЭКРАН БЛОКИРОВКИ -->
   <div class="view-page" id="blockedView">
     <div class="auth-container">
       <div style="background:#13090e; border:2px solid var(--danger); border-radius:16px; padding:28px 22px; max-width:400px; width:100%; box-shadow:0 0 40px rgba(255,51,102,0.35); text-align:center;">
@@ -1279,6 +1362,152 @@ let FULL_CATALOG = [
         }
       }
     ]
+  },
+  {
+    "id": "deep_archive_recon",
+    "title": "🏛️ Архивы, Удаленные данные & Сквозной Auto-Recon",
+    "desc": "Сквозной сбор связей, поиск в Wayback Machine, история SSL-сертификатов и архивных копий.",
+    "tools": [
+      {
+        "id": "autorecon",
+        "name": "⚡ Сквозной Auto-Recon & Граф связей (Auto-Investigator)",
+        "repo": "https://github.com/sherlock-project/sherlock",
+        "web_url": "",
+        "purpose": "🕸️ Автоматическое сквозное расследование: сбор профилей, коммит-email, проверка серверов, построение интерактивного графа связей и тактического досье.",
+        "input": "username / email / domain / phone",
+        "web_runnable": true,
+        "scan_type": "autorecon",
+        "install_guide": {
+          "git": "# Встроенный в систему авто-движок расследования",
+          "pip_or_pkg": "# Работает автономно в WebApp",
+          "docker": "# Встроенный модуль",
+          "usage": "Введите любую цель для сквозного построения графа связей",
+          "notes": "Объединяет Sherlock, GitHub коммиты, Holehe и Wayback в единый граф."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Запустить Auto-Recon",
+          "action": "scan_autorecon"
+        }
+      },
+      {
+        "id": "wayback",
+        "name": "🏛️ Wayback Machine & Archive.org Inspector",
+        "repo": "https://github.com/internetarchive/wayback",
+        "web_url": "https://web.archive.org/",
+        "purpose": "⏳ Поиск удаленных страниц, старых версий профилей соцсетей, контактов и снимков сайтов за прошлые годы через Web Archive API.",
+        "input": "url / domain / profile link",
+        "web_runnable": true,
+        "scan_type": "wayback",
+        "install_guide": {
+          "git": "# Встроенный модуль обращения к CDX API Archive.org",
+          "pip_or_pkg": "pip install httpx",
+          "docker": "# Доступно в веб-панели",
+          "usage": "wayback_machine --target github.com/username",
+          "notes": "Позволяет увидеть, что было написано на странице до ее удаления."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Проверить архивы",
+          "action": "scan_wayback"
+        }
+      },
+      {
+        "id": "crtsh",
+        "name": "📜 Certificate Transparency Logs (crt.sh)",
+        "repo": "https://github.com/crtsh/crt.sh",
+        "web_url": "https://crt.sh/",
+        "purpose": "🔍 Поиск скрытых, тестовых и забытых поддоменов через глобальные журналы прозрачности SSL-сертификатов.",
+        "input": "domain",
+        "web_runnable": true,
+        "scan_type": "crtsh",
+        "install_guide": {
+          "git": "# Встроенный парсер журналов сертификатов crt.sh",
+          "pip_or_pkg": "curl https://crt.sh/?q=%.target.com&output=json",
+          "docker": "# Работает через API",
+          "usage": "crtsh --domain example.com",
+          "notes": "Находит поддомены, которых нет в открытых записях DNS."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Анализ SSL журналов",
+          "action": "scan_crtsh"
+        }
+      }
+    ]
+  },
+  {
+    "id": "cyber_tools_lab",
+    "title": "🧰 Лаборатория Декодеров & Dork Builder",
+    "desc": "Конструктор боевых дорков, автоопределение хешей (MD5/SHA256/bcrypt), JWT и мульти-декодеры.",
+    "tools": [
+      {
+        "id": "cyberchef_decoder",
+        "name": "🧰 Кибер-декодер (Base64, Hex, ROT13, URL)",
+        "repo": "https://github.com/gchq/CyberChef",
+        "web_url": "https://gchq.github.io/CyberChef/",
+        "purpose": "🔓 Универсальный швейцарский нож декодирования: Base64, Hex, URL, Binary, ROT13 прямо в интерфейсе.",
+        "input": "encoded string / payload",
+        "web_runnable": true,
+        "scan_type": "decoder",
+        "install_guide": {
+          "git": "# Встроенная лаборатория декодеров",
+          "pip_or_pkg": "# Доступно в WebApp",
+          "docker": "# Не требуется",
+          "usage": "Введите зашифрованную строку и выберите алгоритм",
+          "notes": "Позволяет быстро разобрать полезную нагрузку."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Открыть декодер",
+          "action": "open_decoder"
+        }
+      },
+      {
+        "id": "hash_identifier",
+        "name": "🔐 Hash Identifier & Analyzer",
+        "repo": "https://github.com/blackploit/hash-identifier",
+        "web_url": "https://hashes.com/",
+        "purpose": "🎯 Автоматическое определение алгоритма хеширования (MD5, SHA-1, SHA-256, NTLM, bcrypt, Argon2).",
+        "input": "hash string",
+        "web_runnable": true,
+        "scan_type": "decoder",
+        "install_guide": {
+          "git": "# Встроенный анализатор хешей",
+          "pip_or_pkg": "# Доступно в WebApp",
+          "docker": "# Не требуется",
+          "usage": "Вставьте хеш (например: e10adc3949ba59abbe56e057f20f883e)",
+          "notes": "Определяет разрядность и вероятные алгоритмы."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Идентифицировать хеш",
+          "action": "open_decoder"
+        }
+      },
+      {
+        "id": "jwt_decoder",
+        "name": "🛡️ JWT Token & Payload Inspector",
+        "repo": "https://jwt.io/",
+        "web_url": "https://jwt.io/",
+        "purpose": "🔑 Разбор структуры токенов авторизации (Header, Payload, claims, таймстампы) без отправки ключа.",
+        "input": "jwt token",
+        "web_runnable": true,
+        "scan_type": "decoder",
+        "install_guide": {
+          "git": "# Встроенный инспектор JWT",
+          "pip_or_pkg": "# Доступно в WebApp",
+          "docker": "# Не требуется",
+          "usage": "Вставьте токен eyJhbGciOi...",
+          "notes": "Показывает права пользователя и время истечения токена."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Анализ JWT",
+          "action": "open_decoder"
+        }
+      }
+    ]
   }
 ];
 let currentCategory = 'all';
@@ -1289,6 +1518,8 @@ let isUserAdmin = false;
 let cliHistory = [];
 let cliHistoryIndex = -1;
 let matrixActive = false;
+let visNetworkInstance = null;
+let lastAutoReconData = null;
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
@@ -1476,7 +1707,7 @@ function setFilter(cat, elem) {
   renderCatalog();
 }
 
-// ОТРИСОВКА КАТАЛОГА В УЛУЧШЕННОЙ 2-КОЛОНОЧНОЙ СЕТКЕ
+// ОТРИСОВКА КАТАЛОГА В 2-КОЛОНОЧНОЙ СЕТКЕ
 function renderCatalog() {
   const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
   const container = document.getElementById('catalogContainer');
@@ -1521,7 +1752,11 @@ function renderCatalog() {
       }
 
       let iconClass = 'fa-solid fa-cube';
-      if (tool.id.includes('git')) iconClass = 'fa-brands fa-github';
+      if (tool.id.includes('autorecon')) iconClass = 'fa-solid fa-project-diagram';
+      else if (tool.id.includes('wayback') || tool.id.includes('archive')) iconClass = 'fa-solid fa-clock-rotate-left';
+      else if (tool.id.includes('crtsh')) iconClass = 'fa-solid fa-certificate';
+      else if (tool.id.includes('decode') || tool.id.includes('hash') || tool.id.includes('jwt')) iconClass = 'fa-solid fa-wrench';
+      else if (tool.id.includes('git')) iconClass = 'fa-brands fa-github';
       else if (tool.id.includes('crypto')) iconClass = 'fa-solid fa-wallet';
       else if (tool.id.includes('phone')) iconClass = 'fa-solid fa-phone';
       else if (tool.id.includes('tg') || tool.id.includes('tele')) iconClass = 'fa-brands fa-telegram';
@@ -1571,30 +1806,9 @@ function runMainQuickScan() {
     return;
   }
 
-  // Умный авто-роутинг по формату ввода
-  if (target.startsWith('0x') || target.startsWith('T') && target.length === 34 || target.startsWith('bc1') || target.startsWith('1') && target.length >= 26) {
-    openToolPage('crypto_tracker');
-    document.getElementById('tvTargetInput').value = target;
-  } else if (target.includes('github.com') || target.startsWith('gh:')) {
-    openToolPage('github_recon');
-    document.getElementById('tvTargetInput').value = target.replace('gh:', '').replace('https://github.com/', '');
-  } else if (target.startsWith('+') || /^\d{10,15}$/.test(target.replace(/[\s\-\(\)]/g, ''))) {
-    openToolPage('phoneinfoga_recon');
-    document.getElementById('tvTargetInput').value = target;
-  } else if (target.includes('@') && target.includes('.')) {
-    openToolPage('holehe_osint');
-    document.getElementById('tvTargetInput').value = target;
-  } else if (target.startsWith('@') || target.includes('_temp') || target.includes('_alt') || target.includes('_work')) {
-    openToolPage('sockpuppet_attribution');
-    document.getElementById('tvTargetInput').value = target;
-  } else if (target.includes('.') && !target.includes(' ') && (target.endsWith('.com') || target.endsWith('.ru') || target.endsWith('.org') || target.endsWith('.io') || target.startsWith('http'))) {
-    openToolPage('subfinder');
-    document.getElementById('tvTargetInput').value = target;
-  } else {
-    openToolPage('sherlock');
-    document.getElementById('tvTargetInput').value = target;
-  }
-
+  // Автоматический роутинг на Auto-Recon & Граф
+  openToolPage('autorecon');
+  document.getElementById('tvTargetInput').value = target;
   runCurrentToolScan();
 }
 
@@ -1607,11 +1821,11 @@ function openToolPage(toolId) {
   }
   if (!selected) {
     selected = {
-      id: 'sherlock',
-      name: 'Sherlock Project Engine',
-      purpose: 'Поиск открытых аккаунтов по 480+ официальным базам данных.',
-      scan_type: 'username',
-      input: 'username'
+      id: 'autorecon',
+      name: 'Auto-Recon Engine & Graph',
+      purpose: 'Сквозное расследование цифрового следа и построение интерактивного графа связей.',
+      scan_type: 'autorecon',
+      input: 'target'
     };
   }
 
@@ -1641,8 +1855,14 @@ function openToolPage(toolId) {
 
   const input = document.getElementById('tvTargetInput');
   input.value = '';
-  if (selected.scan_type === 'github' || selected.id === 'github_recon') {
-    input.placeholder = `GitHub логин (например: torvalds или sorberaa)`;
+  if (selected.scan_type === 'autorecon' || selected.id === 'autorecon') {
+    input.placeholder = `Цель для сквозного расследования (например: torvalds или google.com)`;
+  } else if (selected.scan_type === 'wayback' || selected.id === 'wayback') {
+    input.placeholder = `URL или домен (например: github.com/torvalds)`;
+  } else if (selected.scan_type === 'crtsh' || selected.id === 'crtsh') {
+    input.placeholder = `Домен для поиска SSL журналов (например: example.com)`;
+  } else if (selected.scan_type === 'github' || selected.id === 'github_recon') {
+    input.placeholder = `GitHub логин (например: torvalds)`;
   } else if (selected.scan_type === 'crypto' || selected.id === 'crypto_tracker') {
     input.placeholder = `Адрес кошелька (BTC, ETH, USDT TRC20, SOL)`;
   } else if (selected.scan_type === 'attribution' || selected.id === 'sockpuppet_attribution') {
@@ -1655,8 +1875,6 @@ function openToolPage(toolId) {
     input.placeholder = `Домен (например: google.com)`;
   } else if (selected.input === 'email' || selected.scan_type === 'email') {
     input.placeholder = `Email (например: user@mail.ru)`;
-  } else if (selected.input === 'ip' || selected.scan_type === 'ip') {
-    input.placeholder = `IP-адрес (например: 8.8.8.8)`;
   } else if (selected.input === 'phone' || selected.scan_type === 'phone') {
     input.placeholder = `Номер телефона (например: +79991234567)`;
   } else {
@@ -1717,14 +1935,157 @@ async function runCurrentToolScan() {
   }
 }
 
-// ВЫВОД РЕЗУЛЬТАТОВ РАЗВЕДКИ (GITHUB, CRYPTO, SHERLOCK, PHONE, DOMAIN, IP, CLI)
+// ВЫВОД РЕЗУЛЬТАТОВ РАЗВЕДКИ (AUTORECON, WAYBACK, CRTSH, GITHUB, CRYPTO, SHERLOCK, PHONE, DOMAIN, CLI)
 function renderToolSpecificOutput(data, target) {
   const outBox = document.getElementById('tvOutputBox');
   const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
   let html = '';
 
-  // 1. GITHUB DEEP RECON
-  if (data.type === 'github') {
+  // 1. AUTO-RECON & GRAPH
+  if (data.type === 'autorecon') {
+    lastAutoReconData = data;
+    html += `
+      <div class="custom-card" style="border-color:var(--primary);">
+        <div class="custom-card-title" style="color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
+          <span><i class="fa-solid fa-project-diagram"></i> Сквозное Расследование: ${data.target}</span>
+          <div class="btn-group">
+            <button onclick="showView('graphView'); renderInteractiveVisGraph(lastAutoReconData.nodes, lastAutoReconData.edges);" class="btn btn-cyan" style="padding:3px 8px; font-size:10px;"><i class="fa-solid fa-expand"></i> Открыть граф</button>
+            <button onclick="printDossierReport()" class="btn btn-primary" style="padding:3px 8px; font-size:10px;"><i class="fa-solid fa-file-pdf"></i> Экспорт Досье</button>
+          </div>
+        </div>
+        
+        <div class="custom-grid" style="margin-bottom:12px;">
+          <div class="custom-item">
+            <div class="custom-label">🎯 Исходная цель</div>
+            <div class="custom-val">${data.target}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🔗 Связанных узлов</div>
+            <div class="custom-val" style="color:var(--primary);">${(data.nodes || []).length} объектов в графе</div>
+          </div>
+        </div>
+
+        <div id="inlineVisGraph" style="width:100%; height:320px; background:#020509; border:1px solid #162a44; border-radius:10px; margin-bottom:12px;"></div>
+
+        <div style="font-size:11px; font-weight:800; color:var(--cyan); margin-bottom:4px; text-transform:uppercase;">
+          📋 Аналитическое резюме досье:
+        </div>
+        <div class="ai-dossier-text" style="color:#cbd5e1; font-size:12px; line-height:1.5; white-space:pre-wrap;">${data.ai_dossier}</div>
+      </div>
+    `;
+
+    setTimeout(() => {
+      const container = document.getElementById('inlineVisGraph');
+      if (container && data.nodes && data.edges) {
+        const visData = {
+          nodes: new vis.DataSet(data.nodes),
+          edges: new vis.DataSet(data.edges)
+        };
+        const options = {
+          physics: { stabilization: true, barnesHut: { springLength: 90 } },
+          nodes: { font: { color: '#ffffff', size: 12 } }
+        };
+        new vis.Network(container, visData, options);
+      }
+    }, 100);
+
+  // 2. WAYBACK MACHINE
+  } else if (data.type === 'wayback') {
+    const snaps = data.snapshots || [];
+    const latest = data.latest_snapshot;
+    let logLines = data.raw_cli_output || '';
+
+    html += `
+      <div class="hacker-terminal">
+        <div class="term-topbar">
+          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+          <span>WAYBACK-PROBE@STATION:~# ./wayback ${data.target}</span>
+          <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
+        </div>
+        <div class="term-log-content">${logLines}</div>
+      </div>
+
+      <div class="custom-card" style="border-color:var(--purple);">
+        <div class="custom-card-title" style="color:var(--purple); display:flex; justify-content:space-between;">
+          <span><i class="fa-solid fa-clock-rotate-left"></i> Архивные копии: ${data.target}</span>
+          <div class="btn-group">
+            <button onclick="openExternalUrl('${data.archive_links?.wayback_calendar}')" class="btn btn-primary" style="padding:2px 7px; font-size:10px;">Календарь Wayback</button>
+            <button onclick="openExternalUrl('${data.archive_links?.archive_today}')" class="btn btn-secondary" style="padding:2px 7px; font-size:10px;">Archive.today</button>
+          </div>
+        </div>
+
+        <div class="custom-grid" style="margin-bottom:10px;">
+          <div class="custom-item" style="grid-column: span 2;">
+            <div class="custom-label">⏳ Последний зафиксированный снимок</div>
+            <div class="custom-val">
+              ${latest ? `<a href="${latest.url}" target="_blank" style="color:var(--primary); text-decoration:none;">🔗 ${latest.timestamp} (HTTP ${latest.status})</a>` : '<span style="color:var(--text-muted);">Прямой последний снимок не найден</span>'}
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:11px; font-weight:800; color:#fff; margin-top:8px; margin-bottom:6px;">
+          Хронологические архивные копии (${snaps.length}):
+        </div>
+        <div class="profiles-grid">
+          ${snaps.map(s => `
+            <div class="profile-card">
+              <div>
+                <div class="profile-name" style="font-size:11px;">📅 ${s.timestamp}</div>
+                <div style="font-size:9px; color:var(--cyan);">HTTP ${s.status} · ${s.mimetype}</div>
+              </div>
+              <button onclick="openExternalUrl('${s.view_url}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">Открыть</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+  // 3. CERTIFICATE TRANSPARENCY (CRTSH)
+  } else if (data.type === 'crtsh') {
+    const subs = data.subdomains || [];
+    let logLines = data.raw_cli_output || '';
+
+    html += `
+      <div class="hacker-terminal">
+        <div class="term-topbar">
+          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
+          <span>CRTSH-PROBE@STATION:~# ./crtsh -d ${data.domain}</span>
+          <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
+        </div>
+        <div class="term-log-content">${logLines}</div>
+      </div>
+
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-certificate" style="color:var(--cyan);"></i> Журналы SSL-сертификатов (crt.sh)</div>
+        <div class="custom-grid" style="margin-bottom:10px;">
+          <div class="custom-item">
+            <div class="custom-label">🌐 Исследуемый домен</div>
+            <div class="custom-val">${data.domain}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">📜 Извлечено субдоменов</div>
+            <div class="custom-val" style="color:var(--primary); font-weight:800;">${data.total_subdomains} записей</div>
+          </div>
+        </div>
+
+        <div style="font-size:11px; font-weight:800; color:#fff; margin-top:8px; margin-bottom:6px;">
+          Субдомены из открытых SSL-логов:
+        </div>
+        <div class="profiles-grid">
+          ${subs.slice(0, 24).map(s => `
+            <div class="profile-card">
+              <div>
+                <div class="profile-name" style="font-size:11px; font-family:monospace;">${s}</div>
+              </div>
+              <button onclick="openExternalUrl('https://${s}')" class="btn btn-secondary" style="padding:2px 6px; font-size:9px;">🔗</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+  // 4. GITHUB DEEP RECON
+  } else if (data.type === 'github') {
     const emails = data.emails_discovered || [];
     const repos = data.recent_repos || [];
     let logLines = `[${nowStr}] [GH-PROBE] RESOLVING USER: ${data.username}
@@ -1738,7 +2099,7 @@ function renderToolSpecificOutput(data, target) {
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>GITHUB-INTEL@STATION:~# ./gh-dork ${data.username}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\`')}\`)">📋 Копировать CLI</button>
+          <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${logLines}</div>
       </div>
@@ -1797,7 +2158,7 @@ function renderToolSpecificOutput(data, target) {
       html += '</div>';
     }
 
-  // 2. CRYPTO & BLOCKCHAIN WALLET
+  // 5. CRYPTO
   } else if (data.type === 'crypto') {
     let logLines = `[${nowStr}] [CRYPTO-PROBE] RESOLVING ADDRESS: ${data.address}
 [${nowStr}] [+] DETECTED NETWORK: ${data.network} (${data.symbol})
@@ -1809,7 +2170,7 @@ function renderToolSpecificOutput(data, target) {
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>CRYPTO-INTEL@STATION:~# ./trace ${data.address.substr(0, 10)}...</span>
-          <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\`')}\`)">📋 Копировать CLI</button>
+          <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${logLines}</div>
       </div>
@@ -1840,7 +2201,7 @@ function renderToolSpecificOutput(data, target) {
       </div>
     `;
 
-  // 3. SHERLOCK USERNAME
+  // 6. SHERLOCK USERNAME
   } else if (data.type === 'username') {
     const pdata = data.probable_data || {};
     const profiles = data.profiles || [];
@@ -1857,7 +2218,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>SHERLOCK@STATION:~# ./sherlock ${data.username}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\`')}\`)">📋 Копировать CLI</button>
+          <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${cliLog}</div>
       </div>
@@ -1917,7 +2278,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       `;
     }
 
-  // 4. PHONE RECON
+  // 7. PHONE
   } else if (data.type === 'phone') {
     const tz = (data.timezones || []).join(', ') || 'UTC';
     const m = data.messengers || {};
@@ -1933,7 +2294,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>PHONE-RECON@STATION:~# ./phoneinfoga scan -n ${data.e164}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\`')}\`)">📋 Копировать CLI</button>
+          <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${cliLog}</div>
       </div>
@@ -1972,7 +2333,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       </div>
     `;
 
-  // 5. DOMAIN & SUBFINDER
+  // 8. DOMAIN
   } else if (data.type === 'domain') {
     const d = data.data || {};
     const ssl = d.ssl || {};
@@ -1990,7 +2351,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>SUBFINDER@STATION:~# ./subfinder -d ${data.target}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\`')}\`)">📋 Копировать CLI</button>
+          <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${cliLog}</div>
       </div>
@@ -2039,34 +2400,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
       html += '</div>';
     }
 
-  // 6. IP GEOINT
-  } else if (data.type === 'ip') {
-    const d = data.data || {};
-    html += `
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-earth-americas" style="color:var(--cyan);"></i> Геолокация и Провайдер IP</div>
-        <div class="custom-grid">
-          <div class="custom-item">
-            <div class="custom-label">🌍 Страна и Город</div>
-            <div class="custom-val">${d.country || '—'}, ${d.city || '—'} (${d.regionName || ''})</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🏢 Провайдер (ISP)</div>
-            <div class="custom-val">${d.isp || '—'}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🔢 Автономная система (AS)</div>
-            <div class="custom-val">${d.as || '—'}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🕒 Часовой пояс</div>
-            <div class="custom-val">${d.timezone || '—'}</div>
-          </div>
-        </div>
-      </div>
-    `;
-
-  // 7. CLI TOOL DIRECT RUNNER
+  // 9. CLI TOOL DIRECT RUNNER
   } else if (data.type === 'cli_tool') {
     let cliLog = data.raw_cli_output || `[${nowStr}] [MODULE] INITIALIZING: ${data.tool_name}
 [${nowStr}] [TARGET] "${data.target}"
@@ -2078,7 +2412,7 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>${data.tool_id.toUpperCase()}@STATION:~# ${data.cli_command}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\`')}\`)">📋 Копировать CLI</button>
+          <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${cliLog}</div>
       </div>
@@ -2108,6 +2442,164 @@ ${checkedLines || `[${nowStr}] [-] NO DIRECT MATCHES FOUND`}
   }
 
   outBox.innerHTML = html;
+}
+
+// ИНТЕРАКТИВНЫЙ VIS.JS ГРАФ СВЯЗЕЙ
+async function runGraphDirectScan() {
+  const target = document.getElementById('graphTargetInput').value.trim();
+  const loader = document.getElementById('graphLoader');
+  const box = document.getElementById('graphContainerBox');
+
+  if (!target) {
+    alert('Введите цель для построения графа');
+    return;
+  }
+
+  loader.style.display = 'block';
+  box.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/scan/autorecon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId },
+      body: JSON.stringify({ target, caller: currentSessionUser })
+    });
+    const data = await res.json();
+    loader.style.display = 'none';
+    box.style.display = 'block';
+    lastAutoReconData = data;
+
+    renderInteractiveVisGraph(data.nodes || [], data.edges || []);
+    document.getElementById('graphDossierContent').innerText = data.ai_dossier || 'Досье сформировано.';
+  } catch (err) {
+    loader.style.display = 'none';
+    alert('Ошибка построения графа: ' + err.message);
+  }
+}
+
+function renderInteractiveVisGraph(nodes, edges) {
+  const container = document.getElementById('visNetworkCanvas');
+  if (!container) return;
+
+  const data = {
+    nodes: new vis.DataSet(nodes),
+    edges: new vis.DataSet(edges)
+  };
+
+  const options = {
+    physics: {
+      stabilization: true,
+      barnesHut: {
+        gravitationalConstant: -3000,
+        springLength: 100,
+        springConstant: 0.04
+      }
+    },
+    interaction: {
+      hover: true,
+      navigationButtons: true,
+      keyboard: true
+    },
+    nodes: {
+      borderWidth: 2,
+      shadow: true,
+      font: { color: '#ffffff', face: 'monospace' }
+    },
+    edges: {
+      width: 1.5,
+      shadow: true,
+      font: { color: '#94a3b8', size: 10, align: 'middle' }
+    }
+  };
+
+  visNetworkInstance = new vis.Network(container, data, options);
+}
+
+function exportCurrentGraph() {
+  const canvas = document.querySelector('#visNetworkCanvas canvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = `osint_graph_${Date.now()}.png`;
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function printDossierReport() {
+  if (!lastAutoReconData) {
+    alert('Сначала выполните поиск или постройте граф');
+    return;
+  }
+  const printWin = window.open('', '_blank');
+  const d = lastAutoReconData;
+  printWin.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>OSINT Report · ${d.target}</title>
+      <style>
+        body { font-family: monospace; padding: 25px; background: #fff; color: #000; line-height: 1.5; }
+        h1 { border-bottom: 2px solid #000; padding-bottom: 8px; text-transform: uppercase; }
+        .meta { margin-bottom: 20px; font-size: 12px; color: #555; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; }
+      </style>
+    </head>
+    <body>
+      <h1>🛡️ OSINT TACTICAL DOSSIER · PEACE OF THE ISLAND</h1>
+      <div class="meta">
+        <b>Объект:</b> ${d.target} | <b>Дата:</b> ${new Date().toLocaleString()} | <b>Оператор:</b> ${currentSessionUser || 'Investigator'}
+      </div>
+      <h2>1. Сводный аналитический отчет</h2>
+      <pre>${d.ai_dossier || 'Нет данных'}</pre>
+      <h2>2. Идентифицированные цифровые узлы (${(d.nodes || []).length})</h2>
+      <ul>
+        ${(d.nodes || []).map(n => `<li><b>${n.label}</b> [${n.group || 'Node'}]</li>`).join('')}
+      </ul>
+      <script>window.print();</script>
+    </body>
+    </html>
+  `);
+  printWin.document.close();
+}
+
+// ДЕКОДЕРЫ
+async function runDecoderAction(action) {
+  const input = document.getElementById('decoderInputData').value.trim();
+  const resBox = document.getElementById('decoderResultBox');
+  const outPre = document.getElementById('decoderOutputPre');
+
+  if (!input) {
+    alert('Введите строку или хеш');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/tools/decode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, data: input })
+    });
+    const data = await res.json();
+    resBox.style.display = 'block';
+
+    if (data.action === 'hash_id') {
+      outPre.innerText = `[HASH IDENTIFIER REPORT]
+Длина хеша: ${data.length} символов
+Вероятные алгоритмы:
+${(data.possible_algorithms || []).map(a => `  • ${a}`).join('\n')}`;
+    } else if (data.action === 'jwt_decode') {
+      outPre.innerText = `[JWT STRUCTURE]
+HEADER:
+${JSON.stringify(data.header, null, 2)}
+
+PAYLOAD:
+${JSON.stringify(data.payload, null, 2)}`;
+    } else {
+      outPre.innerText = data.result || JSON.stringify(data, null, 2);
+    }
+  } catch (e) {
+    resBox.style.display = 'block';
+    outPre.innerText = 'Ошибка: ' + e.message;
+  }
 }
 
 // ИНТЕРАКТИВНЫЙ CLI ТЕРМИНАЛ ОБРАБОТЧИК
@@ -2149,14 +2641,17 @@ async function executeCliCommand() {
   if (cmd === 'help') {
     outputEl.innerText += `AVAILABLE COMMANDS:
   help                     - Show this command reference
+  autorecon <target>       - Full cross-correlation scan & relationship graph
   sherlock <username>      - Search 480+ databases for username
+  wayback <url/domain>     - Retrieve historical captures & deleted snapshots
+  crtsh <domain>           - Extract subdomains from SSL Certificate Transparency
   github <username>        - Extract commit emails & repos for GitHub user
   crypto <wallet_address>  - Identify network, balance & ledger links for wallet
   phone <phone_number>     - Lookup carrier, region and VoIP status
   subfinder <domain>       - Enumerate subdomains, DNS and SSL certificates
   holehe <email>           - Check email registration across 120+ platforms
-  ip <ip_address>          - Lookup GeoIP, ISP and ASN
-  attr <tg_username>       - Sockpuppet attribution & root handle correlation
+  hash <hash_string>       - Identify hash type (MD5/SHA256/bcrypt)
+  b64d <string>            - Base64 decode
   matrix                   - Toggle Matrix Digital Rain background FX
   whoami / id              - Display current user callsign & Telegram ID
   clear                    - Clear terminal screen
@@ -2171,6 +2666,30 @@ async function executeCliCommand() {
     outputEl.innerText += `[+] Callsign: ${currentSessionUser || 'Guest'} | TG ID: ${tgUserId || 'Browser'} | Admin: ${isUserAdmin ? 'YES' : 'NO'}\n`;
   } else if (cmd === 'catalog' || cmd === 'exit') {
     showView('catalogView');
+  } else if (cmd === 'hash' && arg) {
+    try {
+      const res = await fetch('/api/tools/decode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'hash_id', data: arg })
+      });
+      const data = await res.json();
+      outputEl.innerText += `[+] Hash Length: ${data.length} | Likely: ${(data.possible_algorithms || []).join(', ')}\n`;
+    } catch (e) {
+      outputEl.innerText += `[-] Error: ${e.message}\n`;
+    }
+  } else if (cmd === 'b64d' && arg) {
+    try {
+      const res = await fetch('/api/tools/decode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'base64_decode', data: arg })
+      });
+      const data = await res.json();
+      outputEl.innerText += `[+] Decoded: ${data.result}\n`;
+    } catch (e) {
+      outputEl.innerText += `[-] Error: ${e.message}\n`;
+    }
   } else if (arg) {
     outputEl.innerText += `[*] Executing '${cmd} ${arg}' via OSINT Engine...\n`;
     try {
@@ -2217,7 +2736,7 @@ async function executeCliCommand() {
   outputEl.scrollTop = outputEl.scrollHeight;
 }
 
-// ОБРАБОТКА ФОТО (ИСПРАВЛЕНО И РАБОТАЕТ В ОБОИХ ОКНАХ)
+// ОБРАБОТКА ФОТО
 function handlePhotoDrop(e, inputId) {
   e.preventDefault();
   if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -2315,7 +2834,7 @@ function renderPhotoSpecificCard(data, container) {
       <div class="term-topbar">
         <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
         <span>EXIF-TOOL@STATION:~# exiftool -v input_image</span>
-        <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\`')}\`)">📋 Копировать CLI</button>
+        <button class="copy-btn" onclick="copyText(this, \`${cliLog.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
       </div>
       <div class="term-log-content">${cliLog}</div>
     </div>
@@ -2414,7 +2933,7 @@ function renderAttributionOutput(data, container) {
       <div class="term-topbar">
         <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
         <span>ATTRIBUTION@ENGINE:~# ./attr @${target}</span>
-        <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\`')}\`)">📋 Копировать CLI</button>
+        <button class="copy-btn" onclick="copyText(this, \`${logLines.replace(/`/g, '\\`')}\`)">📋 Копировать CLI</button>
       </div>
       <div class="term-log-content">${logLines}</div>
     </div>
@@ -2631,21 +3150,6 @@ function copyText(btn, text) {
     const orig = btn.innerText;
     btn.innerText = 'Скопировано!';
     setTimeout(() => { btn.innerText = orig; }, 1500);
-  });
-}
-
-function filterResultProfiles(cat, btn) {
-  if (btn && btn.parentElement) {
-    btn.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  const cards = document.querySelectorAll('#scanProfilesGrid .profile-card');
-  cards.forEach(c => {
-    if (cat === 'Все' || c.getAttribute('data-cat') === cat) {
-      c.style.display = 'flex';
-    } else {
-      c.style.display = 'none';
-    }
   });
 }
 
