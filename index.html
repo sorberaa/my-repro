@@ -2431,8 +2431,7 @@ function printDossierReport() {
         .meta { margin-bottom: 20px; font-size: 12px; color: #555; }
         pre { background: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; }
       </style>
-    </head>
-    <body>
+    <body onload="window.print()">
       <h1>🛡️ OSINT TACTICAL DOSSIER · PEACE OF THE ISLAND</h1>
       <div class="meta">
         <b>Объект:</b> ${d.target} | <b>Дата:</b> ${new Date().toLocaleString()} | <b>Оператор:</b> ${currentSessionUser || 'Investigator'}
@@ -2443,7 +2442,6 @@ function printDossierReport() {
       <ul>
         ${(d.nodes || []).map(n => `<li><b>${n.label}</b> [${n.group || 'Node'}]</li>`).join('')}
       </ul>
-      <script>window.print();</script>
     </body>
     </html>
   `);
