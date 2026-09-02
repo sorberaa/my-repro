@@ -608,76 +608,47 @@ async def api_user_profile(request: Request):
             "user": u
         }
 
-    # 2. Registering with submitted nickname
-    if nickname_input and len(nickname_input) >= 2:
-        nickname_clean = re.sub(r"[^\w\-\.]", "", nickname_input)[:24]
-        
-        # Check for twink / multi-accounting by device fingerprint or IP
-        is_twink = False
-        linked_acc = None
-        if fingerprint:
-            for existing_k, existing_u in users.items():
-                if existing_k != user_key and fingerprint in existing_u.get("device_fingerprints", []):
-                    is_twink = True
-                    linked_acc = existing_u.get("nickname") or existing_u.get("username") or existing_k
-                    break
+    # 2. Auto-register new user or update nickname
+    nickname_clean = re.sub(r"[^\w\-\.]", "", nickname_input)[:24] if nickname_input else (tg_username or tg_name or ("Admin" if is_admin else f"Agent_{tg_id[-4:] if len(tg_id)>=4 else 'User'}"))
+    
+    # Check for twink / multi-accounting by device fingerprint or IP
+    is_twink = False
+    linked_acc = None
+    if fingerprint:
+        for existing_k, existing_u in users.items():
+            if existing_k != user_key and fingerprint in existing_u.get("device_fingerprints", []):
+                is_twink = True
+                linked_acc = existing_u.get("nickname") or existing_u.get("username") or existing_k
+                break
 
-        init_balance = 999999 if is_admin else (0 if is_twink else 5)
-        
-        new_user = {
-            "tg_id": tg_id or user_key,
-            "username": nickname_clean,
-            "nickname": nickname_clean,
-            "tg_username": tg_username,
-            "tg_name": tg_name,
-            "role": "admin" if is_admin else "user",
-            "status": "active",
-            "registered_at": now_str,
-            "last_seen": now_str,
-            "last_ip": ip,
-            "total_scans": 0,
-            "scan_balance": init_balance,
-            "is_unlimited": is_admin,
-            "device_fingerprints": [fingerprint] if fingerprint else [],
-            "is_twink": is_twink,
-            "linked_account": linked_acc,
-            "notes": f"TG: @{tg_username}" + (f" | ⚠️ Твинк аккаунта @{linked_acc}" if is_twink else "")
-        }
-        users[user_key] = new_user
-        save_users(users)
+    init_balance = 999999 if is_admin else (0 if is_twink else 5)
+    
+    new_user = {
+        "tg_id": tg_id or user_key,
+        "username": nickname_clean,
+        "nickname": nickname_clean,
+        "tg_username": tg_username,
+        "tg_name": tg_name,
+        "role": "admin" if is_admin else "user",
+        "status": "active",
+        "registered_at": now_str,
+        "last_seen": now_str,
+        "last_ip": ip,
+        "total_scans": 0,
+        "scan_balance": init_balance,
+        "is_unlimited": is_admin,
+        "device_fingerprints": [fingerprint] if fingerprint else [],
+        "is_twink": is_twink,
+        "linked_account": linked_acc,
+        "notes": f"TG: @{tg_username}" + (f" | ⚠️ Твинк аккаунта @{linked_acc}" if is_twink else "")
+    }
+    users[user_key] = new_user
+    save_users(users)
 
-        geo = await resolve_ip_geo(ip)
-        append_visit({
-            "ts": now_str,
-            "user": nickname_clean,
-            "tg_id": tg_id,
-            "tg_username": tg_username,
-            "ip": ip,
-            "country": geo.get("country", "GLOBAL"),
-            "city": geo.get("city", ""),
-            "ua": ua
-        })
-
-        return {
-            "ok": True,
-            "registered": True,
-            "blocked": False,
-            "is_admin": is_admin,
-            "nickname": nickname_clean,
-            "role": new_user["role"],
-            "scan_balance": new_user["scan_balance"],
-            "is_unlimited": new_user["is_unlimited"],
-            "is_twink": new_user["is_twink"],
-            "packages": packages,
-            "user": new_user
-        }
-
-    # 3. Not registered yet
-    suggested = tg_username or tg_name or "Agent"
     geo = await resolve_ip_geo(ip)
     append_visit({
         "ts": now_str,
-        "user": f"Новый гость (TG: {tg_id or '—'})",
+        "user": nickname_clean,
         "tg_id": tg_id,
         "tg_username": tg_username,
         "ip": ip,
@@ -688,11 +659,16 @@ async def api_user_profile(request: Request):
 
     return {
         "ok": True,
-        "registered": False,
+        "registered": True,
         "blocked": False,
         "is_admin": is_admin,
-        "suggested_nickname": suggested,
-        "packages": packages
+        "nickname": nickname_clean,
+        "role": new_user["role"],
+        "scan_balance": new_user["scan_balance"],
+        "is_unlimited": new_user["is_unlimited"],
+        "is_twink": new_user["is_twink"],
+        "packages": packages,
+        "user": new_user
     }
 
 
