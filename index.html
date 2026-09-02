@@ -280,7 +280,7 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
   </div>
 
   <!-- ВЬЮ 1: ГЛАВНЫЙ КАТАЛОГ & БЫСТРЫЙ ПОИСК -->
-  <div class="view-page" id="catalogView">
+  <div class="view-page active" id="catalogView">
     
     <!-- STATS HERO BANNER -->
     <div class="hero-stats-banner">
@@ -1871,7 +1871,21 @@ async function initUserProfile() {
   }
   tgUserId = tgId;
 
-  const fp = await getDeviceFingerprint();
+  // Immediate UI activation
+  currentSessionUser = tgUser || tgName || `Agent_${tgId.slice(-4)}`;
+  const badgeEl = document.getElementById('currentUserBadge');
+  const spanEl = document.getElementById('currentUsernameSpan');
+  if (badgeEl && spanEl) {
+    spanEl.innerText = currentSessionUser;
+    badgeEl.style.display = 'inline-flex';
+  }
+  renderCatalog();
+  showView('catalogView');
+
+  let fp = 'df_default';
+  try {
+    fp = await getDeviceFingerprint();
+  } catch(e) {}
 
   try {
     const res = await fetch('/api/user/profile', {
@@ -1891,23 +1905,16 @@ async function initUserProfile() {
     if (data.is_admin) {
       isUserAdmin = true;
       currentSessionUser = data.nickname || 'Admin';
-      document.getElementById('currentUserBadge').style.display = 'inline-flex';
       document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-shield';
       document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
-      showView('catalogView');
     } else if (data.registered) {
       isUserAdmin = false;
       currentSessionUser = data.nickname;
-      document.getElementById('currentUserBadge').style.display = 'inline-flex';
       document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-check';
       document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
-      showView('catalogView');
-    } else {
-      document.getElementById('regNicknameInput').value = data.suggested_nickname || '';
-      showView('registerView');
     }
   } catch (e) {
-    showView('catalogView');
+    console.warn('Profile init:', e);
   }
 }
 
