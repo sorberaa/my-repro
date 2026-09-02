@@ -358,45 +358,135 @@ CATALOG = [
                 }
             },
             {
+                "id": "instaloader",
+                "name": "Instaloader (Python Instagram Downloader & Metadata Extractor)",
+                "repo": "https://github.com/instaloader/instaloader",
+                "web_url": "https://instaloader.github.io/",
+                "purpose": "📥 Мощнейший Python-инструмент для выгрузки постов, историй, видео и сохранения оригинальных EXIF-метаданных, геопозиций и текстовых описаний для анализа.",
+                "input": "instagram username / post link",
+                "web_runnable": True,
+                "scan_type": "cli_tool",
+                "install_guide": {
+                    "git": "git clone https://github.com/instaloader/instaloader.git\ncd instaloader",
+                    "pip_or_pkg": "pip3 install instaloader",
+                    "docker": "docker run --rm -v $(pwd):/data instaloader/instaloader --geotags profile <target>",
+                    "usage": "instaloader --geotags --comments --stories profile <username>",
+                    "notes": "Сохраняет геометки фотографий и выгружает полный дамп текстовых комментариев."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Анализ Instagram в WebApp",
+                    "action": "scan_universal"
+                }
+            },
+            {
+                "id": "osintgram",
+                "name": "Osintgram (Интерактивная консоль Instagram-разведки)",
+                "repo": "https://github.com/Datalux/Osintgram",
+                "web_url": "https://github.com/Datalux/Osintgram",
+                "purpose": "🕵️ Интерактивный терминал разведки по Instagram: анализ подписчиков, извлечение телефонных номеров, почт, геотегов с фото и истории комментариев.",
+                "input": "instagram username",
+                "web_runnable": True,
+                "scan_type": "cli_tool",
+                "install_guide": {
+                    "git": "git clone https://github.com/Datalux/Osintgram.git\ncd Osintgram",
+                    "pip_or_pkg": "pip3 install -r requirements.txt",
+                    "docker": "docker build -t osintgram .\ndocker run --rm -it -v \"$PWD/output:/output\" osintgram <target>",
+                    "usage": "python3 main.py <target_username>",
+                    "notes": "Команды внутри шелла: `addrs` (геометки), `comments` (комментарии), `followers` (подписчики)."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Запустить Osintgram",
+                    "action": "scan_universal"
+                }
+            },
+            {
                 "id": "toutatis",
-                "name": "Toutatis (Instagram OSINT)",
+                "name": "Toutatis (Instagram Phone/Email Mask Extractor)",
                 "repo": "https://github.com/megadose/toutatis",
                 "web_url": "https://github.com/megadose/toutatis",
-                "purpose": "📸 Извлечение скрытых данных из Instagram: маскированный номер телефона (+7***), частичная почта, числовой ID аккаунта.",
+                "purpose": "📸 Извлечение скрытых данных из Instagram: маскированный номер телефона (+7***42), частичная почта, числовой ID аккаунта через API восстановления.",
                 "input": "instagram handle",
-                "web_runnable": False,
+                "web_runnable": True,
+                "scan_type": "cli_tool",
                 "install_guide": {
                     "git": "git clone https://github.com/megadose/toutatis.git\ncd toutatis",
                     "pip_or_pkg": "pip3 install toutatis",
                     "docker": "docker build -t toutatis .\ndocker run -it toutatis",
-                    "usage": "toutatis -u target_user -s \"YOUR_SESSIONID\"",
-                    "notes": "Использует API мобильного приложения Instagram для получения данных восстановления доступа."
+                    "usage": "toutatis -u <username> -s \"YOUR_SESSIONID\"",
+                    "notes": "Использует официальные эндпоинты Instagram для получения масок телефона и почты."
                 },
                 "launch": {
-                    "type": "url",
-                    "label": "📖 GitHub Репозиторий",
-                    "href": "https://github.com/megadose/toutatis"
+                    "type": "api",
+                    "label": "⚡ Пробить Toutatis",
+                    "action": "scan_universal"
                 }
             },
             {
-                "id": "phoneinfoga",
-                "name": "PhoneInfoga (Международный Phone OSINT)",
-                "repo": "https://github.com/sundowndev/phoneinfoga",
-                "web_url": "https://github.com/sundowndev/phoneinfoga",
-                "purpose": "📞 Продвинутый сбор данных по номерам телефонов: оператор, страна, тип связи (VoIP/Mobile), репутация и доркинга в сети.",
-                "input": "international phone number",
-                "web_runnable": False,
+                "id": "instagram_followers_parser",
+                "name": "Instagram Followers DOM Parser (VladiStep)",
+                "repo": "https://github.com/VladiStep/instagram_followers_parser",
+                "web_url": "https://github.com/VladiStep/instagram_followers_parser",
+                "purpose": "⚡ Быстрый JavaScript-скрипт для консоли браузера (F12) для автоматического скролла и парсинга подписчиков страницы.",
+                "input": "instagram profile url",
+                "web_runnable": True,
+                "scan_type": "web_link",
                 "install_guide": {
-                    "git": "git clone https://github.com/sundowndev/phoneinfoga.git\ncd phoneinfoga",
-                    "pip_or_pkg": "curl -sSL https://raw.githubusercontent.com/sundowndev/phoneinfoga/master/support/scripts/install | bash",
-                    "docker": "docker run --rm -it -p 5000:5000 sundowndev/phoneinfoga serve -p 5000",
-                    "usage": "./phoneinfoga scan -n +79991234567\n# Или веб-панель:\n./phoneinfoga serve -p 5000",
-                    "notes": "Имеет встроенный веб-интерфейс на порту 5000 для интерактивного сканирования."
+                    "git": "git clone https://github.com/VladiStep/instagram_followers_parser.git",
+                    "pip_or_pkg": "# Браузерный скрипт для консоли Chrome DevTools",
+                    "docker": "# Не требуется",
+                    "usage": "Вставить код `instagramFollowersParser.js` в консоль F12 на странице подписчиков",
+                    "notes": "Использует MutationObserver для оптимизированного скролла без нагрузки на RAM."
                 },
                 "launch": {
                     "type": "url",
                     "label": "📖 GitHub Репозиторий",
-                    "href": "https://github.com/sundowndev/phoneinfoga"
+                    "href": "https://github.com/VladiStep/instagram_followers_parser"
+                }
+            },
+            {
+                "id": "vk_recon",
+                "name": "ВКонтакте Deep Recon & Hidden Friends Finder",
+                "repo": "https://github.com/sherlock-project/sherlock",
+                "web_url": "https://vk.com/",
+                "purpose": "🌐 Разведка по профилям VK: извлечение открытых записей, привязок к городу, альбомов, скрытых друзей и старых id.",
+                "input": "vk id / screen_name",
+                "web_runnable": True,
+                "scan_type": "username",
+                "install_guide": {
+                    "git": "# Встроенный в систему веб-сканер",
+                    "pip_or_pkg": "pip install httpx",
+                    "docker": "# Работает автономно",
+                    "usage": "Введите ник или ID страницы (например, durov или id1)",
+                    "notes": "Генерирует поисковые дорки по стене и архивам записей."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Анализ VK в WebApp",
+                    "action": "scan_username"
+                }
+            },
+            {
+                "id": "tiktok_osint",
+                "name": "TikTok Profile & Metadata Recon",
+                "repo": "https://github.com/drawrowfly/tiktok-scraper",
+                "web_url": "https://www.tiktok.com/",
+                "purpose": "🎵 Извлечение числового SecUID, аватаров высокого разрешения, даты регистрации и истории хэштегов из TikTok.",
+                "input": "tiktok handle (@username)",
+                "web_runnable": True,
+                "scan_type": "username",
+                "install_guide": {
+                    "git": "git clone https://github.com/drawrowfly/tiktok-scraper.git",
+                    "pip_or_pkg": "npm install -g tiktok-scraper",
+                    "docker": "docker run -it drawrowfly/tiktok-scraper user <username>",
+                    "usage": "tiktok-scraper user <username> -d --history",
+                    "notes": "Позволяет скачать медиа и извлечь скрытый идентификатор автора."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Проверить TikTok",
+                    "action": "scan_username"
                 }
             }
         ]
@@ -948,6 +1038,50 @@ CATALOG = [
                     "type": "api",
                     "label": "⚡ Анализ JWT",
                     "action": "open_decoder"
+                }
+            },
+            {
+                "id": "crypto_forensics",
+                "name": "🪙 Crypto & Blockchain Wallet Forensics (BTC, ETH, TRON)",
+                "repo": "https://github.com/blockstream/esplora",
+                "web_url": "https://blockstream.info/",
+                "purpose": "💰 Разведка криптокошельков: проверка баланса, объема всех транзакций, даты первой/последней активности для Bitcoin (BTC), Ethereum (ETH) и TRON/USDT (TRC-20).",
+                "input": "crypto address (1..., 3..., bc1..., 0x..., T...)",
+                "web_runnable": True,
+                "scan_type": "crypto",
+                "install_guide": {
+                    "git": "# Встроенный чекер публичных блокчейнов",
+                    "pip_or_pkg": "pip install httpx",
+                    "docker": "# Доступно в WebApp",
+                    "usage": "crypto_recon --address 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+                    "notes": "Автоматически определяет сеть (BTC, ETH, TRX) и строит сводку баланса."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Проверить кошелек",
+                    "action": "scan_crypto"
+                }
+            },
+            {
+                "id": "dorking_wizard",
+                "name": "🧙‍♂️ OSINT Dorking Matrix & Leak Finder",
+                "repo": "https://github.com/BullsEye0/dork-cli",
+                "web_url": "https://google.com/",
+                "purpose": "🎯 Генератор 25+ боевых поисковых дорков: поиск скрытых документов (.pdf/.xlsx), открытых баз (.sql/.env), утечек на Pastebin и следов в Instagram, VK, TikTok.",
+                "input": "target username / keyword / domain",
+                "web_runnable": True,
+                "scan_type": "dorks",
+                "install_guide": {
+                    "git": "# Встроенный конструктор поисковых матриц",
+                    "pip_or_pkg": "# Доступно в WebApp",
+                    "docker": "# Не требуется",
+                    "usage": "Введите слово для генерации ссылок под Google, Yandex, DuckDuckGo",
+                    "notes": "Позволяет запустить точечный поиск по скрытым документам и паролям в один клик."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Сгенерировать дорки",
+                    "action": "scan_dorks"
                 }
             }
         ]

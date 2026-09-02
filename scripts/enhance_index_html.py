@@ -1,8 +1,17 @@
 import json
+import sys
 from pathlib import Path
-from src.catalog import CATALOG
 
-html_path = Path("index.html")
+root_dir = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(root_dir / "src"))
+sys.path.insert(0, str(root_dir))
+
+try:
+    from catalog import CATALOG
+except Exception:
+    from src.catalog import CATALOG
+
+html_path = root_dir / "index.html"
 
 catalog_json = json.dumps(CATALOG, ensure_ascii=False, indent=2)
 
@@ -27,6 +36,8 @@ full_html = f"""<!DOCTYPE html>
   --cyan-glow: rgba(0, 229, 255, 0.3);
   --purple: #a855f7;
   --purple-glow: rgba(168, 85, 247, 0.3);
+  --yellow: #facc15;
+  --yellow-glow: rgba(250, 204, 21, 0.35);
   --danger: #ff3366;
   --text: #e2e8f0;
   --text-muted: #8492a6;
@@ -37,9 +48,7 @@ full_html = f"""<!DOCTYPE html>
 * {{ margin:0; padding:0; box-sizing:border-box; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }}
 body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px; padding-bottom:70px; position:relative; overflow-x:hidden; }}
 
-/* Canvas для эффекта матрицы */
 #matrixCanvas {{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.18; display:none; }}
-
 .container {{ max-width:880px; margin:0 auto; position:relative; z-index:1; }}
 
 /* Навбар */
@@ -51,6 +60,9 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
 .user-badge {{ display:inline-flex; align-items:center; gap:6px; padding:5px 10px; background:#0b1322; border-radius:8px; font-size:11px; font-weight:700; color:var(--cyan); border:1px solid #1a2942; cursor:pointer; }}
 .user-badge:hover {{ border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }}
 
+.quota-badge {{ display:inline-flex; align-items:center; gap:6px; padding:5px 10px; background:#1c1803; border-radius:8px; font-size:11px; font-weight:800; color:var(--yellow); border:1px solid #715809; cursor:pointer; transition:all .2s; }}
+.quota-badge:hover {{ border-color:var(--yellow); box-shadow:0 0 12px var(--yellow-glow); transform:scale(1.02); }}
+
 .view-page {{ display:none; }}
 .view-page.active {{ display:block; }}
 
@@ -60,6 +72,7 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
 .stat-pill i {{ color:var(--primary); font-size:12px; }}
 .stat-pill.cyan i {{ color:var(--cyan); }}
 .stat-pill.purple i {{ color:var(--purple); }}
+.stat-pill.yellow i {{ color:var(--yellow); }}
 
 /* Главный быстрый поиск на первой странице */
 .quick-recon-box {{ background:linear-gradient(135deg, #07101c, #0b1c33); border:1px solid #193860; border-radius:14px; padding:14px; margin-bottom:14px; box-shadow:0 6px 24px rgba(0,0,0,0.6); }}
@@ -109,6 +122,8 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
 .btn-secondary:hover {{ border-color:var(--cyan); color:#fff; }}
 .btn-purple {{ background:linear-gradient(135deg, #7c3aed, #9333ea); color:#fff; }}
 .btn-cyan {{ background:linear-gradient(135deg, #00e5ff, #0099ff); color:#000; font-weight:800; }}
+.btn-yellow {{ background:linear-gradient(135deg, #facc15, #eab308); color:#000; font-weight:800; }}
+.btn-yellow:hover {{ box-shadow:0 0 12px var(--yellow-glow); }}
 .btn-danger {{ background:rgba(255,51,102,0.15); color:var(--danger); border:1px solid var(--danger); }}
 
 /* Страница инструмента */
@@ -118,75 +133,80 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
 .tool-view-title {{ font-size:17px; font-weight:800; color:#fff; margin-bottom:4px; }}
 .tool-view-desc {{ font-size:12px; color:var(--text-muted); margin-bottom:12px; line-height:1.45; }}
 
-.workspace-box {{ background:#060a12; border:1px solid var(--card-border); border-radius:14px; padding:16px; margin-bottom:12px; }}
-.workspace-title {{ font-size:13px; font-weight:800; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:6px; text-transform:uppercase; }}
-.input-row {{ display:flex; gap:6px; margin-bottom:10px; }}
-.tool-input {{ flex:1; padding:11px 13px; background:#02050a; border:1px solid var(--card-border); border-radius:8px; color:#fff; font-size:13px; outline:none; }}
+.workspace-box {{ background:#080e18; border:1px solid var(--card-border); border-radius:14px; padding:16px; margin-bottom:14px; }}
+.workspace-title {{ font-size:13px; font-weight:800; color:var(--primary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:6px; }}
+
+.input-row {{ display:flex; gap:6px; margin-bottom:12px; }}
+.tool-input {{ flex:1; padding:10px 14px; background:#02050a; border:1px solid #1a2a40; border-radius:8px; color:#fff; font-size:13px; outline:none; }}
 .tool-input:focus {{ border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }}
 
-/* Загрузка фото */
-.upload-dropzone {{ border:2px dashed #1e3557; border-radius:12px; padding:22px; text-align:center; cursor:pointer; background:#04070e; margin-bottom:12px; transition:all .2s; }}
-.upload-dropzone:hover {{ border-color:var(--cyan); background:rgba(0,229,255,0.04); }}
-.upload-preview {{ max-width:100%; max-height:260px; border-radius:10px; margin:10px auto; display:none; object-fit:contain; border:1px solid #1a2f4c; }}
-
-/* ХАКЕРСКАЯ КОНСОЛЬ В СТИЛЕ КИБЕРПАНК */
-.hacker-terminal {{ background:var(--term-bg); border:1px solid var(--term-border); border-radius:10px; padding:12px; margin-bottom:12px; box-shadow:0 0 24px rgba(0,255,102,0.08); position:relative; }}
-.term-topbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #102418; padding-bottom:6px; margin-bottom:8px; font-size:11px; font-family:'Courier New', monospace; font-weight:700; color:var(--primary); }}
-.term-dots {{ display:flex; gap:4px; }}
-.term-dot {{ width:8px; height:8px; border-radius:50%; display:inline-block; }}
-.term-dot-red {{ background:#ff3366; }}
-.term-dot-yellow {{ background:#ffaa00; }}
-.term-dot-green {{ background:#00ff66; box-shadow:0 0 6px #00ff66; }}
-.term-log-content {{ font-family:'Courier New', Consolas, monospace; font-size:11.5px; line-height:1.45; color:#38ef7d; word-break:break-all; white-space:pre-wrap; max-height:280px; overflow-y:auto; scrollbar-width:thin; }}
-
-/* ИНТЕРАКТИВНЫЙ CLI ТЕРМИНАЛ */
-.cli-console-box {{ background:#020407; border:2px solid #00ff6644; border-radius:14px; padding:16px; box-shadow:0 0 36px rgba(0,255,102,0.12); font-family:'Courier New', Consolas, monospace; }}
-.cli-output {{ min-height:240px; max-height:420px; overflow-y:auto; color:#00ff66; font-size:12px; line-height:1.5; white-space:pre-wrap; margin-bottom:12px; scrollbar-width:thin; }}
-.cli-prompt-row {{ display:flex; align-items:center; gap:8px; border-top:1px solid #0d2818; padding-top:10px; }}
-.cli-prompt-label {{ color:var(--cyan); font-weight:700; font-size:12px; }}
-.cli-input {{ flex:1; background:transparent; border:none; color:#00ff66; font-family:'Courier New', monospace; font-size:13px; font-weight:700; outline:none; }}
-
-/* БЛОК ДАННЫХ */
-.custom-card {{ background:linear-gradient(135deg, #07111e, #0b1a2e); border:1px solid #162f50; border-radius:12px; padding:14px; margin-bottom:12px; }}
-.custom-card-title {{ font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:10px; text-transform:uppercase; }}
-.custom-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }}
-.custom-item {{ background:rgba(0,0,0,0.4); padding:9px 12px; border-radius:8px; border:1px solid rgba(0,229,255,0.12); }}
-.custom-label {{ font-size:10px; font-weight:700; color:var(--cyan); text-transform:uppercase; margin-bottom:2px; }}
-.custom-val {{ font-size:12px; font-weight:700; color:#fff; word-break:break-all; }}
-
-.info-banner {{ background:#081220; border:1px solid #162c4a; border-radius:10px; padding:12px 14px; font-size:11px; color:#cbd5e1; line-height:1.5; margin-bottom:12px; }}
-
-.profiles-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:6px; margin-top:8px; }}
-.profile-card {{ background:#04070d; border:1px solid #131f32; border-radius:8px; padding:9px; display:flex; align-items:center; justify-content:space-between; }}
-.profile-left {{ display:flex; align-items:center; gap:8px; }}
-.profile-icon {{ font-size:14px; color:var(--cyan); width:18px; text-align:center; }}
-.profile-name {{ font-size:12px; font-weight:700; color:#fff; }}
-.profile-tag {{ font-size:9px; color:var(--primary); }}
-
-.loader {{ display:none; text-align:center; padding:16px 0; }}
-.spinner {{ border:2px solid rgba(255,255,255,0.1); border-top:2px solid var(--primary); border-radius:50%; width:24px; height:24px; animation:spin 0.8s linear infinite; margin:0 auto 8px; }}
-@keyframes spin {{ 0% {{ transform:rotate(0deg); }} 100% {{ transform:rotate(360deg); }} }}
-
-.code-wrap {{ position:relative; background:#020408; border:1px solid #132236; border-radius:8px; padding:10px 12px; font-family:'Courier New', monospace; font-size:11px; color:var(--primary); word-break:break-all; white-space:pre-wrap; }}
-.cmd-box {{ margin-bottom:8px; }}
-.cmd-label {{ font-size:10px; font-weight:700; color:var(--cyan); text-transform:uppercase; margin-bottom:3px; display:flex; justify-content:space-between; align-items:center; }}
-.copy-btn {{ position:absolute; right:6px; top:6px; background:#0c1728; color:var(--text-muted); border:none; border-radius:5px; padding:4px 8px; font-size:10px; cursor:pointer; }}
+/* ХАКЕРСКИЙ ТЕРМИНАЛ (CLI) */
+.hacker-terminal {{ background:var(--term-bg); border:1px solid var(--term-border); border-radius:12px; padding:12px 14px; margin-bottom:12px; font-family:'Courier New', Courier, monospace; box-shadow:inset 0 0 15px rgba(0,255,102,0.06); }}
+.term-topbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,255,102,0.2); padding-bottom:6px; margin-bottom:8px; font-size:10px; color:var(--primary); }}
+.term-dots {{ display:flex; gap:5px; }}
+.term-dot {{ width:8px; height:8px; border-radius:50%; }}
+.term-dot-red {{ background:#ff5f56; }}
+.term-dot-yellow {{ background:#ffbd2e; }}
+.term-dot-green {{ background:#27c93f; }}
+.term-log-content {{ color:#38ef7d; font-size:11px; line-height:1.5; white-space:pre-wrap; max-height:220px; overflow-y:auto; word-break:break-all; }}
+.copy-btn {{ background:none; border:1px solid #234230; color:var(--primary); border-radius:4px; padding:2px 6px; font-size:9px; cursor:pointer; }}
 .copy-btn:hover {{ background:var(--primary); color:#000; }}
 
-.admin-table {{ width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }}
-.admin-table th {{ text-align:left; padding:8px 6px; background:#0e1624; color:var(--text-muted); border-bottom:1px solid #1a273b; }}
-.admin-table td {{ padding:8px 6px; border-bottom:1px solid #0f1828; color:#cbd5e1; }}
+/* КАРТОЧКИ РЕЗУЛЬТАТОВ */
+.custom-card {{ background:#0a1220; border:1px solid #1a2d48; border-radius:10px; padding:12px; margin-bottom:10px; }}
+.custom-card-title {{ font-size:12px; font-weight:800; color:#fff; margin-bottom:8px; display:flex; align-items:center; gap:6px; }}
+.custom-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px; }}
+.custom-item {{ background:#050a14; padding:8px 10px; border-radius:6px; border:1px solid #142032; }}
+.custom-label {{ color:var(--text-muted); font-size:10px; margin-bottom:2px; }}
+.custom-val {{ color:#fff; font-weight:700; word-break:break-all; }}
 
-/* Авторизация */
-.auth-container {{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; padding:16px; text-align:center; }}
-.auth-card {{ background:linear-gradient(135deg, #071220, #0b1a2e); border:2px solid var(--cyan); border-radius:16px; padding:30px 24px; max-width:420px; width:100%; box-shadow:0 0 40px rgba(0,229,255,0.25); }}
-.auth-icon {{ font-size:52px; color:var(--cyan); margin-bottom:14px; text-shadow:0 0 20px var(--cyan-glow); }}
-.auth-title {{ font-size:17px; font-weight:800; color:#fff; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }}
-.auth-subtitle {{ font-size:12px; color:#94a3b8; margin-bottom:20px; line-height:1.5; }}
-.auth-input {{ width:100%; padding:13px; background:#02050a; border:1px solid var(--cyan); border-radius:10px; color:#fff; font-size:14px; font-weight:700; text-align:center; outline:none; margin-bottom:14px; }}
-.auth-input:focus {{ border-color:var(--primary); box-shadow:0 0 15px var(--primary-glow); }}
+/* СЕТКА НАЙДЕННЫХ ПРОФИЛЕЙ */
+.profiles-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:6px; margin-top:8px; }}
+.profile-card {{ background:#060c18; border:1px solid #16243a; border-radius:8px; padding:8px 10px; display:flex; align-items:center; justify-content:space-between; gap:6px; }}
+.profile-left {{ display:flex; align-items:center; gap:8px; overflow:hidden; }}
+.profile-name {{ font-size:11px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.profile-tag {{ font-size:9px; color:var(--primary); }}
+.profile-icon {{ font-size:12px; color:var(--cyan); }}
 
-.footer-info {{ text-align:center; font-size:10px; color:#475569; margin-top:24px; }}
+/* ДОРКИНГ МАТРИЦА */
+.dork-item {{ background:#050b14; border:1px solid #142236; border-radius:8px; padding:10px; margin-bottom:8px; }}
+.dork-title {{ font-size:11px; font-weight:800; color:#fff; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; }}
+.dork-code {{ font-family:monospace; font-size:11px; color:var(--cyan); background:#020509; padding:6px 8px; border-radius:4px; border:1px solid #101c2e; margin-bottom:6px; word-break:break-all; }}
+
+/* ТЕРМИНАЛЬНАЯ КОНСОЛЬ */
+.cli-console-box {{ background:var(--term-bg); border:1px solid var(--term-border); border-radius:14px; padding:16px; margin-bottom:14px; box-shadow:0 0 30px rgba(0,255,102,0.1); }}
+.cli-output {{ color:#38ef7d; font-family:'Courier New', monospace; font-size:12px; line-height:1.55; white-space:pre-wrap; max-height:420px; overflow-y:auto; margin-bottom:12px; border-bottom:1px solid #163622; padding-bottom:10px; }}
+.cli-prompt-row {{ display:flex; align-items:center; gap:8px; font-family:'Courier New', monospace; }}
+.cli-prompt-label {{ color:var(--primary); font-weight:800; font-size:13px; }}
+.cli-input {{ flex:1; background:transparent; border:none; outline:none; color:#fff; font-family:'Courier New', monospace; font-size:13px; }}
+
+/* АДМИН-ТАБЛИЦА */
+.admin-table {{ width:100%; border-collapse:collapse; font-size:11px; }}
+.admin-table th {{ background:#0d1626; color:var(--cyan); padding:8px 10px; text-align:left; border-bottom:1px solid #1a2d48; }}
+.admin-table td {{ padding:8px 10px; border-bottom:1px solid #101c30; color:#cbd5e1; }}
+.admin-table tr:hover td {{ background:rgba(0,229,255,0.04); }}
+
+/* ДРОПЗОНА ФОТО */
+.upload-dropzone {{ border:2px dashed #1a3455; border-radius:12px; padding:24px 16px; text-align:center; background:#060d1a; cursor:pointer; transition:all .2s; margin-bottom:10px; }}
+.upload-dropzone:hover {{ border-color:var(--cyan); background:#091426; box-shadow:0 0 15px var(--cyan-glow); }}
+.upload-preview {{ max-width:100%; max-height:240px; border-radius:8px; margin-top:10px; display:none; border:1px solid #1a2d48; }}
+
+/* СПИННЕР */
+.loader {{ display:none; text-align:center; padding:16px; }}
+.spinner {{ width:24px; height:24px; border:3px solid rgba(0,255,102,0.2); border-top-color:var(--primary); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 8px; }}
+@keyframes spin {{ to {{ transform:rotate(360deg); }} }}
+
+/* АВТОРИЗАЦИЯ */
+.auth-container {{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:65vh; padding:20px; }}
+.auth-card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:16px; padding:24px; max-width:400px; width:100%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.7); backdrop-filter:blur(10px); }}
+.auth-icon {{ font-size:44px; color:var(--primary); margin-bottom:12px; }}
+.auth-title {{ font-size:16px; font-weight:800; color:#fff; margin-bottom:6px; }}
+.auth-subtitle {{ font-size:11px; color:var(--text-muted); margin-bottom:18px; line-height:1.45; }}
+.auth-input {{ width:100%; padding:12px 14px; background:#02050a; border:1px solid #1a2a40; border-radius:10px; color:#fff; font-size:13px; outline:none; margin-bottom:12px; text-align:center; }}
+.auth-input:focus {{ border-color:var(--primary); box-shadow:0 0 12px var(--primary-glow); }}
+
+.info-banner {{ background:rgba(0,229,255,0.06); border:1px solid rgba(0,229,255,0.25); border-radius:10px; padding:12px 14px; font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.5; }}
+.footer-info {{ text-align:center; font-size:10px; color:#475569; margin-top:20px; padding:10px; }}
 </style>
 </head>
 <body>
@@ -194,12 +214,16 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
 <canvas id="matrixCanvas"></canvas>
 
 <div class="container">
-  <!-- Навбар -->
-  <div class="navbar" id="mainNavbar">
+  
+  <!-- НАВБАР -->
+  <div class="navbar">
     <div class="brand" onclick="showView('catalogView')">
       <i class="fa-solid fa-terminal"></i> peace of the island of sor/ber peoples
     </div>
     <div class="nav-actions">
+      <div class="quota-badge" id="quotaBadge" onclick="openStarsModal()" title="Баланс запросов и покупка Stars">
+        <i class="fa-solid fa-star"></i> <span id="quotaSpan">5/5 Запросов</span>
+      </div>
       <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="handleUserBadgeClick()">
         <i id="userBadgeIcon" class="fa-solid fa-user-check"></i> <span id="currentUsernameSpan">Позывной</span>
       </div>
@@ -212,6 +236,48 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
     </div>
   </div>
 
+  <!-- MODAL: ПОКУПКА ЗВЕЗД (STARS) -->
+  <div id="starsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#090f1d; border:2px solid #eab308; border-radius:16px; padding:20px; max-width:440px; width:100%; box-shadow:0 0 40px rgba(234,179,8,0.25);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="font-size:15px; font-weight:800; color:#facc15; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-star"></i> Пополнение баланса (Telegram Stars)
+        </div>
+        <button onclick="closeStarsModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
+      </div>
+      <div style="font-size:11px; color:#cbd5e1; margin-bottom:14px; line-height:1.5;">
+        Каждому новому агенту начисляется <b>5 бесплатных запросов</b>.<br>
+        Для продолжения расследований выберите тариф пополнения:
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+        <div onclick="buyStarsPkg('pkg_20')" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#eab308'" onmouseout="this.style.borderColor='#1e293b'">
+          <div>
+            <div style="font-weight:800; font-size:13px; color:#fff;">🌟 20 OSINT Запросов</div>
+            <div style="font-size:10px; color:#94a3b8;">Тариф «Разведчик»</div>
+          </div>
+          <button class="btn btn-yellow" style="padding:6px 12px; font-size:11px;">35 ⭐️</button>
+        </div>
+        <div onclick="buyStarsPkg('pkg_50')" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#eab308'" onmouseout="this.style.borderColor='#1e293b'">
+          <div>
+            <div style="font-weight:800; font-size:13px; color:#fff;">🌟 50 OSINT Запросов</div>
+            <div style="font-size:10px; color:#94a3b8;">Тариф «Оперативник» (Популярно)</div>
+          </div>
+          <button class="btn btn-yellow" style="padding:6px 12px; font-size:11px;">88 ⭐️</button>
+        </div>
+        <div onclick="buyStarsPkg('pkg_100')" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#eab308'" onmouseout="this.style.borderColor='#1e293b'">
+          <div>
+            <div style="font-weight:800; font-size:13px; color:#fff;">🌟 100 OSINT Запросов</div>
+            <div style="font-size:10px; color:#94a3b8;">Тариф «Архимаг OSINT»</div>
+          </div>
+          <button class="btn btn-yellow" style="padding:6px 12px; font-size:11px;">235 ⭐️</button>
+        </div>
+      </div>
+      <div style="font-size:10px; color:#64748b; text-align:center;">
+        Оплата происходит мгновенно через официальные Telegram Stars. Также доступна команда <code>/buy</code> в боте.
+      </div>
+    </div>
+  </div>
+
   <!-- ВЬЮ 0: СТРАНИЦА РЕГИСТРАЦИИ -->
   <div class="view-page" id="registerView">
     <div class="auth-container">
@@ -219,11 +285,11 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
         <i class="fa-solid fa-shield-halved auth-icon"></i>
         <div class="auth-title">peace of the island of sor/ber peoples</div>
         <div class="auth-subtitle">
-          Для доступа к системе расследований, базам Sherlock, поиску по GitHub и телефонной разведке зарегистрируйте ваш рабочий позывной:
+          Для доступа к системе расследований, базам Sherlock, поиску по Instagram, VK, GitHub и блокчейн-разведке зарегистрируйте рабочий позывной:
         </div>
         <input type="text" id="regNicknameInput" class="auth-input" placeholder="Введите ваш позывной (например: Ghost_OSINT)" onkeydown="if(event.key==='Enter') doRegister()">
         <button class="btn btn-primary" style="width:100%; justify-content:center; padding:13px; font-size:13px;" onclick="doRegister()">
-          <i class="fa-solid fa-check"></i> Зарегистрироваться и войти
+          <i class="fa-solid fa-check"></i> Зарегистрироваться и получить 5 запросов
         </button>
         <div id="regStatusMsg" style="margin-top:12px; font-size:12px; color:var(--danger); display:none;"></div>
       </div>
@@ -235,18 +301,19 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
     
     <!-- STATS HERO BANNER -->
     <div class="hero-stats-banner">
-      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 29 Утилит Онлайн</div>
+      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 33 Утилиты Онлайн</div>
       <div class="stat-pill cyan"><i class="fa-solid fa-bolt"></i> Auto-Recon & Граф</div>
-      <div class="stat-pill purple"><i class="fa-solid fa-clock-rotate-left"></i> Wayback & crt.sh</div>
+      <div class="stat-pill purple"><i class="fa-brands fa-instagram"></i> Instagram, VK & TikTok</div>
+      <div class="stat-pill yellow"><i class="fa-solid fa-coins"></i> Crypto & Dorks</div>
     </div>
 
     <!-- БЫСТРЫЙ СКАНЕР ПРЯМО НА ГЛАВНОЙ -->
     <div class="quick-recon-box">
       <div class="quick-title">
-        <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сквозной Auto-Recon: Sherlock · GitHub Commits · Wayback · Crypto
+        <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сквозной Auto-Recon: Sherlock · Instagram · GitHub · Crypto · Dorks
       </div>
       <div class="quick-input-group">
-        <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм, GitHub логин, телефон, домен или криптокошелек..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
+        <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм, Instagram, GitHub, кошелек (BTC/ETH/TRX), телефон или домен..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
         <button class="btn btn-primary" onclick="runMainQuickScan()"><i class="fa-solid fa-bolt"></i> Найти</button>
       </div>
     </div>
@@ -254,20 +321,21 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
     <div class="search-box-row">
       <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" placeholder="Поиск по программам: GitHub, Sherlock, Wayback, crt.sh, EXIF, GeoIP..." oninput="renderCatalog()">
+        <input type="text" id="searchInput" placeholder="Поиск: Instagram, Instaloader, Osintgram, Sherlock, Crypto, Dorks, VK, EXIF..." oninput="renderCatalog()">
       </div>
-      <div class="search-counter" id="searchCounterBadge">29 утилит</div>
+      <div class="search-counter" id="searchCounterBadge">33 утилиты</div>
     </div>
 
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (29)</div>
+      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (33)</div>
+      <div class="chip" onclick="setFilter('social_google_instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram, VK & TikTok</div>
       <div class="chip" onclick="setFilter('deep_archive_recon', this)"><i class="fa-solid fa-clock-rotate-left"></i> Архивы & Auto-Recon</div>
-      <div class="chip" onclick="setFilter('hacker_crypto_git', this)"><i class="fa-brands fa-github"></i> GitHub & Crypto</div>
+      <div class="chip" onclick="setFilter('cyber_tools_lab', this)"><i class="fa-solid fa-coins"></i> Блокчейн & Dorks</div>
       <div class="chip" onclick="setFilter('telegram_osint', this)"><i class="fa-brands fa-telegram"></i> Telegram & Вирты</div>
       <div class="chip" onclick="setFilter('username_osint', this)"><i class="fa-solid fa-magnifying-glass"></i> Sherlock Никнеймы</div>
       <div class="chip" onclick="setFilter('email_checks', this)"><i class="fa-solid fa-phone"></i> Телефон & Email</div>
+      <div class="chip" onclick="setFilter('hacker_crypto_git', this)"><i class="fa-brands fa-github"></i> GitHub Recon</div>
       <div class="chip" onclick="setFilter('web_infra_secrets', this)"><i class="fa-solid fa-network-wired"></i> Домены & Серверы</div>
-      <div class="chip" onclick="setFilter('cyber_tools_lab', this)"><i class="fa-solid fa-wrench"></i> Декодеры & Dorks</div>
       <div class="chip" onclick="setFilter('amazing_osint', this)"><i class="fa-solid fa-camera"></i> Фото & GeoINT</div>
     </div>
 
@@ -337,13 +405,13 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
       
       <div class="cli-output" id="cliOutputContent">peace of the island of sor/ber peoples · Terminal Console
 Type 'help' to see available commands, or execute any tool directly.
-Examples: 'autorecon torvalds', 'wayback github.com/user', 'crtsh domain.com', 'hash 5d41402abc4b2a76b9719d911017c592'
+Examples: 'autorecon torvalds', 'crypto 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'dorks target', 'wayback github.com/user'
 ----------------------------------------------------------------------
 </div>
 
       <div class="cli-prompt-row">
         <span class="cli-prompt-label">root@cyberhub:~#</span>
-        <input type="text" id="cliInputField" class="cli-input" placeholder="Введите команду (help, autorecon, sherlock, wayback, crtsh, hash, clear)..." autofocus onkeydown="handleCliKeyDown(event)">
+        <input type="text" id="cliInputField" class="cli-input" placeholder="Введите команду (help, autorecon, crypto, dorks, sherlock, wayback, crtsh, clear)..." autofocus onkeydown="handleCliKeyDown(event)">
         <button class="btn btn-primary" style="padding:5px 12px; font-size:11px;" onclick="executeCliCommand()">RUN</button>
       </div>
     </div>
@@ -361,7 +429,7 @@ Examples: 'autorecon torvalds', 'wayback github.com/user', 'crtsh domain.com', '
         <button class="btn btn-secondary" style="padding:3px 8px; font-size:10px;" onclick="exportCurrentGraph()"><i class="fa-solid fa-camera"></i> Сохранить PNG</button>
       </div>
       <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
-        Визуализация цифровых связей между профилями, репозиториями, скрытыми email-адресами из коммитов, блокчейн-кошельками и доменами.
+        Визуализация цифровых связей между профилями, коммит-email, блокчейн-кошельками и инфраструктурой.
       </div>
 
       <div class="input-row">
@@ -376,7 +444,7 @@ Examples: 'autorecon torvalds', 'wayback github.com/user', 'crtsh domain.com', '
 
       <div id="graphContainerBox" style="display:none;">
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px; font-size:10px; color:#cbd5e1;">
-          <span>🟢 Цель</span> · <span>🔵 Профиль</span> · <span>🔴 Commit Email</span> · <span>🟣 ФИО</span> · <span>🌐 Сервер/IP</span>
+          <span>🟢 Цель</span> · <span>🔵 Профиль</span> · <span>🔴 Commit Email</span> · <span>🟣 ФИО</span> · <span>🪙 Крипто</span> · <span>🌐 Сервер/IP</span>
         </div>
         <div id="visNetworkCanvas" style="width:100%; height:400px; background:#020509; border:1px solid #162a44; border-radius:12px; margin-bottom:12px;"></div>
         
@@ -398,105 +466,89 @@ Examples: 'autorecon torvalds', 'wayback github.com/user', 'crtsh domain.com', '
     </div>
 
     <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--purple);">
-        <i class="fa-solid fa-user-secret"></i> Детектор виртов & Поиск основы (Sockpuppet Attribution)
-      </div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px; line-height:1.45;">
-        Выявление реального владельца и основы, когда вам пишут с купленного или виртуального аккаунта.
+      <div class="workspace-title" style="color:var(--purple);"><i class="fa-solid fa-user-secret"></i> Детектор виртов & Атрибуция основы</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
+        Сопоставление цифровых следов виртов, купленных аккаунтов Telegram и поиск истинного владельца через мутации и метаданные ID.
       </div>
 
-      <div style="margin-bottom:8px;">
-        <input class="tool-input" id="attrTargetInput" placeholder="Юзернейм или ID вирта (например: @alex_temp или 6834920194)">
-      </div>
-      <div style="margin-bottom:8px;">
-        <textarea class="tool-input" id="attrTextSample" style="height:65px; resize:none;" placeholder="Текст сообщений вирта (для выявления сленга и связей)..."></textarea>
+      <div class="input-row">
+        <input class="tool-input" id="attrTargetInput" placeholder="Введите юзернейм или ID вирта (например: @sock_puppet)" onkeydown="if(event.key==='Enter') runAttributionScanDirect()">
+        <button class="btn btn-purple" onclick="runAttributionScanDirect()"><i class="fa-solid fa-bolt"></i> Найти основу</button>
       </div>
 
-      <button class="btn btn-purple" style="width:100%; justify-content:center; padding:11px;" onclick="runAttributionScanDirect()">
-        <i class="fa-solid fa-crosshairs"></i> Рассчитать атрибуцию и найти основу
-      </button>
+      <div style="margin-bottom:10px;">
+        <input class="tool-input" id="attrTextSample" placeholder="Образец сообщений жертвы (опционально, для стилометрического анализа)...">
+      </div>
 
       <div class="loader" id="attrLoader">
         <div class="spinner" style="border-top-color:var(--purple);"></div>
-        <span style="font-size:11px; color:var(--purple);">Корреляция мутаций никнеймов, ID и баз данных...</span>
+        <span style="font-size:11px; color:var(--purple);">Анализ мутаций никнеймов и цифровых следов...</span>
       </div>
 
-      <div id="attrResultBox" style="margin-top:12px;"></div>
+      <div id="attrResultBox"></div>
     </div>
   </div>
 
-  <!-- ВЬЮ 6: ФОТО & ЭКСПЕРТИЗА МЕТАДАННЫХ -->
+  <!-- ВЬЮ 6: ФОТО & EXIF GEOLOCATION -->
   <div class="view-page" id="photoView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
     </div>
 
     <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--cyan);"><i class="fa-solid fa-camera"></i> Экспертиза снимка (EXIF, GPS, Камера)</div>
+      <div class="workspace-title" style="color:var(--cyan);"><i class="fa-solid fa-camera"></i> Разведка по Фото & Извлечение EXIF/GPS</div>
       <div class="upload-dropzone" onclick="document.getElementById('directPhotoInput').click()" ondragover="event.preventDefault()" ondrop="handlePhotoDrop(event, 'directPhotoInput')">
-        <i class="fa-solid fa-image" style="font-size:36px; color:var(--cyan); margin-bottom:8px;"></i>
-        <div style="font-weight:700; color:#fff; font-size:13px;">Загрузить фото для анализа метаданных</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">JPG, PNG, WEBP (без сжатия)</div>
+        <i class="fa-solid fa-cloud-arrow-up" style="font-size:36px; color:var(--cyan); margin-bottom:8px;"></i>
+        <div style="font-weight:700; color:#fff; font-size:14px;">Нажмите или перетащите фото для анализа</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">Извлечение GPS координат, камеры, даты съемки и поиск дубликатов в Сети</div>
         <input type="file" id="directPhotoInput" accept="image/*" style="display:none;" onchange="processDirectPhoto(this)">
       </div>
-
       <img id="directPhotoPreview" class="upload-preview">
 
       <div class="loader" id="photoLoader">
         <div class="spinner" style="border-top-color:var(--cyan);"></div>
-        <span style="font-size:11px; color:var(--cyan);">Чтение тегов EXIF и геолокации...</span>
+        <span style="font-size:11px; color:var(--cyan);">Анализ структуры снимка и поиск совпадений...</span>
       </div>
 
-      <div id="photoResultBox"></div>
+      <div id="photoResultBox" style="margin-top:12px;"></div>
     </div>
   </div>
 
-  <!-- ВЬЮ 7: ЛАБОРАТОРИЯ ДЕКОДЕРОВ & DORK BUILDER -->
+  <!-- ВЬЮ 7: ДЕКОДЕРЫ & DORK BUILDER -->
   <div class="view-page" id="decoderView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
     </div>
 
     <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--primary);"><i class="fa-solid fa-wrench"></i> Лаборатория Декодеров & Hash Identifier</div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
-        Мгновенный анализ хешей, декодирование Base64/Hex/URL, просмотр структуры JWT-токенов.
-      </div>
-
-      <div style="margin-bottom:10px;">
-        <textarea class="tool-input" id="decoderInputData" style="height:80px; font-family:monospace; resize:none;" placeholder="Вставьте строку, хеш или токен (например: eyJhbGci... или e10adc3949ba59abbe56e057f20f883e)"></textarea>
-      </div>
+      <div class="workspace-title"><i class="fa-solid fa-wrench"></i> Лаборатория Кибер-Декодеров</div>
+      <textarea class="tool-input" id="decoderInputData" placeholder="Вставьте зашифрованную строку, хеш (MD5/SHA256) или JWT токен..." style="width:100%; height:80px; resize:vertical; margin-bottom:8px;"></textarea>
 
       <div class="btn-group" style="margin-bottom:12px;">
-        <button class="btn btn-primary" onclick="runDecoderAction('hash_id')"><i class="fa-solid fa-magnifying-glass"></i> Опознать Хеш</button>
-        <button class="btn btn-cyan" onclick="runDecoderAction('base64_decode')">Base64 Decode</button>
+        <button class="btn btn-primary" onclick="runDecoderAction('hash_id')"><i class="fa-solid fa-fingerprint"></i> Хеш-Идентификатор</button>
+        <button class="btn btn-cyan" onclick="runDecoderAction('jwt_decode')"><i class="fa-solid fa-shield-halved"></i> JWT Token</button>
+        <button class="btn btn-secondary" onclick="runDecoderAction('base64_decode')">Base64 Decode</button>
         <button class="btn btn-secondary" onclick="runDecoderAction('base64_encode')">Base64 Encode</button>
-        <button class="btn btn-cyan" onclick="runDecoderAction('hex_decode')">Hex Decode</button>
-        <button class="btn btn-secondary" onclick="runDecoderAction('jwt_decode')"><i class="fa-solid fa-key"></i> Разобрать JWT</button>
+        <button class="btn btn-secondary" onclick="runDecoderAction('hex_decode')">Hex Decode</button>
         <button class="btn btn-secondary" onclick="runDecoderAction('rot13')">ROT13</button>
       </div>
 
-      <div id="decoderResultBox" style="display:none;">
-        <div class="custom-card">
-          <div class="custom-card-title" style="display:flex; justify-content:space-between;">
-            <span><i class="fa-solid fa-check"></i> Результат обработки</span>
-            <button class="copy-btn" style="position:static;" onclick="copyText(this, document.getElementById('decoderOutputPre').innerText)">Копировать</button>
-          </div>
-          <pre id="decoderOutputPre" class="code-wrap" style="font-size:12px; color:var(--primary);"></pre>
-        </div>
+      <div id="decoderResultBox" style="display:none;" class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-terminal"></i> Результат обработки</div>
+        <pre id="decoderOutputPre" style="font-family:monospace; color:var(--primary); font-size:12px; white-space:pre-wrap; word-break:break-all; max-height:250px; overflow-y:auto;"></pre>
       </div>
     </div>
   </div>
 
-  <!-- ВЬЮ 8: УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (АДМИН) -->
+  <!-- ВЬЮ 8: АДМИН-ПАНЕЛЬ -->
   <div class="view-page" id="usersAdminView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
     </div>
 
     <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--purple); display:flex; justify-content:space-between; align-items:center;">
-        <span><i class="fa-solid fa-users-gear"></i> Управление пользователями</span>
+      <div class="workspace-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-users-gear"></i> Управление Пользователями & Квотами Stars</span>
         <button class="btn btn-purple" onclick="toggleAddUserModal()"><i class="fa-solid fa-plus"></i> Добавить</button>
       </div>
 
@@ -508,7 +560,7 @@ Examples: 'autorecon torvalds', 'wayback github.com/user', 'crtsh domain.com', '
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
           <select class="tool-input" id="newRole">
             <option value="user">User (Обычный)</option>
-            <option value="vip">VIP (Расширенный)</option>
+            <option value="vip">VIP (Бесконечный)</option>
             <option value="admin">Admin (Владелец)</option>
           </select>
           <input class="tool-input" id="newPassword" type="password" placeholder="Пароль (опционально)">
@@ -522,10 +574,10 @@ Examples: 'autorecon torvalds', 'wayback github.com/user', 'crtsh domain.com', '
       <div style="overflow-x:auto;">
         <table class="admin-table">
           <thead>
-            <tr><th>Позывной / Ник</th><th>Telegram</th><th>IP адрес</th><th>Статус</th><th>Поисков</th><th>Действия</th></tr>
+            <tr><th>Позывной / Ник</th><th>Telegram</th><th>Квота (Stars)</th><th>Статус</th><th>Антифрод</th><th>Управление квотой</th><th>Действия</th></tr>
           </thead>
           <tbody id="usersTableBody">
-            <tr><td colspan="6" style="text-align:center; padding:10px;">Загрузка пользователей...</td></tr>
+            <tr><td colspan="7" style="text-align:center; padding:10px;">Загрузка пользователей...</td></tr>
           </tbody>
         </table>
       </div>
@@ -574,6 +626,8 @@ let activeTool = null;
 let currentSessionUser = '';
 let tgUserId = '';
 let isUserAdmin = false;
+let userScanBalance = 5;
+let isUserUnlimited = false;
 let cliHistory = [];
 let cliHistoryIndex = -1;
 let matrixActive = false;
@@ -584,6 +638,73 @@ const tg = window.Telegram?.WebApp;
 if (tg) {{
   tg.expand();
   tg.ready();
+}}
+
+// FINGERPRINTING FUNCTION FOR MULTI-ACCOUNT DETECTION
+async function getDeviceFingerprint() {{
+  try {{
+    let canvasData = '';
+    try {{
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(125,1,62,20);
+      ctx.fillStyle = '#069';
+      ctx.fillText('sorber_recon_fp_1.0', 2, 15);
+      canvasData = canvas.toDataURL();
+    }} catch(e){{}}
+
+    let glInfo = '';
+    try {{
+      const gl = document.createElement('canvas').getContext('webgl');
+      if (gl) {{
+        const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+        glInfo = dbg ? (gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) + '~' + gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
+      }}
+    }} catch(e){{}}
+
+    const nav = window.navigator;
+    const screen = window.screen;
+    const raw = [
+      canvasData.slice(0, 100),
+      glInfo,
+      nav.userAgent,
+      nav.language,
+      nav.hardwareConcurrency || 4,
+      screen.width + 'x' + screen.height,
+      screen.colorDepth,
+      Intl.DateTimeFormat().resolvedOptions().timeZone
+    ].join('###');
+
+    let hash = 0;
+    for (let i = 0; i < raw.length; i++) {{
+      const char = raw.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash |= 0;
+    }}
+    return 'df_' + Math.abs(hash).toString(16);
+  }} catch(e) {{
+    return 'df_fallback_' + (localStorage.getItem('osint_local_uid') || '0');
+  }}
+}}
+
+// STARS MODAL
+function openStarsModal() {{
+  document.getElementById('starsModal').style.display = 'flex';
+}}
+
+function closeStarsModal() {{
+  document.getElementById('starsModal').style.display = 'none';
+}}
+
+function buyStarsPkg(pkgKey) {{
+  closeStarsModal();
+  if (tg && tg.sendData) {{
+    tg.sendData('/buy');
+  }}
+  alert('⭐️ Для покупки пакета через Telegram Stars отправьте команду /buy в чате нашего бота!');
 }}
 
 // MATRIX DIGITAL RAIN FX
@@ -643,7 +764,18 @@ function handleUserBadgeClick() {{
   if (isUserAdmin) {{
     showView('usersAdminView');
   }} else {{
-    showView('registerView');
+    openStarsModal();
+  }}
+}}
+
+function updateQuotaDisplay(balance, unlimited) {{
+  userScanBalance = balance;
+  isUserUnlimited = unlimited;
+  const qBadge = document.getElementById('quotaSpan');
+  if (unlimited) {{
+    qBadge.innerText = '👑 VIP Безлимит';
+  }} else {{
+    qBadge.innerText = `⭐️ ${{balance}} запросов`;
   }}
 }}
 
@@ -673,11 +805,13 @@ async function initUserProfile() {{
   }}
   tgUserId = tgId;
 
+  const fp = await getDeviceFingerprint();
+
   try {{
     const res = await fetch('/api/user/profile', {{
       method: 'POST',
       headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgId }},
-      body: JSON.stringify({{ tg_id: tgId, tg_username: tgUser, tg_name: tgName }})
+      body: JSON.stringify({{ tg_id: tgId, tg_username: tgUser, tg_name: tgName, fingerprint: fp }})
     }});
     const data = await res.json();
 
@@ -685,6 +819,8 @@ async function initUserProfile() {{
       showView('blockedView');
       return;
     }}
+
+    updateQuotaDisplay(data.scan_balance ?? 5, data.is_unlimited ?? false);
 
     if (data.is_admin) {{
       isUserAdmin = true;
@@ -701,99 +837,91 @@ async function initUserProfile() {{
       document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
       showView('catalogView');
     }} else {{
-      isUserAdmin = false;
-      document.getElementById('currentUserBadge').style.display = 'none';
       document.getElementById('regNicknameInput').value = data.suggested_nickname || '';
       showView('registerView');
     }}
   }} catch (e) {{
-    showView('registerView');
+    showView('catalogView');
   }}
 }}
 
-// РЕГИСТРАЦИЯ
 async function doRegister() {{
-  const nick = document.getElementById('regNicknameInput').value.trim();
+  const nickname = document.getElementById('regNicknameInput').value.trim();
   const statusMsg = document.getElementById('regStatusMsg');
-
-  if (!nick || nick.length < 2) {{
-    statusMsg.innerText = 'Пожалуйста, введите ваш позывной (минимум 2 символа)';
+  if (!nickname || nickname.length < 2) {{
+    statusMsg.innerText = 'Позывной должен содержать минимум 2 символа';
     statusMsg.style.display = 'block';
     return;
   }}
 
-  let tgUser = '';
-  let tgName = '';
-  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {{
-    tgUser = tg.initDataUnsafe.user.username || '';
-    tgName = `${{tg.initDataUnsafe.user.first_name || ''}} ${{tg.initDataUnsafe.user.last_name || ''}}`.trim();
-  }}
+  const fp = await getDeviceFingerprint();
 
   try {{
     const res = await fetch('/api/user/profile', {{
       method: 'POST',
       headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
-      body: JSON.stringify({{ tg_id: tgUserId, tg_username: tgUser, tg_name: tgName, nickname: nick }})
+      body: JSON.stringify({{ tg_id: tgUserId, nickname, fingerprint: fp }})
     }});
     const data = await res.json();
-    if (data.ok) {{
-      currentSessionUser = data.nickname || nick;
+
+    if (data.ok && data.registered) {{
+      currentSessionUser = data.nickname;
+      isUserAdmin = data.is_admin;
+      updateQuotaDisplay(data.scan_balance ?? 5, data.is_unlimited ?? false);
+
       document.getElementById('currentUserBadge').style.display = 'inline-flex';
-      if (data.is_admin) {{
-        isUserAdmin = true;
-        document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-shield';
-        document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
-      }} else {{
-        isUserAdmin = false;
-        document.getElementById('userBadgeIcon').className = 'fa-solid fa-user-check';
-        document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
-      }}
+      document.getElementById('userBadgeIcon').className = isUserAdmin ? 'fa-solid fa-user-shield' : 'fa-solid fa-user-check';
+      document.getElementById('currentUsernameSpan').innerText = currentSessionUser;
       showView('catalogView');
     }} else {{
-      statusMsg.innerText = 'Ошибка: ' + (data.error || 'Попробуйте другой позывной');
+      statusMsg.innerText = data.error || 'Ошибка регистрации';
       statusMsg.style.display = 'block';
     }}
   }} catch (e) {{
-    statusMsg.innerText = 'Ошибка соединения: ' + e.message;
+    statusMsg.innerText = 'Сетевая ошибка: ' + e.message;
     statusMsg.style.display = 'block';
   }}
 }}
 
-function setFilter(cat, elem) {{
+// РЕНДЕР КАТАЛОГА
+function setFilter(cat, element) {{
   currentCategory = cat;
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  if (elem) elem.classList.add('active');
+  document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+  if (element) element.classList.add('active');
   renderCatalog();
 }}
 
-// ОТРИСОВКА КАТАЛОГА В 2-КОЛОНОЧНОЙ СЕТКЕ
 function renderCatalog() {{
-  const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
   const container = document.getElementById('catalogContainer');
-  const counterBadge = document.getElementById('searchCounterBadge');
   if (!container) return;
-  container.innerHTML = '';
 
-  let totalShown = 0;
+  container.innerHTML = '';
+  let totalToolsCount = 0;
 
   FULL_CATALOG.forEach(group => {{
     if (currentCategory !== 'all' && group.id !== currentCategory) return;
 
     const filteredTools = group.tools.filter(t => {{
-      if (!query) return true;
-      const gStr = JSON.stringify(t.install_guide || {{}}).toLowerCase();
-      const blob = (group.title + ' ' + t.name + ' ' + t.purpose + ' ' + (t.input||'') + ' ' + gStr).toLowerCase();
-      return blob.includes(query);
+      if (!search) return true;
+      return t.name.toLowerCase().includes(search) ||
+             t.purpose.toLowerCase().includes(search) ||
+             t.id.toLowerCase().includes(search) ||
+             (t.input || '').toLowerCase().includes(search);
     }});
 
     if (filteredTools.length === 0) return;
-    totalShown += filteredTools.length;
+    totalToolsCount += filteredTools.length;
 
-    const groupWrap = document.createElement('div');
-    groupWrap.innerHTML = `
-      <div class="group-title">${{group.title}}</div>
-      <div class="group-desc">${{group.desc}}</div>
-    `;
+    const groupTitle = document.createElement('div');
+    groupTitle.className = 'group-title';
+    groupTitle.innerHTML = group.title;
+    container.appendChild(groupTitle);
+
+    const groupDesc = document.createElement('div');
+    groupDesc.className = 'group-desc';
+    groupDesc.innerText = group.desc;
+    container.appendChild(groupDesc);
 
     const grid = document.createElement('div');
     grid.className = 'cards-grid';
@@ -803,785 +931,351 @@ function renderCatalog() {{
       card.className = 'card';
       card.onclick = () => openToolPage(tool.id);
 
-      let badge = '<span class="badge badge-doc">CLI</span>';
-      if (tool.web_runnable && tool.launch?.type === 'api') {{
-        badge = '<span class="badge badge-api">⚡ SCANNER</span>';
-      }} else if (tool.web_url && tool.launch?.type === 'url') {{
-        badge = '<span class="badge badge-web">🌐 WEB</span>';
-      }}
-
-      let iconClass = 'fa-solid fa-cube';
-      if (tool.id.includes('autorecon')) iconClass = 'fa-solid fa-project-diagram';
-      else if (tool.id.includes('wayback') || tool.id.includes('archive')) iconClass = 'fa-solid fa-clock-rotate-left';
-      else if (tool.id.includes('crtsh')) iconClass = 'fa-solid fa-certificate';
-      else if (tool.id.includes('decode') || tool.id.includes('hash') || tool.id.includes('jwt')) iconClass = 'fa-solid fa-wrench';
-      else if (tool.id.includes('git')) iconClass = 'fa-brands fa-github';
-      else if (tool.id.includes('crypto')) iconClass = 'fa-solid fa-wallet';
-      else if (tool.id.includes('phone')) iconClass = 'fa-solid fa-phone';
-      else if (tool.id.includes('tg') || tool.id.includes('tele')) iconClass = 'fa-brands fa-telegram';
-      else if (tool.id.includes('photo') || tool.id.includes('suncalc') || tool.id.includes('exif')) iconClass = 'fa-solid fa-camera';
-      else if (tool.id.includes('email') || tool.id.includes('holehe')) iconClass = 'fa-solid fa-envelope';
-      else if (tool.id.includes('subfinder') || tool.id.includes('domain') || tool.id.includes('web')) iconClass = 'fa-solid fa-globe';
+      let badgeHtml = '<span class="badge badge-api">API Engine</span>';
+      if (tool.scan_type === 'decoder') badgeHtml = '<span class="badge badge-api">Cyber Lab</span>';
+      else if (tool.scan_type === 'crypto') badgeHtml = '<span class="badge badge-api" style="border-color:#facc15; color:#facc15;">Crypto</span>';
+      else if (tool.scan_type === 'dorks') badgeHtml = '<span class="badge badge-api" style="border-color:#a855f7; color:#a855f7;">Dork Matrix</span>';
+      else if (!tool.web_runnable) badgeHtml = '<span class="badge badge-doc">CLI Tool</span>';
 
       card.innerHTML = `
         <div>
           <div class="card-header">
             <div class="card-title">
-              <i class="${{iconClass}} card-icon"></i>
+              <i class="fa-solid fa-cube card-icon"></i>
               <span>${{tool.name}}</span>
             </div>
-            ${{badge}}
+            ${{badgeHtml}}
           </div>
           <div class="card-purpose">${{tool.purpose}}</div>
-          <div class="card-target-tag">🎯 Цель: ${{tool.input || 'параметр'}}</div>
         </div>
-        <div class="btn-group" onclick="event.stopPropagation()">
-          <button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="openToolPage('${{tool.id}}')">
-            <i class="fa-solid fa-bolt"></i> Запуск
-          </button>
-          ${{tool.web_url ? `<button onclick="openExternalUrl('${{tool.web_url}}')" class="btn btn-secondary" title="Открыть веб-сервис"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>` : ''}}
-          ${{tool.repo ? `<button onclick="openExternalUrl('${{tool.repo}}')" class="btn btn-secondary" title="GitHub Репозиторий"><i class="fa-brands fa-github"></i></button>` : ''}}
+        <div>
+          <div class="card-target-tag">Target: ${{tool.input || 'string'}}</div>
+          <div class="btn-group">
+            <button class="btn btn-primary" style="padding:5px 10px; font-size:10px;" onclick="event.stopPropagation(); openToolPage('${{tool.id}}')">
+              <i class="fa-solid fa-play"></i> Открыть
+            </button>
+            ${{tool.repo ? `<button class="btn btn-secondary" style="padding:5px 10px; font-size:10px;" onclick="event.stopPropagation(); openExternalUrl('${{tool.repo}}')"><i class="fa-brands fa-github"></i></button>` : ''}}
+          </div>
         </div>
       `;
       grid.appendChild(card);
     }});
 
-    groupWrap.appendChild(grid);
-    container.appendChild(groupWrap);
+    container.appendChild(grid);
   }});
 
-  if (counterBadge) counterBadge.innerText = `${{totalShown}} утилит`;
-
-  if (totalShown === 0) {{
-    container.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted); font-size:13px;">Ничего не найдено по вашему запросу.</div>';
-  }}
-}}
-
-// БЫСТРЫЙ ЗАПУСК С ГЛАВНОЙ СТРАНИЦЫ
-function runMainQuickScan() {{
-  const target = document.getElementById('mainQuickTargetInput').value.trim();
-  if (!target) {{
-    alert('Введите никнейм, GitHub логин, телефон или адрес кошелька');
-    return;
-  }}
-
-  // Автоматический роутинг на Auto-Recon & Граф
-  openToolPage('autorecon');
-  document.getElementById('tvTargetInput').value = target;
-  runCurrentToolScan();
+  const counterBadge = document.getElementById('searchCounterBadge');
+  if (counterBadge) counterBadge.innerText = `${{totalToolsCount}} утилит`;
 }}
 
 function openToolPage(toolId) {{
-  let selected = null;
-  for (let g of FULL_CATALOG) {{
-    for (let t of g.tools) {{
-      if (t.id === toolId) {{ selected = t; break; }}
-    }}
-  }}
-  if (!selected) {{
-    selected = {{
-      id: 'autorecon',
-      name: 'Auto-Recon Engine & Graph',
-      purpose: 'Сквозное расследование цифрового следа и построение интерактивного графа связей.',
-      scan_type: 'autorecon',
-      input: 'target'
-    }};
-  }}
+  let found = null;
+  FULL_CATALOG.forEach(g => {{
+    g.tools.forEach(t => {{ if (t.id === toolId) found = t; }});
+  }});
+  if (!found) return;
 
-  activeTool = selected;
-  document.getElementById('tvTitle').innerHTML = `<i class="fa-solid fa-cube" style="color:var(--primary);"></i> ${{selected.name}}`;
-  document.getElementById('tvPurpose').innerText = selected.purpose;
+  activeTool = found;
+  document.getElementById('tvTitle').innerText = found.name;
+  document.getElementById('tvPurpose').innerText = found.purpose;
 
-  const btnGroup = document.getElementById('tvHeaderButtons');
-  btnGroup.innerHTML = '';
-
-  if (selected.web_url) {{
-    btnGroup.innerHTML += `<button onclick="openExternalUrl('${{selected.web_url}}')" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Web</button>`;
+  const headerBtns = document.getElementById('tvHeaderButtons');
+  headerBtns.innerHTML = '';
+  if (found.web_url) {{
+    headerBtns.innerHTML += `<button onclick="openExternalUrl('${{found.web_url}}')" class="btn btn-cyan"><i class="fa-solid fa-arrow-up-right-from-square"></i> Сервис</button>`;
   }}
-  if (selected.repo) {{
-    btnGroup.innerHTML += `<button onclick="openExternalUrl('${{selected.repo}}')" class="btn btn-secondary"><i class="fa-brands fa-github"></i> GitHub</button>`;
+  if (found.repo) {{
+    headerBtns.innerHTML += `<button onclick="openExternalUrl('${{found.repo}}')" class="btn btn-secondary"><i class="fa-brands fa-github"></i> GitHub</button>`;
   }}
 
-  const isPhotoTool = selected.id.includes('suncalc') || selected.id.includes('meta') || selected.id.includes('photo') || (selected.input||'').includes('photo');
-  
-  if (isPhotoTool) {{
-    document.getElementById('tvPhotoUploaderBox').style.display = 'block';
-    document.getElementById('tvTextInputRow').style.display = 'none';
+  const photoBox = document.getElementById('tvPhotoUploaderBox');
+  const textRow = document.getElementById('tvTextInputRow');
+  const targetInput = document.getElementById('tvTargetInput');
+  const outBox = document.getElementById('tvOutputBox');
+  outBox.style.display = 'none';
+
+  if (found.scan_type === 'photo' || found.id === 'photo_exif_gps') {{
+    photoBox.style.display = 'block';
+    textRow.style.display = 'none';
   }} else {{
-    document.getElementById('tvPhotoUploaderBox').style.display = 'none';
-    document.getElementById('tvTextInputRow').style.display = 'flex';
+    photoBox.style.display = 'none';
+    textRow.style.display = 'flex';
+    targetInput.placeholder = `Введите цель (${{found.input || 'username / url'}})...`;
   }}
 
-  const input = document.getElementById('tvTargetInput');
-  input.value = '';
-  if (selected.scan_type === 'autorecon' || selected.id === 'autorecon') {{
-    input.placeholder = `Цель для сквозного расследования (например: torvalds или google.com)`;
-  }} else if (selected.scan_type === 'wayback' || selected.id === 'wayback') {{
-    input.placeholder = `URL или домен (например: github.com/torvalds)`;
-  }} else if (selected.scan_type === 'crtsh' || selected.id === 'crtsh') {{
-    input.placeholder = `Домен для поиска SSL журналов (например: example.com)`;
-  }} else if (selected.scan_type === 'github' || selected.id === 'github_recon') {{
-    input.placeholder = `GitHub логин (например: torvalds)`;
-  }} else if (selected.scan_type === 'crypto' || selected.id === 'crypto_tracker') {{
-    input.placeholder = `Адрес кошелька (BTC, ETH, USDT TRC20, SOL)`;
-  }} else if (selected.scan_type === 'attribution' || selected.id === 'sockpuppet_attribution') {{
-    input.placeholder = `Telegram юзернейм или ID вирта (например: @alex_temp)`;
-  }} else if (selected.scan_type === 'telegram' || selected.id === 'tg_inspector') {{
-    input.placeholder = `Telegram username или ID (например: durov)`;
-  }} else if (selected.input === 'username' || selected.scan_type === 'username') {{
-    input.placeholder = `Никнейм для Sherlock (например: wertag20)`;
-  }} else if (selected.input === 'domain' || selected.scan_type === 'domain') {{
-    input.placeholder = `Домен (например: google.com)`;
-  }} else if (selected.input === 'email' || selected.scan_type === 'email') {{
-    input.placeholder = `Email (например: user@mail.ru)`;
-  }} else if (selected.input === 'phone' || selected.scan_type === 'phone') {{
-    input.placeholder = `Номер телефона (например: +79991234567)`;
-  }} else {{
-    input.placeholder = `Цель для анализа`;
-  }}
-
-  document.getElementById('tvOutputBox').style.display = 'none';
-  document.getElementById('tvOutputBox').innerHTML = '';
-
-  const cmdsDiv = document.getElementById('tvInstallCommands');
-  cmdsDiv.innerHTML = '';
-  const guide = selected.install_guide || {{}};
-
-  if (guide.git) cmdsDiv.appendChild(createCmdBox('1. Клонирование Git', guide.git));
-  if (guide.pip_or_pkg) cmdsDiv.appendChild(createCmdBox('2. Установка зависимостей', guide.pip_or_pkg));
-  if (guide.docker) cmdsDiv.appendChild(createCmdBox('3. Docker запуск', guide.docker));
-  if (guide.usage) cmdsDiv.appendChild(createCmdBox('4. Пример запуска', guide.usage));
+  const instDiv = document.getElementById('tvInstallCommands');
+  instDiv.innerHTML = '';
+  const guide = found.install_guide || {{}};
+  if (guide.git) instDiv.appendChild(createCmdBox('Git Clone', guide.git));
+  if (guide.pip_or_pkg) instDiv.appendChild(createCmdBox('Установка (Pip/Pkg)', guide.pip_or_pkg));
+  if (guide.usage) instDiv.appendChild(createCmdBox('Запуск в CLI', guide.usage));
 
   showView('toolView');
 }}
 
-// ЗАПУСК СКАНИРОВАНИЯ В ТЕРМИНАЛЕ
+// ЗАПУСК СКАНЕРА
 async function runCurrentToolScan() {{
   if (!activeTool) return;
-  const rawTarget = document.getElementById('tvTargetInput').value.trim();
+  const target = document.getElementById('tvTargetInput').value.trim();
+  if (!target) {{
+    alert('Введите цель для проверки');
+    return;
+  }}
+  executeToolScan(activeTool.id, target);
+}}
+
+async function runMainQuickScan() {{
+  const target = document.getElementById('mainQuickTargetInput').value.trim();
+  if (!target) {{
+    alert('Введите никнейм, логин GitHub, телефон или домен');
+    return;
+  }}
+
+  // Check if crypto
+  if (target.startsWith('0x') || (target.startsWith('T') && target.length === 34) || target.startsWith('bc1') || (target.startsWith('1') && target.length >= 26)) {{
+    openToolPage('crypto_forensics');
+    executeToolScan('crypto_forensics', target);
+    return;
+  }}
+
+  openToolPage('autorecon');
+  executeToolScan('autorecon', target);
+}}
+
+async function executeToolScan(toolId, target) {{
   const loader = document.getElementById('tvLoader');
   const loaderText = document.getElementById('tvLoaderText');
   const outBox = document.getElementById('tvOutputBox');
 
-  if (!rawTarget) {{
-    alert('Введите цель для анализа');
-    return;
-  }}
-
   loader.style.display = 'block';
+  loaderText.innerText = `Запуск ${{toolId}} для "${{target}}"...`;
   outBox.style.display = 'none';
-  loaderText.innerText = `Запуск модуля ${{activeTool.name}}...`;
 
   try {{
     const res = await fetch('/api/scan/universal', {{
       method: 'POST',
       headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
-      body: JSON.stringify({{ tool_id: activeTool.id, target: rawTarget, caller: currentSessionUser || 'user' }})
+      body: JSON.stringify({{ tool_id: toolId, target, caller: currentSessionUser }})
     }});
     const data = await res.json();
     loader.style.display = 'none';
     outBox.style.display = 'block';
 
-    if (data.type === 'attribution') {{
-      renderAttributionOutput(data, outBox);
-    }} else {{
-      renderToolSpecificOutput(data, rawTarget);
+    if (data.code === 'QUOTA_EXCEEDED') {{
+      outBox.innerHTML = `
+        <div style="background:#181005; border:2px solid #eab308; border-radius:12px; padding:16px; text-align:center;">
+          <div style="font-size:16px; font-weight:800; color:#facc15; margin-bottom:6px;">⭐️ Лимит запросов исчерпан</div>
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px;">${{data.error}}</div>
+          <button class="btn btn-yellow" onclick="openStarsModal()"><i class="fa-solid fa-star"></i> Пополнить за Stars</button>
+        </div>
+      `;
+      return;
     }}
+
+    renderToolScanResult(data, outBox, target);
   }} catch (err) {{
     loader.style.display = 'none';
     outBox.style.display = 'block';
-    outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${{err.message}}</div>`;
+    outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка выполнения: ${{err.message}}</div>`;
   }}
 }}
 
-// ВЫВОД РЕЗУЛЬТАТОВ РАЗВЕДКИ (AUTORECON, WAYBACK, CRTSH, GITHUB, CRYPTO, SHERLOCK, PHONE, DOMAIN, CLI)
-function renderToolSpecificOutput(data, target) {{
-  const outBox = document.getElementById('tvOutputBox');
+// РЕНДЕР РЕЗУЛЬТАТОВ
+function renderToolScanResult(data, outBox, target) {{
   const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
   let html = '';
 
-  // 1. AUTO-RECON & GRAPH
-  if (data.type === 'autorecon') {{
-    lastAutoReconData = data;
-    html += `
-      <div class="custom-card" style="border-color:var(--primary);">
-        <div class="custom-card-title" style="color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
-          <span><i class="fa-solid fa-project-diagram"></i> Сквозное Расследование: ${{data.target}}</span>
-          <div class="btn-group">
-            <button onclick="showView('graphView'); renderInteractiveVisGraph(lastAutoReconData.nodes, lastAutoReconData.edges);" class="btn btn-cyan" style="padding:3px 8px; font-size:10px;"><i class="fa-solid fa-expand"></i> Открыть граф</button>
-            <button onclick="printDossierReport()" class="btn btn-primary" style="padding:3px 8px; font-size:10px;"><i class="fa-solid fa-file-pdf"></i> Экспорт Досье</button>
-          </div>
-        </div>
-        
-        <div class="custom-grid" style="margin-bottom:12px;">
-          <div class="custom-item">
-            <div class="custom-label">🎯 Исходная цель</div>
-            <div class="custom-val">${{data.target}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🔗 Связанных узлов</div>
-            <div class="custom-val" style="color:var(--primary);">${{(data.nodes || []).length}} объектов в графе</div>
-          </div>
-        </div>
-
-        <div id="inlineVisGraph" style="width:100%; height:320px; background:#020509; border:1px solid #162a44; border-radius:10px; margin-bottom:12px;"></div>
-
-        <div style="font-size:11px; font-weight:800; color:var(--cyan); margin-bottom:4px; text-transform:uppercase;">
-          📋 Аналитическое резюме досье:
-        </div>
-        <div class="ai-dossier-text" style="color:#cbd5e1; font-size:12px; line-height:1.5; white-space:pre-wrap;">${{data.ai_dossier}}</div>
-      </div>
-    `;
-
-    setTimeout(() => {{
-      const container = document.getElementById('inlineVisGraph');
-      if (container && data.nodes && data.edges) {{
-        const visData = {{
-          nodes: new vis.DataSet(data.nodes),
-          edges: new vis.DataSet(data.edges)
-        }};
-        const options = {{
-          physics: {{ stabilization: true, barnesHut: {{ springLength: 90 }} }},
-          nodes: {{ font: {{ color: '#ffffff', size: 12 }} }}
-        }};
-        new vis.Network(container, visData, options);
-      }}
-    }}, 100);
-
-  // 2. WAYBACK MACHINE
-  }} else if (data.type === 'wayback') {{
-    const snaps = data.snapshots || [];
-    const latest = data.latest_snapshot;
-    let logLines = data.raw_cli_output || '';
-
+  // 1. CRYPTO FORENSICS
+  if (data.type === 'crypto') {{
+    const cd = data.data || {{}};
+    let logLines = data.raw_cli_output || `[${{nowStr}}] [CRYPTO] ${{data.target}}`;
     html += `
       <div class="hacker-terminal">
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>WAYBACK-PROBE@STATION:~# ./wayback ${{data.target}}</span>
+          <span>CRYPTO-RECON@STATION:~# crypto_recon --address ${{data.target}}</span>
           <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{logLines}}</div>
       </div>
 
-      <div class="custom-card" style="border-color:var(--purple);">
-        <div class="custom-card-title" style="color:var(--purple); display:flex; justify-content:space-between;">
-          <span><i class="fa-solid fa-clock-rotate-left"></i> Архивные копии: ${{data.target}}</span>
-          <div class="btn-group">
-            <button onclick="openExternalUrl('${{data.archive_links?.wayback_calendar}}')" class="btn btn-primary" style="padding:2px 7px; font-size:10px;">Календарь Wayback</button>
-            <button onclick="openExternalUrl('${{data.archive_links?.archive_today}}')" class="btn btn-secondary" style="padding:2px 7px; font-size:10px;">Archive.today</button>
-          </div>
-        </div>
-
-        <div class="custom-grid" style="margin-bottom:10px;">
-          <div class="custom-item" style="grid-column: span 2;">
-            <div class="custom-label">⏳ Последний зафиксированный снимок</div>
-            <div class="custom-val">
-              ${{latest ? `<a href="${{latest.url}}" target="_blank" style="color:var(--primary); text-decoration:none;">🔗 ${{latest.timestamp}} (HTTP ${{latest.status}})</a>` : '<span style="color:var(--text-muted);">Прямой последний снимок не найден</span>'}}
-            </div>
-          </div>
-        </div>
-
-        <div style="font-size:11px; font-weight:800; color:#fff; margin-top:8px; margin-bottom:6px;">
-          Хронологические архивные копии (${{snaps.length}}):
-        </div>
-        <div class="profiles-grid">
-          ${{snaps.map(s => `
-            <div class="profile-card">
-              <div>
-                <div class="profile-name" style="font-size:11px;">📅 ${{s.timestamp}}</div>
-                <div style="font-size:9px; color:var(--cyan);">HTTP ${{s.status}} · ${{s.mimetype}}</div>
-              </div>
-              <button onclick="openExternalUrl('${{s.view_url}}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">Открыть</button>
-            </div>
-          `).join('')}}
-        </div>
-      </div>
-    `;
-
-  // 3. CERTIFICATE TRANSPARENCY (CRTSH)
-  }} else if (data.type === 'crtsh') {{
-    const subs = data.subdomains || [];
-    let logLines = data.raw_cli_output || '';
-
-    html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>CRTSH-PROBE@STATION:~# ./crtsh -d ${{data.domain}}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
-        </div>
-        <div class="term-log-content">${{logLines}}</div>
-      </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-certificate" style="color:var(--cyan);"></i> Журналы SSL-сертификатов (crt.sh)</div>
-        <div class="custom-grid" style="margin-bottom:10px;">
-          <div class="custom-item">
-            <div class="custom-label">🌐 Исследуемый домен</div>
-            <div class="custom-val">${{data.domain}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">📜 Извлечено субдоменов</div>
-            <div class="custom-val" style="color:var(--primary); font-weight:800;">${{data.total_subdomains}} записей</div>
-          </div>
-        </div>
-
-        <div style="font-size:11px; font-weight:800; color:#fff; margin-top:8px; margin-bottom:6px;">
-          Субдомены из открытых SSL-логов:
-        </div>
-        <div class="profiles-grid">
-          ${{subs.slice(0, 24).map(s => `
-            <div class="profile-card">
-              <div>
-                <div class="profile-name" style="font-size:11px; font-family:monospace;">${{s}}</div>
-              </div>
-              <button onclick="openExternalUrl('https://${{s}}')" class="btn btn-secondary" style="padding:2px 6px; font-size:9px;">🔗</button>
-            </div>
-          `).join('')}}
-        </div>
-      </div>
-    `;
-
-  // 4. GITHUB DEEP RECON
-  }} else if (data.type === 'github') {{
-    const emails = data.emails_discovered || [];
-    const repos = data.recent_repos || [];
-    let logLines = `[${{nowStr}}] [GH-PROBE] RESOLVING USER: ${{data.username}}
-[${{nowStr}}] [+] REAL NAME: "${{data.name}}"
-[${{nowStr}}] [+] REPOSITORIES: ${{data.public_repos_count}} | FOLLOWERS: ${{data.followers}}
-[${{nowStr}}] [COMMITS] EXTRACTING UNMASKED EMAILS: ${{emails.length > 0 ? emails.join(', ') : 'NO PUBLIC EMAILS'}}
-[${{nowStr}}] [✓] GITHUB RECON COMPLETED.`;
-
-    html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>GITHUB-INTEL@STATION:~# ./gh-dork ${{data.username}}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
-        </div>
-        <div class="term-log-content">${{logLines}}</div>
-      </div>
-
-      <div class="custom-card" style="border-color:var(--cyan);">
-        <div class="custom-card-title" style="color:var(--cyan); display:flex; justify-content:space-between;">
-          <span><i class="fa-brands fa-github"></i> Профиль GitHub: ${{data.username}}</span>
-          <button onclick="openExternalUrl('${{data.profile_url}}')" class="btn btn-primary" style="padding:2px 8px; font-size:10px;">Открыть GitHub</button>
-        </div>
-        <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
-          <img src="${{data.avatar_url}}" style="width:54px; height:54px; border-radius:50%; border:2px solid var(--cyan);" alt="Avatar">
-          <div>
-            <div style="font-weight:800; font-size:15px; color:#fff;">${{data.name}}</div>
-            <div style="font-size:11px; color:var(--text-muted);">${{data.bio}}</div>
-            <div style="font-size:10px; color:var(--cyan); margin-top:2px;">📍 ${{data.location}} · 🏢 ${{data.company}}</div>
-          </div>
-        </div>
-
+      <div class="custom-card" style="border-color:#facc15;">
+        <div class="custom-card-title"><i class="fa-solid fa-coins" style="color:#facc15;"></i> Разведка Блокчейн Кошелька</div>
         <div class="custom-grid">
-          <div class="custom-item" style="grid-column: span 2;">
-            <div class="custom-label">📧 Извлеченные Email (из коммитов)</div>
-            <div class="custom-val" style="color:var(--primary); font-family:monospace; font-size:13px;">
-              ${{emails.length > 0 ? emails.map(e => `<div>✉️ <b>${{e}}</b></div>`).join('') : '<span style="color:var(--text-muted);">Публичные email скрыты в последних коммитах</span>'}}
-            </div>
+          <div class="custom-item">
+            <div class="custom-label">🪙 Сеть / Монета</div>
+            <div class="custom-val" style="color:#facc15;">${{cd.coin_type}}</div>
           </div>
           <div class="custom-item">
-            <div class="custom-label">🔑 Публичные SSH Ключи</div>
-            <div class="custom-val"><button onclick="openExternalUrl('${{data.keys_url}}')" class="btn btn-secondary" style="padding:2px 6px; font-size:9px;">Посмотреть .keys</button></div>
+            <div class="custom-label">💰 Текущий баланс</div>
+            <div class="custom-val" style="color:var(--primary); font-size:13px;">${{cd.balance}}</div>
           </div>
           <div class="custom-item">
-            <div class="custom-label">🛡️ GPG Подписи</div>
-            <div class="custom-val"><button onclick="openExternalUrl('${{data.gpg_url}}')" class="btn btn-secondary" style="padding:2px 6px; font-size:9px;">Посмотреть .gpg</button></div>
+            <div class="custom-label">📊 Всего транзакций</div>
+            <div class="custom-val">${{cd.tx_count}} tx</div>
           </div>
+          <div class="custom-item">
+            <div class="custom-label">🕒 Активность</div>
+            <div class="custom-val">${{cd.last_seen || '—'}}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <button onclick="openExternalUrl('${{cd.explorer_url}}')" class="btn btn-yellow" style="width:100%; justify-content:center;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Открыть в Блокчейн-Эксплорере
+          </button>
         </div>
       </div>
     `;
 
-    if (repos.length > 0) {{
-      html += `
-        <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
-          Активные репозитории (${{repos.length}}):
-        </div>
-        <div class="profiles-grid">
-      `;
-      repos.forEach(r => {{
-        html += `
-          <div class="profile-card">
-            <div>
-              <div class="profile-name" style="font-size:11px;">${{r.name}}</div>
-              <div style="font-size:9px; color:var(--cyan);">⭐ ${{r.stars}} · ${{r.language}}</div>
-            </div>
-            <button onclick="openExternalUrl('${{r.url}}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">Код</button>
-          </div>
-        `;
-      }});
-      html += '</div>';
-    }}
-
-  // 5. CRYPTO
-  }} else if (data.type === 'crypto') {{
-    let logLines = `[${{nowStr}}] [CRYPTO-PROBE] RESOLVING ADDRESS: ${{data.address}}
-[${{nowStr}}] [+] DETECTED NETWORK: ${{data.network}} (${{data.symbol}})
-[${{nowStr}}] [EXPLORERS] GENERATING REALTIME LEDGER LINKS...
-[${{nowStr}}] [✓] BLOCKCHAIN INTEL READY.`;
-
+  // 2. OSINT DORKING MATRIX
+  }} else if (data.type === 'dorks') {{
+    let logLines = data.raw_cli_output || `[${{nowStr}}] [DORKS] TARGET: ${{data.target}}`;
     html += `
       <div class="hacker-terminal">
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>CRYPTO-INTEL@STATION:~# ./trace ${{data.address.substr(0, 10)}}...</span>
+          <span>DORKING-WIZARD@STATION:~# dork_matrix "${{data.target}}"</span>
           <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{logLines}}</div>
       </div>
 
-      <div class="custom-card" style="border-color:var(--primary);">
-        <div class="custom-card-title"><i class="fa-solid fa-wallet" style="color:var(--primary);"></i> Анализ блокчейн-кошелька</div>
-        <div class="custom-grid">
-          <div class="custom-item" style="grid-column: span 2;">
-            <div class="custom-label">🪙 Адрес кошелька</div>
-            <div class="custom-val" style="color:var(--primary); font-family:monospace; font-size:12px;">${{data.address}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🌐 Сеть блокчейна</div>
-            <div class="custom-val">${{data.network}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🛡️ AML / Чистота</div>
-            <div class="custom-val"><button onclick="openExternalUrl('${{data.aml_check_url}}')" class="btn btn-secondary" style="padding:2px 6px; font-size:9px;">AML Check</button></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);"></i> Блокчейн-эксплореры (Баланс и транзакции)</div>
-        <div class="btn-group">
-          ${{data.explorers.map(ex => `<button onclick="openExternalUrl('${{ex.url}}')" class="btn btn-primary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${{ex.name}}</button>`).join('')}}
-        </div>
+      <div style="font-size:13px; font-weight:800; color:#fff; margin-bottom:8px;">
+        🧙‍♂️ Сгенерировано ${{data.total_dorks}} целевых дорков для "${{data.target}}":
       </div>
     `;
 
-  // 6. SHERLOCK USERNAME
-  }} else if (data.type === 'username') {{
-    const pdata = data.probable_data || {{}};
-    const profiles = data.profiles || [];
-    
-    let checkedLines = profiles.map(p => `[${{nowStr}}] [+] [MATCH] ${{p.platform.padEnd(14)}} (${{p.category}}) -> ${{p.url}}`).join('\\n');
-    let cliLog = `[${{nowStr}}] [CORE] INITIATING SHERLOCK PROJECT ENGINE
-[${{nowStr}}] [TARGET] RESOLVING IDENTIFIER: "${{data.username}}"
-[${{nowStr}}] [PROBE] CROSS-SEARCHING ALL OFFICIAL PLATFORMS...
-${{checkedLines || `[${{nowStr}}] [-] NO DIRECT MATCHES FOUND`}}
-[${{nowStr}}] [✓] COMPLETED: ${{data.found_count}} OF ${{data.total_checked}} NODES VERIFIED.`;
-
-    html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>SHERLOCK@STATION:~# ./sherlock ${{data.username}}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
-        </div>
-        <div class="term-log-content">${{cliLog}}</div>
-      </div>
-    `;
-
-    if (profiles.length > 0) {{
+    (data.categories || []).forEach(cat => {{
       html += `
         <div class="custom-card">
-          <div class="custom-card-title">
-            <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сводная дедукция по цели "${{target}}"
-          </div>
-          <div class="custom-grid">
-            <div class="custom-item">
-              <div class="custom-label">👤 Вероятное имя</div>
-              <div class="custom-val">${{pdata.name || target}}</div>
-            </div>
-            <div class="custom-item">
-              <div class="custom-label">🏙️ Локация</div>
-              <div class="custom-val">${{pdata.location || 'По часовому поясу'}}</div>
-            </div>
-            <div class="custom-item">
-              <div class="custom-label">🎂 Возраст</div>
-              <div class="custom-val">${{pdata.age_estimate || '20–30 лет'}}</div>
-            </div>
-            <div class="custom-item">
-              <div class="custom-label">🔗 Подтвержденных баз</div>
-              <div class="custom-val" style="color:var(--primary); font-weight:800;">${{data.found_count}} из ${{data.total_checked}}</div>
-            </div>
-          </div>
-        </div>
-
-        <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
-          Подтвержденные профили (${{data.found_count}}):
-        </div>
-        <div class="profiles-grid" id="scanProfilesGrid">
+          <div class="custom-card-title"><i class="${{cat.icon || 'fa-solid fa-magnifying-glass'}}" style="color:var(--cyan);"></i> ${{cat.category}}</div>
       `;
-      profiles.forEach(p => {{
+      (cat.dorks || []).forEach(d => {{
         html += `
-          <div class="profile-card" data-cat="${{p.category}}">
-            <div class="profile-left">
-              <i class="fa-solid fa-arrow-up-right-from-square profile-icon"></i>
-              <div>
-                <div class="profile-name">${{p.platform}}</div>
-                <span class="profile-tag">✅ ${{p.category}}</span>
-              </div>
+          <div class="dork-item">
+            <div class="dork-title">
+              <span>${{d.title}}</span>
+              <button class="copy-btn" onclick="copyText(this, \`${{d.dork.replace(/`/g, '\\\\`')}}\`)">Копировать дорк</button>
             </div>
-            <button onclick="openExternalUrl('${{p.url}}')" class="btn btn-secondary" style="padding:4px 8px; font-size:10px;">🔗 Открыть</button>
+            <div class="dork-code">${{d.dork}}</div>
+            <div class="btn-group">
+              <button onclick="openExternalUrl('${{d.google}}')" class="btn btn-primary" style="padding:3px 8px; font-size:10px;"><i class="fa-brands fa-google"></i> Google</button>
+              <button onclick="openExternalUrl('${{d.yandex}}')" class="btn btn-secondary" style="padding:3px 8px; font-size:10px;"><i class="fa-brands fa-yandex"></i> Яндекс</button>
+            </div>
           </div>
         `;
       }});
       html += '</div>';
-    }} else {{
+    }});
+
+  // 3. AUTO-RECON
+  }} else if (data.type === 'autorecon') {{
+    html += `
+      <div class="custom-card" style="border-color:var(--primary);">
+        <div class="custom-card-title" style="color:var(--primary);"><i class="fa-solid fa-file-shield"></i> Тактическое Досье Расследования</div>
+        <div style="color:#cbd5e1; font-size:12px; line-height:1.55; white-space:pre-wrap;">${{data.ai_dossier}}</div>
+        <div style="margin-top:10px;">
+          <button class="btn btn-cyan" onclick="showView('graphView')"><i class="fa-solid fa-project-diagram"></i> Открыть Граф Связей</button>
+        </div>
+      </div>
+    `;
+
+  // 4. GITHUB RECON
+  }} else if (data.type === 'github') {{
+    const ems = data.emails_discovered || [];
+    html += `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-brands fa-github" style="color:var(--primary);"></i> GitHub Профиль & Скрытые Email</div>
+        <div class="custom-grid">
+          <div class="custom-item">
+            <div class="custom-label">👤 Логин</div>
+            <div class="custom-val">${{data.login}}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🪪 ФИО</div>
+            <div class="custom-val">${{data.name || '—'}}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">📦 Репозиториев</div>
+            <div class="custom-val">${{data.public_repos_count}}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">📍 Локация</div>
+            <div class="custom-val">${{data.location || 'Скрыта'}}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    if (ems.length > 0) {{
       html += `
-        <div class="info-banner" style="text-align:center; padding:16px; margin-top:10px;">
-          ❌ Прямых открытых совпадений по никнейму <b>${{target}}</b> в 480+ базах не найдено.
+        <div class="custom-card" style="border-color:var(--danger);">
+          <div class="custom-card-title" style="color:var(--danger);"><i class="fa-solid fa-envelope-open-text"></i> Email адреса из коммитов</div>
+          <div class="btn-group">
+            ${{ems.map(e => `<span class="badge badge-api" style="font-size:11px; padding:4px 8px; border-color:var(--danger); color:#fff;">✉️ ${{e}}</span>`).join('')}}
+          </div>
         </div>
       `;
     }}
 
-  // 7. PHONE
-  }} else if (data.type === 'phone') {{
-    const tz = (data.timezones || []).join(', ') || 'UTC';
-    const m = data.messengers || {{}};
-
-    let cliLog = `[${{nowStr}}] [PHONE] PARSING E.164: ${{data.e164}} (${{data.national}})
-[${{nowStr}}] [GEO] REGION: ${{data.country}} | CARRIER: ${{data.carrier}}
-[${{nowStr}}] [LINE] TYPE: ${{data.line_type}} | TZ: ${{tz}}
-[${{nowStr}}] [MESSENGERS] CHECKING WA / TG / VIBER / SKYPE...
-[${{nowStr}}] [✓] PHONE RECON COMPLETED.`;
-
+  // 5. USERNAME / SHERLOCK
+  }} else if (data.type === 'username') {{
+    const profiles = data.profiles || [];
     html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>PHONE-RECON@STATION:~# ./phoneinfoga scan -n ${{data.e164}}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);"></i> Результаты поиска по никнейму "${{target}}"</div>
+        <div style="font-size:12px; color:var(--primary); font-weight:700; margin-bottom:8px;">Найдено совпадений: ${{data.found_count}} из ${{data.total_checked}} баз</div>
+        <div class="profiles-grid">
+          ${{profiles.map(p => `
+            <div class="profile-card">
+              <div class="profile-name">${{p.platform}}</div>
+              <button onclick="openExternalUrl('${{p.url}}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">Открыть</button>
+            </div>
+          `).join('')}}
         </div>
-        <div class="term-log-content">${{cliLog}}</div>
       </div>
+    `;
 
+  // 6. PHONE
+  }} else if (data.type === 'phone') {{
+    const m = data.messengers || {{}};
+    html += `
       <div class="custom-card">
         <div class="custom-card-title"><i class="fa-solid fa-phone" style="color:var(--primary);"></i> Данные оператора и региона</div>
         <div class="custom-grid">
           <div class="custom-item">
-            <div class="custom-label">📞 Номер телефона</div>
-            <div class="custom-val" style="color:var(--primary); font-size:14px;">${{data.e164}}</div>
+            <div class="custom-label">📞 Номер</div>
+            <div class="custom-val" style="color:var(--primary);">${{data.e164}}</div>
           </div>
           <div class="custom-item">
-            <div class="custom-label">🏢 Оператор связи</div>
+            <div class="custom-label">🏢 Оператор</div>
             <div class="custom-val">${{data.carrier}}</div>
           </div>
           <div class="custom-item">
-            <div class="custom-label">🌍 Страна и Регион</div>
+            <div class="custom-label">🌍 Страна</div>
             <div class="custom-val">${{data.country}}</div>
           </div>
           <div class="custom-item">
             <div class="custom-label">🏷️ Тип линии</div>
-            <div class="custom-val" style="color:${{data.is_voip_suspect ? 'var(--danger)' : '#fff'}};">
-              ${{data.is_voip_suspect ? '⚠️ VoIP / Виртуальный номер' : '📱 Мобильный / Физический'}}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-comments" style="color:var(--cyan);"></i> Проверка в мессенджерах</div>
-        <div class="btn-group">
-          ${{m.whatsapp ? `<button onclick="openExternalUrl('${{m.whatsapp}}')" class="btn btn-primary" style="background:#25D366; color:#000;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>` : ''}}
-          ${{m.telegram ? `<button onclick="openExternalUrl('${{m.telegram}}')" class="btn btn-primary" style="background:#229ED9; color:#fff;"><i class="fa-brands fa-telegram"></i> Telegram</button>` : ''}}
-          ${{m.viber ? `<button onclick="openExternalUrl('${{m.viber}}')" class="btn btn-purple"><i class="fa-brands fa-viber"></i> Viber</button>` : ''}}
-        </div>
-      </div>
-    `;
-
-  // 8. DOMAIN
-  }} else if (data.type === 'domain') {{
-    const d = data.data || {{}};
-    const ssl = d.ssl || {{}};
-    const hdrs = d.headers || {{}};
-    const subs = d.subdomains_found || [];
-
-    let cliLog = `[${{nowStr}}] [SUBFINDER] ENUMERATING: ${{data.target}}
-[${{nowStr}}] [DNS] RESOLVED IPS: ${{(d.ip_addresses || []).join(', ')}}
-[${{nowStr}}] [SSL] ISSUER: ${{ssl.issuer || 'N/A'}} (VALID: ${{ssl.valid}})
-[${{nowStr}}] [HTTP] SERVER: ${{hdrs.Server || 'Hidden'}}
-[${{nowStr}}] [SUBDOMAINS] FOUND: ${{subs.length}} ACTIVE NODES.`;
-
-    html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>SUBFINDER@STATION:~# ./subfinder -d ${{data.target}}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
-        </div>
-        <div class="term-log-content">${{cliLog}}</div>
-      </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-network-wired" style="color:var(--cyan);"></i> Инфраструктура домена</div>
-        <div class="custom-grid">
-          <div class="custom-item">
-            <div class="custom-label">🌐 IP Адрес(а)</div>
-            <div class="custom-val">${{d.ip_addresses?.join(', ') || 'Не определен'}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🔒 SSL Сертификат</div>
-            <div class="custom-val">${{ssl.valid ? '✅ ' + (ssl.issuer || 'Действителен') : '❌ Отсутствует'}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🖥️ Серверное ПО</div>
-            <div class="custom-val">${{hdrs.Server || 'Скрыто'}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🛡️ HSTS Защита</div>
-            <div class="custom-val">${{hdrs.HSTS !== 'Отсутствует' ? 'Включена' : 'Отключена'}}</div>
+            <div class="custom-val">${{data.is_voip_suspect ? '⚠️ VoIP' : '📱 Мобильный'}}</div>
           </div>
         </div>
       </div>
     `;
 
-    if (subs.length > 0) {{
-      html += `
-        <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
-          Найденные субдомены (${{subs.length}}):
-        </div>
-        <div class="profiles-grid">
-      `;
-      subs.forEach(s => {{
-        html += `
-          <div class="profile-card">
-            <div>
-              <div class="profile-name" style="font-size:11px;">${{s.subdomain}}</div>
-              <div style="font-size:9px; color:var(--cyan); font-family:monospace;">${{s.ip}}</div>
-            </div>
-            <button onclick="openExternalUrl('https://${{s.subdomain}}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">🔗 Открыть</button>
-          </div>
-        `;
-      }});
-      html += '</div>';
-    }}
-
-  // 9. EMAIL (HOLEHE & GRAVATAR)
-  }} else if (data.type === 'email') {{
-    const ed = data.data || {{}};
-    const gp = ed.gravatar_profile || {{}};
-    const accounts = ed.linked_accounts || [];
-    let logLines = data.raw_cli_output || `[${{nowStr}}] [EMAIL] ${{data.target}}`;
+  // 7. CLI DIRECT OUTPUT / FALLBACK
+  }} else {{
+    let logLines = data.raw_cli_output || `[${{nowStr}}] [MODULE] INITIALIZING: ${{data.tool_name || toolId}}
+[${{nowStr}}] [TARGET] "${{target}}"
+[${{nowStr}}] [STATUS] EXECUTION COMPLETED`;
 
     html += `
       <div class="hacker-terminal">
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>HOLEHE@STATION:~# ./holehe ${{data.target}}</span>
+          <span>${{(data.tool_name || toolId).toUpperCase()}}@STATION:~# scan</span>
           <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{logLines}}</div>
-      </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-envelope" style="color:var(--primary);"></i> Данные Email & Сервера</div>
-        <div class="custom-grid">
-          <div class="custom-item">
-            <div class="custom-label">📧 Email адрес</div>
-            <div class="custom-val" style="color:var(--primary); font-size:13px;">${{data.target}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🏢 MX Почтовый сервер</div>
-            <div class="custom-val">${{ed.mx_found ? '✅ Активен (Существует)' : '❌ Не найден'}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🌐 Почтовый домен</div>
-            <div class="custom-val">${{ed.domain}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">👤 Привязан к Gravatar</div>
-            <div class="custom-val" style="color:${{ed.gravatar ? 'var(--primary)' : 'var(--text-muted)'}}; font-weight:700;">
-              ${{ed.gravatar ? '✅ Обнаружен аватар' : '❌ Не привязан'}}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    if (gp && gp.name) {{
-      html += `
-        <div class="custom-card" style="border-color:var(--cyan);">
-          <div class="custom-card-title"><i class="fa-solid fa-id-card" style="color:var(--cyan);"></i> Извлеченный Gravatar Профиль</div>
-          <div class="custom-grid">
-            <div class="custom-item">
-              <div class="custom-label">👤 Отображаемое имя</div>
-              <div class="custom-val" style="color:var(--primary); font-size:13px;">${{gp.name}}</div>
-            </div>
-            <div class="custom-item">
-              <div class="custom-label">📍 Локация</div>
-              <div class="custom-val">${{gp.location || 'Скрыта'}}</div>
-            </div>
-            ${{gp.bio ? `
-              <div class="custom-item" style="grid-column: span 2;">
-                <div class="custom-label">📝 Описание (Bio)</div>
-                <div class="custom-val">${{gp.bio}}</div>
-              </div>
-            ` : ''}}
-          </div>
-        </div>
-      `;
-    }}
-
-    if (accounts.length > 0) {{
-      html += `
-        <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
-          Привязанные социальные профили (${{accounts.length}}):
-        </div>
-        <div class="profiles-grid">
-      `;
-      accounts.forEach(a => {{
-        html += `
-          <div class="profile-card">
-            <div>
-              <div class="profile-name" style="font-size:11px;">${{a.name}}</div>
-            </div>
-            <button onclick="openExternalUrl('${{a.url}}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">🔗 Профиль</button>
-          </div>
-        `;
-      }});
-      html += '</div>';
-    }}
-
-  // 10. CLI TOOL DIRECT RUNNER
-  }} else if (data.type === 'cli_tool') {{
-    let cliLog = data.raw_cli_output || `[${{nowStr}}] [MODULE] INITIALIZING: ${{data.tool_name}}
-[${{nowStr}}] [TARGET] "${{data.target}}"
-[${{nowStr}}] [COMMAND] ${{data.cli_command}}
-[${{nowStr}}] [STATUS] READY TO EXECUTE`;
-
-    html += `
-      <div class="hacker-terminal">
-        <div class="term-topbar">
-          <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>${{data.tool_id.toUpperCase()}}@STATION:~# ${{data.cli_command}}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
-        </div>
-        <div class="term-log-content">${{cliLog}}</div>
-      </div>
-
-      <div class="custom-card" style="border-color:var(--cyan);">
-        <div class="custom-card-title"><i class="fa-solid fa-cube" style="color:var(--primary);"></i> ${{data.tool_name}}</div>
-        <div style="font-size:12px; color:#cbd5e1; margin-bottom:12px; line-height:1.45;">${{data.purpose}}</div>
-        
-        <div class="custom-item" style="margin-bottom:10px;">
-          <div class="custom-label">⚡ Сгенерированная команда CLI</div>
-          <div class="code-wrap" style="font-size:12px; color:var(--primary);">${{data.cli_command}}</div>
-        </div>
-
-        <div class="btn-group" style="margin-bottom:8px;">
-          ${{data.web_url ? `<button onclick="openExternalUrl('${{data.web_url}}')" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Открыть сервис</button>` : ''}}
-          ${{data.repo ? `<button onclick="openExternalUrl('${{data.repo}}')" class="btn btn-secondary"><i class="fa-brands fa-github"></i> GitHub</button>` : ''}}
-        </div>
-      </div>
-
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);"></i> Быстрый поиск по доркам для цели "${{target}}"</div>
-        <div class="btn-group">
-          ${{(data.quick_links || []).map(q => `<button onclick="openExternalUrl('${{q.url}}')" class="btn btn-secondary" style="font-size:10px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${{q.name}}</button>`).join('')}}
-        </div>
       </div>
     `;
   }}
@@ -1634,27 +1328,11 @@ function renderInteractiveVisGraph(nodes, edges) {{
   const options = {{
     physics: {{
       stabilization: true,
-      barnesHut: {{
-        gravitationalConstant: -3000,
-        springLength: 100,
-        springConstant: 0.04
-      }}
+      barnesHut: {{ gravitationalConstant: -3000, springLength: 100, springConstant: 0.04 }}
     }},
-    interaction: {{
-      hover: true,
-      navigationButtons: true,
-      keyboard: true
-    }},
-    nodes: {{
-      borderWidth: 2,
-      shadow: true,
-      font: {{ color: '#ffffff', face: 'monospace' }}
-    }},
-    edges: {{
-      width: 1.5,
-      shadow: true,
-      font: {{ color: '#94a3b8', size: 10, align: 'middle' }}
-    }}
+    interaction: {{ hover: true, navigationButtons: true, keyboard: true }},
+    nodes: {{ borderWidth: 2, shadow: true, font: {{ color: '#ffffff', face: 'monospace' }} }},
+    edges: {{ width: 1.5, shadow: true, font: {{ color: '#94a3b8', size: 10, align: 'middle' }} }}
   }};
 
   visNetworkInstance = new vis.Network(container, data, options);
@@ -1727,17 +1405,9 @@ async function runDecoderAction(action) {{
     resBox.style.display = 'block';
 
     if (data.action === 'hash_id') {{
-      outPre.innerText = `[HASH IDENTIFIER REPORT]
-Длина хеша: ${{data.length}} символов
-Вероятные алгоритмы:
-${{(data.possible_algorithms || []).map(a => `  • ${{a}}`).join('\\n')}}`;
+      outPre.innerText = `[HASH IDENTIFIER REPORT]\nДлина: ${{data.length}} символов\nАлгоритмы:\n${{(data.possible_algorithms || []).map(a => `  • ${{a}}`).join('\n')}}`;
     }} else if (data.action === 'jwt_decode') {{
-      outPre.innerText = `[JWT STRUCTURE]
-HEADER:
-${{JSON.stringify(data.header, null, 2)}}
-
-PAYLOAD:
-${{JSON.stringify(data.payload, null, 2)}}`;
+      outPre.innerText = `[JWT STRUCTURE]\nHEADER:\n${{JSON.stringify(data.header, null, 2)}}\nPAYLOAD:\n${{JSON.stringify(data.payload, null, 2)}}`;
     }} else {{
       outPre.innerText = data.result || JSON.stringify(data, null, 2);
     }}
@@ -1747,7 +1417,7 @@ ${{JSON.stringify(data.payload, null, 2)}}`;
   }}
 }}
 
-// ИНТЕРАКТИВНЫЙ CLI ТЕРМИНАЛ ОБРАБОТЧИК
+// ТЕРМИНАЛ
 function handleCliKeyDown(event) {{
   if (event.key === 'Enter') {{
     executeCliCommand();
@@ -1777,66 +1447,40 @@ async function executeCliCommand() {{
   cliHistoryIndex = cliHistory.length;
   inputEl.value = '';
 
-  outputEl.innerText += `\\nroot@cyberhub:~# ${{cmdRaw}}\\n`;
+  outputEl.innerText += `\nroot@cyberhub:~# ${{cmdRaw}}\n`;
 
-  const parts = cmdRaw.split(/\\s+/);
+  const parts = cmdRaw.split(/\s+/);
   const cmd = parts[0].toLowerCase();
   const arg = parts.slice(1).join(' ');
 
   if (cmd === 'help') {{
-    outputEl.innerText += `AVAILABLE COMMANDS:
-  help                     - Show this command reference
-  autorecon <target>       - Full cross-correlation scan & relationship graph
-  sherlock <username>      - Search 480+ databases for username
-  wayback <url/domain>     - Retrieve historical captures & deleted snapshots
-  crtsh <domain>           - Extract subdomains from SSL Certificate Transparency
-  github <username>        - Extract commit emails & repos for GitHub user
-  crypto <wallet_address>  - Identify network, balance & ledger links for wallet
-  phone <phone_number>     - Lookup carrier, region and VoIP status
-  subfinder <domain>       - Enumerate subdomains, DNS and SSL certificates
-  holehe <email>           - Check email registration across 120+ platforms
-  hash <hash_string>       - Identify hash type (MD5/SHA256/bcrypt)
-  b64d <string>            - Base64 decode
-  matrix                   - Toggle Matrix Digital Rain background FX
-  whoami / id              - Display current user callsign & Telegram ID
-  clear                    - Clear terminal screen
-  catalog                  - Return to Web Catalog view
-`;
+    outputEl.innerText += `AVAILABLE COMMANDS:\n  help, autorecon <target>, crypto <addr>, dorks <query>, sherlock <user>, wayback <url>, crtsh <domain>, github <user>, phone <num>, hash <str>, clear, matrix\n`;
   }} else if (cmd === 'clear') {{
-    outputEl.innerText = 'peace of the island of sor/ber peoples · Terminal Cleared\\n';
+    outputEl.innerText = 'peace of the island of sor/ber peoples · Terminal Cleared\n';
   }} else if (cmd === 'matrix') {{
     toggleMatrix();
-    outputEl.innerText += `[+] Matrix Rain FX toggled: ${{matrixActive ? 'ENABLED' : 'DISABLED'}}\\n`;
-  }} else if (cmd === 'whoami' || cmd === 'id') {{
-    outputEl.innerText += `[+] Callsign: ${{currentSessionUser || 'Guest'}} | TG ID: ${{tgUserId || 'Browser'}} | Admin: ${{isUserAdmin ? 'YES' : 'NO'}}\\n`;
-  }} else if (cmd === 'catalog' || cmd === 'exit') {{
-    showView('catalogView');
-  }} else if (cmd === 'hash' && arg) {{
+    outputEl.innerText += `[+] Matrix Rain FX: ${{matrixActive ? 'ENABLED' : 'DISABLED'}}\n`;
+  }} else if (cmd === 'crypto' && arg) {{
     try {{
-      const res = await fetch('/api/tools/decode', {{
+      const res = await fetch('/api/scan/crypto', {{
         method: 'POST',
-        headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{ action: 'hash_id', data: arg }})
+        headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
+        body: JSON.stringify({{ target: arg, caller: currentSessionUser }})
       }});
       const data = await res.json();
-      outputEl.innerText += `[+] Hash Length: ${{data.length}} | Likely: ${{(data.possible_algorithms || []).join(', ')}}\\n`;
-    }} catch (e) {{
-      outputEl.innerText += `[-] Error: ${{e.message}}\\n`;
-    }}
-  }} else if (cmd === 'b64d' && arg) {{
+      outputEl.innerText += (data.raw_cli_output || JSON.stringify(data.data, null, 2)) + '\n';
+    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + '\n'; }}
+  }} else if (cmd === 'dorks' && arg) {{
     try {{
-      const res = await fetch('/api/tools/decode', {{
+      const res = await fetch('/api/tools/dorks', {{
         method: 'POST',
         headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{ action: 'base64_decode', data: arg }})
+        body: JSON.stringify({{ target: arg }})
       }});
       const data = await res.json();
-      outputEl.innerText += `[+] Decoded: ${{data.result}}\\n`;
-    }} catch (e) {{
-      outputEl.innerText += `[-] Error: ${{e.message}}\\n`;
-    }}
+      outputEl.innerText += (data.raw_cli_output || 'Dorks generated.') + '\n';
+    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + '\n'; }}
   }} else if (arg) {{
-    outputEl.innerText += `[*] Executing '${{cmd}} ${{arg}}' via OSINT Engine...\\n`;
     try {{
       const res = await fetch('/api/scan/universal', {{
         method: 'POST',
@@ -1844,44 +1488,15 @@ async function executeCliCommand() {{
         body: JSON.stringify({{ tool_id: cmd, target: arg, caller: currentSessionUser }})
       }});
       const data = await res.json();
-      if (data.raw_cli_output) {{
-        outputEl.innerText += data.raw_cli_output + '\\n';
-      }} else if (data.type === 'username') {{
-        outputEl.innerText += `[+] Matches verified: ${{data.found_count}} of ${{data.total_checked}} platforms.\\n`;
-        (data.profiles || []).forEach(p => {{
-          outputEl.innerText += `  [+] ${{p.platform.padEnd(16)}}: ${{p.url}}\\n`;
-        }});
-        if ((data.profiles || []).length === 0) {{
-          outputEl.innerText += `  [-] No verified open profiles found for '${{arg}}'.\\n`;
-        }}
-      }} else if (data.type === 'github') {{
-        outputEl.innerText += `[+] Name: ${{data.name}} | Repos: ${{data.public_repos_count}} | Followers: ${{data.followers}}\\n`;
-        if (data.emails_discovered && data.emails_discovered.length > 0) {{
-          outputEl.innerText += `[!] COMMITS UNMASKED EMAILS: ${{data.emails_discovered.join(', ')}}\\n`;
-        }}
-      }} else if (data.type === 'phone') {{
-        outputEl.innerText += `[+] E.164: ${{data.e164}} | Region: ${{data.country}} | Carrier: ${{data.carrier}} | Line: ${{data.line_type}}\\n`;
-      }} else if (data.type === 'domain') {{
-        outputEl.innerText += `[+] Target Domain: ${{data.target}} | IPs: ${{(data.data?.ip_addresses || []).join(', ')}}\\n`;
-        (data.data?.subdomains_found || []).forEach(s => {{
-          outputEl.innerText += `  --> ${{s.subdomain.padEnd(25)}} [${{s.ip}}]\\n`;
-        }});
-      }} else if (data.type === 'crypto') {{
-        outputEl.innerText += `[+] Network: ${{data.network}} (${{data.symbol}})\\n[+] Explorers: ${{data.explorers.map(e => e.name).join(', ')}}\\n`;
-      }} else {{
-        outputEl.innerText += `[✓] Execution completed for '${{arg}}'.\\n`;
-      }}
-    }} catch (e) {{
-      outputEl.innerText += `[-] Error: ${{e.message}}\\n`;
-    }}
+      outputEl.innerText += (data.raw_cli_output || `[✓] Finished scan for '${{arg}}'.`) + '\n';
+    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + '\n'; }}
   }} else {{
-    outputEl.innerText += `[-] Unknown command or missing target: '${{cmd}}'. Type 'help' for command list.\\n`;
+    outputEl.innerText += `[-] Unknown command: '${{cmd}}'. Type 'help'.\n`;
   }}
-
   outputEl.scrollTop = outputEl.scrollHeight;
 }}
 
-// ОБРАБОТКА ФОТО
+// ФОТО ОБРАБОТКА
 function handlePhotoDrop(e, inputId) {{
   e.preventDefault();
   if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {{
@@ -1897,18 +1512,15 @@ async function handlePhotoUpload(input) {{
   const file = input.files[0];
   const preview = document.getElementById('tvPhotoPreview');
   const loader = document.getElementById('tvLoader');
-  const loaderText = document.getElementById('tvLoaderText');
   const outBox = document.getElementById('tvOutputBox');
 
   loader.style.display = 'block';
-  loaderText.innerText = 'Анализ тегов EXIF, GPS и камеры...';
   outBox.style.display = 'none';
 
   const reader = new FileReader();
   reader.onload = async function(e) {{
     preview.src = e.target.result;
     preview.style.display = 'block';
-
     try {{
       const res = await fetch('/api/scan/photo', {{
         method: 'POST',
@@ -1922,7 +1534,7 @@ async function handlePhotoUpload(input) {{
     }} catch (err) {{
       loader.style.display = 'none';
       outBox.style.display = 'block';
-      outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${{err.message}}</div>`;
+      outBox.innerHTML = `<div style="color:var(--danger);">❌ Ошибка: ${{err.message}}</div>`;
     }}
   }};
   reader.readAsDataURL(file);
@@ -1942,7 +1554,6 @@ async function processDirectPhoto(input) {{
   reader.onload = async function(e) {{
     preview.src = e.target.result;
     preview.style.display = 'block';
-
     try {{
       const res = await fetch('/api/scan/photo', {{
         method: 'POST',
@@ -1954,7 +1565,7 @@ async function processDirectPhoto(input) {{
       renderPhotoSpecificCard(data, outBox);
     }} catch (err) {{
       loader.style.display = 'none';
-      outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${{err.message}}</div>`;
+      outBox.innerHTML = `<div style="color:var(--danger);">❌ Ошибка: ${{err.message}}</div>`;
     }}
   }};
   reader.readAsDataURL(file);
@@ -1962,69 +1573,25 @@ async function processDirectPhoto(input) {{
 
 function renderPhotoSpecificCard(data, container) {{
   const exif = data.exif || {{}};
-  const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
   let hasGps = !!exif.gps;
-  let hasCamera = !!(exif.camera_make || exif.camera_model);
-  let hasDate = !!exif.date_time;
-
-  let cliLog = `[${{nowStr}}] [EXIF-PARSER] READING IMAGE HEADERS...
-[${{nowStr}}] [FORMAT] ${{exif.format || 'JPEG'}} | DIMENSIONS: ${{exif.dimensions || '—'}}
-[${{nowStr}}] [CAMERA] MAKE: ${{exif.camera_make || 'None'}} | MODEL: ${{exif.camera_model || 'None'}}
-[${{nowStr}}] [DATE] TIMESTAMP: ${{exif.date_time || 'None'}}
-[${{nowStr}}] [GPS] COORDINATES: ${{hasGps ? `${{exif.gps.latitude}}, ${{exif.gps.longitude}}` : 'No GPS metadata'}}
-[${{nowStr}}] [✓] PHOTO METADATA ANALYSIS COMPLETED.`;
-
   let html = `
-    <div class="hacker-terminal">
-      <div class="term-topbar">
-        <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-        <span>EXIF-TOOL@STATION:~# exiftool -v input_image</span>
-        <button class="copy-btn" onclick="copyText(this, \`${{cliLog.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
-      </div>
-      <div class="term-log-content">${{cliLog}}</div>
-    </div>
-  `;
-
-  if (hasCamera || hasDate || hasGps) {{
-    html += `
-      <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Извлеченные метаданные снимка</div>
-        <div class="custom-grid">
-          <div class="custom-item">
-            <div class="custom-label">📷 Устройство / Камера</div>
-            <div class="custom-val">${{exif.camera_make || ''}} ${{exif.camera_model || '—'}}</div>
-          </div>
-          <div class="custom-item">
-            <div class="custom-label">🕒 Дата съемки</div>
-            <div class="custom-val">${{exif.date_time || 'Скрыта'}}</div>
-          </div>
-          <div class="custom-item" style="grid-column: span 2;">
-            <div class="custom-label">📍 Геолокация (GPS)</div>
-            <div class="custom-val">
-              ${{hasGps ? `
-                <span style="color:var(--primary);">📍 ${{exif.gps.latitude}}, ${{exif.gps.longitude}}</span>
-                <button onclick="openExternalUrl('${{exif.google_maps_url}}')" class="btn btn-primary" style="padding:3px 8px; font-size:10px; margin-left:8px;">Google Maps</button>
-              ` : '<span style="color:var(--text-muted);">Координаты отсутствуют в EXIF</span>'}}
-            </div>
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-camera" style="color:var(--cyan);"></i> Извлеченные метаданные снимка</div>
+      <div class="custom-grid">
+        <div class="custom-item">
+          <div class="custom-label">📷 Камера</div>
+          <div class="custom-val">${{exif.camera_make || ''}} ${{exif.camera_model || '—'}}</div>
+        </div>
+        <div class="custom-item">
+          <div class="custom-label">🕒 Дата</div>
+          <div class="custom-val">${{exif.date_time || 'Скрыта'}}</div>
+        </div>
+        <div class="custom-item" style="grid-column: span 2;">
+          <div class="custom-label">📍 GPS Координаты</div>
+          <div class="custom-val">
+            ${{hasGps ? `<span style="color:var(--primary);">📍 ${{exif.gps.latitude}}, ${{exif.gps.longitude}}</span> <button onclick="openExternalUrl('${{exif.google_maps_url}}')" class="btn btn-primary" style="padding:2px 6px; font-size:10px; margin-left:6px;">Карты</button>` : 'Координаты отсутствуют'}}
           </div>
         </div>
-      </div>
-    `;
-  }} else {{
-    html += `
-      <div class="info-banner">
-        <b>ℹ️ Метаданные (EXIF) чистые:</b> Снимок не содержит скрытых тегов камеры (соцсети и мессенджеры часто удаляют EXIF для защиты приватности).
-      </div>
-    `;
-  }}
-
-  html += `
-    <div class="custom-card">
-      <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);"></i> Поиск оригинала и копий в поисковых системах</div>
-      <div class="btn-group">
-        <button onclick="openExternalUrl('https://yandex.ru/images/search?rpt=imageview')" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Яндекс Картинки</button>
-        <button onclick="openExternalUrl('https://lens.google.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Lens</button>
-        <button onclick="openExternalUrl('https://tineye.com/')" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> TinEye</button>
       </div>
     </div>
   `;
@@ -2038,10 +1605,7 @@ async function runAttributionScanDirect() {{
   const loader = document.getElementById('attrLoader');
   const outBox = document.getElementById('attrResultBox');
 
-  if (!target) {{
-    alert('Введите юзернейм или ID вирта');
-    return;
-  }}
+  if (!target) {{ alert('Введите юзернейм'); return; }}
 
   loader.style.display = 'block';
   outBox.innerHTML = '';
@@ -2057,83 +1621,25 @@ async function runAttributionScanDirect() {{
     renderAttributionOutput(data, outBox);
   }} catch (err) {{
     loader.style.display = 'none';
-    outBox.innerHTML = `<div style="color:var(--danger); font-size:12px;">❌ Ошибка: ${{err.message}}</div>`;
+    outBox.innerHTML = `<div style="color:var(--danger);">❌ Ошибка: ${{err.message}}</div>`;
   }}
 }}
 
 function renderAttributionOutput(data, container) {{
-  const target = data.target || '';
-  const root = data.root_handle || '';
-  const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
   const mutations = data.candidate_mutations || [];
-  const idAge = data.id_age_estimate || {{}};
-
-  let logLines = `[${{nowStr}}] [ATTR] ANALYZING TARGET ACCOUNT: @${{target}}
-[${{nowStr}}] [ID-PROBE] ESTIMATED CREATION: ${{idAge.year || '2023–2024'}} (${{idAge.note || 'Вирт/Купленный'}})
-[${{nowStr}}] [MUTATION] GENERATED ROOT CANDIDATES: ${{mutations.join(', ')}}
-[${{nowStr}}] [SYNTHESIS] CORRELATING DIGITAL FOOTPRINTS...`;
-
   let html = `
-    <div class="hacker-terminal">
-      <div class="term-topbar">
-        <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-        <span>ATTRIBUTION@ENGINE:~# ./attr @${{target}}</span>
-        <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
-      </div>
-      <div class="term-log-content">${{logLines}}</div>
-    </div>
-
     <div class="custom-card" style="border-color:var(--purple);">
-      <div class="custom-card-title" style="color:var(--purple);">
-        <i class="fa-solid fa-user-secret"></i> Результаты детектора виртов
-      </div>
+      <div class="custom-card-title" style="color:var(--purple);"><i class="fa-solid fa-user-secret"></i> Результат атрибуции вирта</div>
       <div class="custom-grid">
         <div class="custom-item">
-          <div class="custom-label">🎯 Исходный аккаунт</div>
-          <div class="custom-val">@${{target}}</div>
+          <div class="custom-label">🎯 Вирт</div>
+          <div class="custom-val">@${{data.target}}</div>
         </div>
-        <div class="custom-item">
-          <div class="custom-label">🔍 Вероятная основа (Корень)</div>
-          <div class="custom-val" style="color:var(--primary); font-size:13px;">${{root ? '@' + root : 'Прямой корень скрыт'}}</div>
-        </div>
-        <div class="custom-item">
-          <div class="custom-label">📅 Возраст Telegram ID</div>
-          <div class="custom-val">${{idAge.year || 'Не определен'}}</div>
-        </div>
-        <div class="custom-item">
-          <div class="custom-label">🏷️ Вердикт профиля</div>
-          <div class="custom-val" style="color:${{data.is_sockpuppet_suspect ? 'var(--danger)' : 'var(--primary)'}};">
-            ${{data.is_sockpuppet_suspect ? '⚠️ Подозрение на вирт' : '✅ Обычный аккаунт'}}
-          </div>
-        </div>
+        <div class="custom-label">🔍 Вероятная основа</div>
+        <div class="custom-val" style="color:var(--primary);">${{data.root_handle ? '@' + data.root_handle : 'Скрыта'}}</div>
       </div>
     </div>
   `;
-
-  if (mutations.length > 0) {{
-    html += `
-      <div style="font-size:12px; font-weight:800; color:#fff; margin-top:10px; margin-bottom:6px;">
-        🔗 Связанные профили вероятного владельца в соцсетях:
-      </div>
-      <div class="profiles-grid">
-    `;
-    mutations.forEach(m => {{
-      html += `
-        <div class="profile-card">
-          <div class="profile-left">
-            <i class="fa-solid fa-link profile-icon" style="color:var(--purple);"></i>
-            <div>
-              <div class="profile-name">@${{m}}</div>
-              <span class="profile-tag">Кандидат в основу</span>
-            </div>
-          </div>
-          <button onclick="openExternalUrl('https://t.me/${{m}}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">Проверить TG</button>
-        </div>
-      `;
-    }});
-    html += '</div>';
-  }}
-
   container.innerHTML = html;
 }}
 
@@ -2146,7 +1652,7 @@ function toggleAddUserModal() {{
 async function loadAdminUsers() {{
   if (!isUserAdmin) return;
   const tbody = document.getElementById('usersTableBody');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:8px;">Загрузка...</td></tr>';
 
   try {{
     const res = await fetch('/api/admin/users', {{ headers: {{ 'X-Telegram-User-Id': tgUserId }} }});
@@ -2158,13 +1664,23 @@ async function loadAdminUsers() {{
       const tr = document.createElement('tr');
       const statusTxt = u.status === 'active' ? '<span style="color:var(--primary); font-weight:700;">🟢 АКТИВЕН</span>' : '<span style="color:var(--danger); font-weight:700;">🔴 БЛОК</span>';
       const tgInfo = u.tg_username ? `@${{u.tg_username}}` : (u.tg_id ? `ID:${{u.tg_id}}` : '—');
-      
+      const twinkTxt = u.is_twink ? '<span style="color:var(--danger); font-weight:800;">⚠️ Твинк</span>' : '<span style="color:var(--primary);">Чисто</span>';
+      const quotaDisplay = u.is_unlimited ? '<span style="color:#facc15; font-weight:800;">👑 VIP</span>' : `<b>${{u.scan_balance}}</b> ост.`;
+
       tr.innerHTML = `
         <td><b>${{u.nickname || u.username}}</b></td>
         <td style="font-size:10px; color:var(--cyan);">${{tgInfo}}</td>
-        <td style="font-family:monospace; font-size:10px; color:#38ef7d;">${{u.last_ip || '—'}}</td>
+        <td>${{quotaDisplay}}</td>
         <td>${{statusTxt}}</td>
-        <td><code>${{u.total_scans}}</code></td>
+        <td>${{twinkTxt}}</td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${{u.id_key || u.tg_id || u.username}}', 20, 'add')">+20</button>
+            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${{u.id_key || u.tg_id || u.username}}', 50, 'add')">+50</button>
+            <button class="btn btn-yellow" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${{u.id_key || u.tg_id || u.username}}', 0, 'unlimited')">VIP</button>
+            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${{u.id_key || u.tg_id || u.username}}', 5, 'reset')">Сброс</button>
+          </div>
+        </td>
         <td>
           <div class="btn-group">
             <button class="btn btn-secondary" style="padding:3px 6px; font-size:9px;" onclick="toggleUserStatus('${{u.id_key || u.tg_id || u.username}}')">${{u.status === 'active' ? 'Блок' : 'Разблок'}}</button>
@@ -2175,7 +1691,26 @@ async function loadAdminUsers() {{
       tbody.appendChild(tr);
     }});
   }} catch (err) {{
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center;">Ошибка загрузки</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger); text-align:center;">Ошибка загрузки</td></tr>';
+  }}
+}}
+
+async function adminSetQuota(username, amount, mode) {{
+  if (!isUserAdmin) return;
+  try {{
+    const res = await fetch('/api/admin/user/set-quota', {{
+      method: 'POST',
+      headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
+      body: JSON.stringify({{ username, amount, mode }})
+    }});
+    const data = await res.json();
+    if (data.ok) {{
+      loadAdminUsers();
+    }} else {{
+      alert('Ошибка: ' + data.error);
+    }}
+  }} catch (e) {{
+    alert('Ошибка: ' + e.message);
   }}
 }}
 
@@ -2186,10 +1721,7 @@ async function submitCreateUser() {{
   const role = document.getElementById('newRole').value;
   const notes = document.getElementById('newNotes').value.trim();
 
-  if (!username) {{
-    alert('Укажите позывной');
-    return;
-  }}
+  if (!username) {{ alert('Укажите позывной'); return; }}
 
   try {{
     const res = await fetch('/api/admin/users/create', {{
@@ -2202,12 +1734,8 @@ async function submitCreateUser() {{
       toggleAddUserModal();
       document.getElementById('newUsername').value = '';
       loadAdminUsers();
-    }} else {{
-      alert('Ошибка: ' + data.error);
-    }}
-  }} catch (e) {{
-    alert('Ошибка: ' + e.message);
-  }}
+    }} else {{ alert('Ошибка: ' + data.error); }}
+  }} catch (e) {{ alert('Ошибка: ' + e.message); }}
 }}
 
 async function toggleUserStatus(username) {{
@@ -2283,7 +1811,7 @@ function createCmdBox(label, cmd) {{
   box.innerHTML = `
     <div class="cmd-label">
       <span>${{label}}</span>
-      <button class="copy-btn" onclick="copyText(this, \\`${{cmd.replace(/`/g, '\\\\`')}}\\`)">Копировать</button>
+      <button class="copy-btn" onclick="copyText(this, \`${{cmd.replace(/`/g, '\\\\`')}}\`)">Копировать</button>
     </div>
     <div class="code-wrap">${{cmd}}</div>
   `;

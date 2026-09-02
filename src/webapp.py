@@ -67,6 +67,10 @@ def load_users() -> dict:
                 "status": "active",
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "total_scans": 0,
+                "scan_balance": 999999,
+                "is_unlimited": True,
+                "device_fingerprints": [],
+                "is_twink": False,
                 "notes": "Главный администратор"
             },
             "analyst": {
@@ -76,6 +80,10 @@ def load_users() -> dict:
                 "status": "active",
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "total_scans": 0,
+                "scan_balance": 999999,
+                "is_unlimited": True,
+                "device_fingerprints": [],
+                "is_twink": False,
                 "notes": "OSINT-исследователь"
             },
             "guest": {
@@ -85,13 +93,35 @@ def load_users() -> dict:
                 "status": "active",
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "total_scans": 0,
+                "scan_balance": 5,
+                "is_unlimited": False,
+                "device_fingerprints": [],
+                "is_twink": False,
                 "notes": "Демо доступ"
             }
         }
         USERS_FILE.write_text(json.dumps(default_users, ensure_ascii=False, indent=2), encoding="utf-8")
         return default_users
     try:
-        return json.loads(USERS_FILE.read_text(encoding="utf-8"))
+        users = json.loads(USERS_FILE.read_text(encoding="utf-8"))
+        # Ensure all fields exist
+        changed = False
+        for k, u in users.items():
+            if "scan_balance" not in u:
+                u["scan_balance"] = 999999 if u.get("role") in ["admin", "vip"] else 5
+                changed = True
+            if "is_unlimited" not in u:
+                u["is_unlimited"] = True if u.get("role") in ["admin", "vip"] else False
+                changed = True
+            if "device_fingerprints" not in u:
+                u["device_fingerprints"] = []
+                changed = True
+            if "is_twink" not in u:
+                u["is_twink"] = False
+                changed = True
+        if changed:
+            save_users(users)
+        return users
     except Exception:
         return {}
 
@@ -100,12 +130,55 @@ def save_users(users: dict) -> None:
     USERS_FILE.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def check_and_consume_quota(caller_user: str = "guest") -> tuple[bool, str]:
+    """Checks user balance and consumes 1 scan if eligible."""
+    try:
+        users = load_users()
+        target_key = None
+        for k, v in users.items():
+            if k == caller_user or v.get("tg_id") == caller_user or v.get("nickname") == caller_user or v.get("username") == caller_user:
+                target_key = k
+                break
+        
+        if not target_key or target_key == "guest":
+            # Check guest quota
+            g = users.get("guest", {})
+            if g.get("role") in ["admin", "vip"] or g.get("is_unlimited"):
+                return True, "unlimited"
+            bal = g.get("scan_balance", 5)
+            if bal <= 0:
+                return False, "Лимит бесплатных запросов исчерпан. Пополните баланс за ⭐ Stars."
+            g["scan_balance"] = bal - 1
+            g["total_scans"] = g.get("total_scans", 0) + 1
+            save_users(users)
+            return True, f"Осталось запросов: {g['scan_balance']}"
+
+        u = users[target_key]
+        if u.get("role") in ["admin", "vip"] or u.get("is_unlimited"):
+            u["total_scans"] = u.get("total_scans", 0) + 1
+            save_users(users)
+            return True, "unlimited"
+
+        bal = u.get("scan_balance", 5)
+        if bal <= 0:
+            return False, "Лимит запросов исчерпан. Пополните баланс за ⭐ Stars через кнопку в шапке или команду /buy в боте."
+
+        u["scan_balance"] = bal - 1
+        u["total_scans"] = u.get("total_scans", 0) + 1
+        save_users(users)
+        return True, f"Осталось запросов: {u['scan_balance']}"
+    except Exception:
+        return True, "ok"
+
+
 def increment_user_scan(username: str = "guest") -> None:
     try:
         users = load_users()
-        if username in users:
-            users[username]["total_scans"] = users[username].get("total_scans", 0) + 1
-            save_users(users)
+        for k, v in users.items():
+            if k == username or v.get("tg_id") == username or v.get("nickname") == username or v.get("username") == username:
+                v["total_scans"] = v.get("total_scans", 0) + 1
+                save_users(users)
+                break
     except Exception:
         pass
 
@@ -462,6 +535,7 @@ async def api_user_profile(request: Request):
     tg_username = str(body.get("tg_username", "")).strip().lstrip("@")
     tg_name = str(body.get("tg_name", "")).strip()
     nickname_input = str(body.get("nickname", "")).strip()
+    fingerprint = str(body.get("fingerprint", "")).strip()
 
     ip = client_ip(request)
     ua = request.headers.get("user-agent", "")[:180]
@@ -472,6 +546,12 @@ async def api_user_profile(request: Request):
 
     is_admin = (str(tg_id) == str(ADMIN_CHAT_ID)) or (bool(ADMIN_CHAT_ID) and str(ADMIN_CHAT_ID) in [tg_id, tg_username])
 
+    packages = [
+        {"id": "scans_20", "scans": 20, "stars": 35, "title": "⭐️ 20 запросов (35 Stars)", "price_str": "35 ⭐️"},
+        {"id": "scans_50", "scans": 50, "stars": 88, "title": "⭐️ 50 запросов (88 Stars)", "price_str": "88 ⭐️"},
+        {"id": "scans_100", "scans": 100, "stars": 235, "title": "⭐️ 100 запросов (235 Stars)", "price_str": "235 ⭐️"}
+    ]
+
     # 1. Existing user
     if user_key in users:
         u = users[user_key]
@@ -479,7 +559,17 @@ async def api_user_profile(request: Request):
         u["last_ip"] = ip
         if tg_username and not u.get("tg_username"): u["tg_username"] = tg_username
         if tg_name and not u.get("tg_name"): u["tg_name"] = tg_name
-        if is_admin: u["role"] = "admin"
+        if is_admin:
+            u["role"] = "admin"
+            u["is_unlimited"] = True
+            u["scan_balance"] = 999999
+
+        if fingerprint:
+            fps = u.get("device_fingerprints", [])
+            if fingerprint not in fps:
+                fps.append(fingerprint)
+                u["device_fingerprints"] = fps
+
         save_users(users)
 
         geo = await resolve_ip_geo(ip)
@@ -511,12 +601,29 @@ async def api_user_profile(request: Request):
             "is_admin": is_admin,
             "nickname": u.get("nickname") or u.get("username") or "Agent",
             "role": u.get("role", "user"),
+            "scan_balance": u.get("scan_balance", 0),
+            "is_unlimited": u.get("is_unlimited", is_admin),
+            "is_twink": u.get("is_twink", False),
+            "packages": packages,
             "user": u
         }
 
     # 2. Registering with submitted nickname
     if nickname_input and len(nickname_input) >= 2:
         nickname_clean = re.sub(r"[^\w\-\.]", "", nickname_input)[:24]
+        
+        # Check for twink / multi-accounting by device fingerprint or IP
+        is_twink = False
+        linked_acc = None
+        if fingerprint:
+            for existing_k, existing_u in users.items():
+                if existing_k != user_key and fingerprint in existing_u.get("device_fingerprints", []):
+                    is_twink = True
+                    linked_acc = existing_u.get("nickname") or existing_u.get("username") or existing_k
+                    break
+
+        init_balance = 999999 if is_admin else (0 if is_twink else 5)
+        
         new_user = {
             "tg_id": tg_id or user_key,
             "username": nickname_clean,
@@ -529,7 +636,12 @@ async def api_user_profile(request: Request):
             "last_seen": now_str,
             "last_ip": ip,
             "total_scans": 0,
-            "notes": f"TG: @{tg_username}" if tg_username else ""
+            "scan_balance": init_balance,
+            "is_unlimited": is_admin,
+            "device_fingerprints": [fingerprint] if fingerprint else [],
+            "is_twink": is_twink,
+            "linked_account": linked_acc,
+            "notes": f"TG: @{tg_username}" + (f" | ⚠️ Твинк аккаунта @{linked_acc}" if is_twink else "")
         }
         users[user_key] = new_user
         save_users(users)
@@ -553,6 +665,10 @@ async def api_user_profile(request: Request):
             "is_admin": is_admin,
             "nickname": nickname_clean,
             "role": new_user["role"],
+            "scan_balance": new_user["scan_balance"],
+            "is_unlimited": new_user["is_unlimited"],
+            "is_twink": new_user["is_twink"],
+            "packages": packages,
             "user": new_user
         }
 
@@ -575,7 +691,8 @@ async def api_user_profile(request: Request):
         "registered": False,
         "blocked": False,
         "is_admin": is_admin,
-        "suggested_nickname": suggested
+        "suggested_nickname": suggested,
+        "packages": packages
     }
 
 
@@ -597,9 +714,100 @@ async def api_admin_get_users(request: Request):
             "status": u.get("status", "active"),
             "created_at": u.get("registered_at") or u.get("created_at") or "—",
             "total_scans": u.get("total_scans", 0),
+            "scan_balance": u.get("scan_balance", 0),
+            "is_unlimited": u.get("is_unlimited", False),
+            "is_twink": u.get("is_twink", False),
+            "linked_account": u.get("linked_account"),
             "notes": u.get("notes", "")
         })
     return {"ok": True, "users": user_list}
+
+
+@app.post("/api/admin/user/set-quota")
+async def api_admin_set_quota(request: Request):
+    if not is_admin_request(request):
+        return JSONResponse({"ok": False, "error": "Доступ запрещен. Только для администратора."}, status_code=403)
+    body = await request.json()
+    username = str(body.get("username", "")).strip()
+    amount = int(body.get("amount", 0))
+    mode = str(body.get("mode", "add")).strip().lower()  # "add", "set", "unlimited", "reset"
+
+    users = load_users()
+    target_key = None
+    for k, v in users.items():
+        if k == username or v.get("tg_id") == username or v.get("nickname") == username or v.get("username") == username:
+            target_key = k
+            break
+
+    if not target_key:
+        return JSONResponse({"ok": False, "error": "Пользователь не найден"}, status_code=404)
+
+    u = users[target_key]
+    if mode == "unlimited":
+        u["is_unlimited"] = True
+        u["scan_balance"] = 999999
+        u["role"] = "vip"
+    elif mode == "set":
+        u["scan_balance"] = max(0, amount)
+        u["is_unlimited"] = False
+    elif mode == "reset":
+        u["scan_balance"] = 5
+        u["is_twink"] = False
+        u["is_unlimited"] = False
+    else:  # add
+        u["scan_balance"] = u.get("scan_balance", 0) + max(0, amount)
+
+    save_users(users)
+    return {
+        "ok": True,
+        "message": f"Квота пользователя {u.get('nickname') or target_key} обновлена: {u.get('scan_balance')} запросов",
+        "scan_balance": u.get("scan_balance"),
+        "is_unlimited": u.get("is_unlimited")
+    }
+
+
+@app.post("/api/user/add-stars-scans")
+async def api_add_stars_scans(request: Request):
+    """Internal webhook called upon successful Telegram Stars payment."""
+    body = await request.json()
+    tg_id = str(body.get("tg_id", "")).strip()
+    scans_to_add = int(body.get("scans", 0))
+    stars_paid = int(body.get("stars", 0))
+
+    if not tg_id or scans_to_add <= 0:
+        return JSONResponse({"ok": False, "error": "Invalid payload"}, status_code=400)
+
+    users = load_users()
+    target_key = None
+    for k, v in users.items():
+        if k == tg_id or v.get("tg_id") == tg_id:
+            target_key = k
+            break
+
+    if not target_key:
+        target_key = tg_id
+        users[target_key] = {
+            "tg_id": tg_id,
+            "username": f"user_{tg_id[:6]}",
+            "nickname": f"user_{tg_id[:6]}",
+            "role": "user",
+            "status": "active",
+            "registered_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "scan_balance": 0,
+            "total_scans": 0,
+            "device_fingerprints": []
+        }
+
+    u = users[target_key]
+    u["scan_balance"] = u.get("scan_balance", 0) + scans_to_add
+    u["notes"] = (u.get("notes", "") + f" | Куплено +{scans_to_add} за {stars_paid}⭐️").strip(" |")
+    save_users(users)
+
+    return {
+        "ok": True,
+        "message": f"Успешно начислено +{scans_to_add} запросов!",
+        "new_balance": u["scan_balance"]
+    }
 
 
 @app.post("/api/admin/users/create")
@@ -1971,15 +2179,188 @@ async def core_scan_crtsh(domain: str, caller_user: str = "guest") -> dict:
     }
 
 
-@app.post("/api/scan/crtsh")
-async def scan_crtsh_endpoint(request: Request):
+async def core_scan_crypto(address: str, caller_user: str = "guest") -> dict:
+    allowed, msg = check_and_consume_quota(caller_user)
+    if not allowed:
+        return {"ok": False, "error": msg, "code": "QUOTA_EXCEEDED"}
+
+    addr = address.strip()
+    coin_type = "Неизвестная сеть"
+    symbol = "CRYPTO"
+    explorer_url = f"https://blockchair.com/search?q={addr}"
+
+    # 1. Bitcoin Address (P2PKH, P2SH, Bech32)
+    if re.match(r"^(1[a-km-zA-HJ-NP-Z1-9]{25,34}|3[a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-zA-HJ-NP-Z0-9]{25,90})$", addr):
+        coin_type = "Bitcoin (BTC)"
+        symbol = "BTC"
+        explorer_url = f"https://blockstream.info/address/{addr}"
+    # 2. Ethereum / EVM Address
+    elif re.match(r"^0x[a-fA-F0-9]{40}$", addr):
+        coin_type = "Ethereum / EVM (ETH / ERC-20)"
+        symbol = "ETH"
+        explorer_url = f"https://etherscan.io/address/{addr}"
+    # 3. TRON Address
+    elif re.match(r"^T[a-zA-HJ-NP-Z0-9]{33}$", addr):
+        coin_type = "TRON / Tether (TRX / USDT TRC-20)"
+        symbol = "TRX / USDT"
+        explorer_url = f"https://tronscan.org/#/address/{addr}"
+    # 4. Solana Address
+    elif re.match(r"^[1-9A-HJ-NP-Za-km-z]{32,44}$", addr) and len(addr) >= 32:
+        coin_type = "Solana (SOL)"
+        symbol = "SOL"
+        explorer_url = f"https://solscan.io/account/{addr}"
+
+    res = {
+        "address": addr,
+        "coin_type": coin_type,
+        "network": coin_type,
+        "symbol": symbol,
+        "balance": "0.00",
+        "total_received": "0.00",
+        "tx_count": 0,
+        "first_seen": "—",
+        "last_seen": "—",
+        "explorer_url": explorer_url
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=4.5) as client:
+            if "Bitcoin" in coin_type:
+                b_resp = await client.get(f"https://blockchain.info/rawaddr/{addr}")
+                if b_resp.status_code == 200:
+                    b_js = b_resp.json()
+                    bal_sat = b_js.get("final_balance", 0)
+                    recv_sat = b_js.get("total_received", 0)
+                    res["balance"] = f"{bal_sat / 1e8:.8f} BTC"
+                    res["total_received"] = f"{recv_sat / 1e8:.8f} BTC"
+                    res["tx_count"] = b_js.get("n_tx", 0)
+                    txs = b_js.get("txs", [])
+                    if txs:
+                        res["last_seen"] = datetime.fromtimestamp(txs[0].get("time", 0)).strftime("%Y-%m-%d %H:%M")
+                        res["first_seen"] = datetime.fromtimestamp(txs[-1].get("time", 0)).strftime("%Y-%m-%d %H:%M")
+            elif "Ethereum" in coin_type:
+                eth_resp = await client.get(f"https://api.blockchair.com/ethereum/dashboards/address/{addr}")
+                if eth_resp.status_code == 200:
+                    eth_js = eth_resp.json().get("data", {}).get(addr, {}).get("address", {})
+                    bal_wei = eth_js.get("balance", 0)
+                    recv_wei = eth_js.get("received", 0)
+                    res["balance"] = f"{int(bal_wei) / 1e18:.6f} ETH"
+                    res["total_received"] = f"{int(recv_wei) / 1e18:.6f} ETH"
+                    res["tx_count"] = eth_js.get("transaction_count", 0)
+                    res["first_seen"] = (eth_js.get("first_seen_receiving") or "—")[:16]
+                    res["last_seen"] = (eth_js.get("last_seen_receiving") or "—")[:16]
+            elif "TRON" in coin_type:
+                tr_resp = await client.get(f"https://apilist.tronscanapi.com/api/account?address={addr}")
+                if tr_resp.status_code == 200:
+                    tr_js = tr_resp.json()
+                    res["balance"] = f"{tr_js.get('balance', 0) / 1e6:.2f} TRX"
+                    res["tx_count"] = tr_js.get("totalTransactionCount", 0)
+                    res["first_seen"] = datetime.fromtimestamp(tr_js.get("date_created", 0) / 1000).strftime("%Y-%m-%d %H:%M") if tr_js.get("date_created") else "—"
+    except Exception:
+        pass
+
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cli_lines = [
+        f"root@cyberhub:~# crypto_recon --address {addr}",
+        f"[{now_ts}] [INIT] Analyzing blockchain transaction ledger...",
+        f"[{now_ts}] [+] Network: {coin_type} | Symbol: {symbol}",
+        f"[{now_ts}] [+] Balance: {res['balance']} | Transactions: {res['tx_count']}",
+        f"[{now_ts}] [EXPLORER] {explorer_url}",
+        f"[{now_ts}] [✓] Blockchain address inspection completed."
+    ]
+    res["raw_cli_output"] = "\n".join(cli_lines)
+
+    return {"ok": True, "type": "crypto", "target": addr, "data": res, "raw_cli_output": res["raw_cli_output"]}
+
+
+@app.post("/api/scan/crypto")
+async def scan_crypto_endpoint(request: Request):
     try:
         body = await request.json()
     except Exception:
         body = {}
-    domain = str(body.get("target", "")).strip()
+    target = str(body.get("target", "")).strip()
     caller = str(body.get("caller", "guest")).strip()
-    res = await core_scan_crtsh(domain, caller)
+    res = await core_scan_crypto(target, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+def core_generate_dorks(query: str) -> dict:
+    q = query.strip()
+    if not q:
+        return {"ok": False, "error": "Введите ключевое слово или никнейм для построения дорков"}
+    eq = urllib.parse.quote(q)
+    categories = [
+        {
+            "category": "📸 Instagram & Соцсети",
+            "icon": "fa-brands fa-instagram",
+            "dorks": [
+                {"title": "Профиль & Био в Instagram", "dork": f'site:instagram.com "{q}"', "google": f'https://www.google.com/search?q=site:instagram.com+"{eq}"', "yandex": f'https://yandex.ru/search/?text=site:instagram.com+"{eq}"'},
+                {"title": "Упоминания и посты Instagram", "dork": f'site:instagram.com/p/ "{q}"', "google": f'https://www.google.com/search?q=site:instagram.com/p/+"{eq}"', "yandex": f'https://yandex.ru/search/?text=site:instagram.com/p/+"{eq}"'},
+                {"title": "Анонимный просмотр Picuki / Dumpor", "dork": f'site:picuki.com OR site:dumpor.com "{q}"', "google": f'https://www.google.com/search?q=(site:picuki.com+OR+site:dumpor.com)+"{eq}"', "yandex": f'https://yandex.ru/search/?text=(site:picuki.com+OR+site:dumpor.com)+"{eq}"'},
+                {"title": "ВКонтакте Стена & Профили", "dork": f'site:vk.com "{q}"', "google": f'https://www.google.com/search?q=site:vk.com+"{eq}"', "yandex": f'https://yandex.ru/search/?text=site:vk.com+"{eq}"'},
+                {"title": "TikTok Видео & Хэштеги", "dork": f'site:tiktok.com "@{q}"', "google": f'https://www.google.com/search?q=site:tiktok.com+"@{eq}"', "yandex": f'https://yandex.ru/search/?text=site:tiktok.com+"@{eq}"'},
+                {"title": "Telegram Каналы & Чаты", "dork": f'site:t.me "{q}"', "google": f'https://www.google.com/search?q=site:t.me+"{eq}"', "yandex": f'https://yandex.ru/search/?text=site:t.me+"{eq}"'}
+            ]
+        },
+        {
+            "category": "📄 Скрытые Документы & PDF",
+            "icon": "fa-solid fa-file-pdf",
+            "dorks": [
+                {"title": "PDF Документы & Договоры", "dork": f'filetype:pdf "{q}"', "google": f'https://www.google.com/search?q=filetype:pdf+"{eq}"', "yandex": f'https://yandex.ru/search/?text=mime:pdf+"{eq}"'},
+                {"title": "Excel Таблицы & Сметы (.xlsx)", "dork": f'filetype:xlsx OR filetype:csv "{q}"', "google": f'https://www.google.com/search?q=(filetype:xlsx+OR+filetype:csv)+"{eq}"', "yandex": f'https://yandex.ru/search/?text=(mime:xls+OR+mime:xlsx)+"{eq}"'},
+                {"title": "Word Документы (.docx)", "dork": f'filetype:docx OR filetype:doc "{q}"', "google": f'https://www.google.com/search?q=(filetype:docx+OR+filetype:doc)+"{eq}"', "yandex": f'https://yandex.ru/search/?text=(mime:doc+OR+mime:docx)+"{eq}"'}
+            ]
+        },
+        {
+            "category": "🔑 Утечки, Пароли & Pastebin",
+            "icon": "fa-solid fa-key",
+            "dorks": [
+                {"title": "Сливы на Pastebin & Pastee", "dork": f'site:pastebin.com OR site:pastee.org "{q}"', "google": f'https://www.google.com/search?q=(site:pastebin.com+OR+site:pastee.org)+"{eq}"', "yandex": f'https://yandex.ru/search/?text=(site:pastebin.com+OR+site:pastee.org)+"{eq}"'},
+                {"title": "GitHub Коммиты & Пароли", "dork": f'site:github.com "{q}" password OR secret OR key', "google": f'https://www.google.com/search?q=site:github.com+"{eq}"+(password+OR+secret+OR+key)', "yandex": f'https://yandex.ru/search/?text=site:github.com+"{eq}"+(password+OR+secret)'},
+                {"title": "Дампы баз данных (SQL / DB)", "dork": f'ext:sql OR ext:db OR ext:dump "{q}"', "google": f'https://www.google.com/search?q=(ext:sql+OR+ext:db+OR+ext:dump)+"{eq}"', "yandex": f'https://yandex.ru/search/?text=(ext:sql+OR+ext:db)+"{eq}"'}
+            ]
+        },
+        {
+            "category": "🗄️ Открытые Директории & Конфиги",
+            "icon": "fa-solid fa-folder-open",
+            "dorks": [
+                {"title": "Открытые папки (Index of)", "dork": f'intitle:"index of" "{q}"', "google": f'https://www.google.com/search?q=intitle:"index+of"+"{eq}"', "yandex": f'https://yandex.ru/search/?text=title:"index+of"+"{eq}"'},
+                {"title": "Конфигурации .env & DB Credentials", "dork": f'ext:env OR ext:yml "DB_PASSWORD" "{q}"', "google": f'https://www.google.com/search?q=(ext:env+OR+ext:yml)+"DB_PASSWORD"+"{eq}"', "yandex": f'https://yandex.ru/search/?text="DB_PASSWORD"+"{eq}"'},
+                {"title": "Лог-файлы серверов (.log)", "dork": f'filetype:log "{q}"', "google": f'https://www.google.com/search?q=filetype:log+"{eq}"', "yandex": f'https://yandex.ru/search/?text=mime:log+"{eq}"'}
+            ]
+        }
+    ]
+    
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cli_lines = [
+        f"root@cyberhub:~# dorking_matrix --query '{q}'",
+        f"[{now_ts}] [INIT] Building advanced search operator matrices...",
+        f"[{now_ts}] [+] Target: '{q}' | Generated {sum(len(c['dorks']) for c in categories)} targeted dorks.",
+        f"[{now_ts}] [✓] Dork matrices prepared for Google, Yandex, DuckDuckGo."
+    ]
+    raw_cli_output = "\n".join(cli_lines)
+
+    return {
+        "ok": True,
+        "type": "dorks",
+        "target": q,
+        "categories": categories,
+        "total_dorks": sum(len(c["dorks"]) for c in categories),
+        "raw_cli_output": raw_cli_output
+    }
+
+
+@app.post("/api/tools/dorks")
+async def tools_dorks_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    query = str(body.get("target", "")).strip()
+    res = core_generate_dorks(query)
     if not res.get("ok"):
         return JSONResponse(res, status_code=400)
     return res
@@ -2290,8 +2671,12 @@ async def scan_universal_endpoint(request: Request):
         return await core_scan_github(target, caller)
 
     # 5. Crypto Wallet Intel
-    if tool_id in ["crypto_tracker"]:
+    if tool_id in ["crypto_tracker", "crypto_forensics", "crypto_recon", "blockchain_investigator"]:
         return await core_scan_crypto(target, caller)
+
+    # 5.1. Dorking Wizard & Search Matrices
+    if tool_id in ["dorking_wizard", "dorks_matrix", "google_dorks"]:
+        return core_generate_dorks(target)
 
     # 6. Phone Recon
     if tool_id in ["phoneinfoga_recon", "ignorant"]:
