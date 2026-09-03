@@ -204,7 +204,7 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
   <div class="navbar">
     <div class="brand" onclick="showView('catalogView')">
       <i class="fa-solid fa-shield-halved" style="color:var(--primary); font-size:14px;"></i>
-      <span style="font-weight:900; letter-spacing:0.5px; font-size:12px;">OSINT TERMINAL</span>
+      <span style="font-weight:900; letter-spacing:0.5px; font-size:12px;">peace of the island of sor/ber peoples</span>
       <span style="font-size:8px; background:rgba(0,255,102,0.15); color:var(--primary); padding:1px 5px; border-radius:4px; font-weight:800; border:1px solid rgba(0,255,102,0.3);">LIVE</span>
     </div>
     <div class="nav-actions">
