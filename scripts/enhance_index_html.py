@@ -203,21 +203,20 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
   <!-- НАВБАР -->
   <div class="navbar">
     <div class="brand" onclick="showView('catalogView')">
-      <i class="fa-solid fa-terminal"></i> peace of the island of sor/ber peoples
+      <i class="fa-solid fa-shield-halved" style="color:var(--primary); font-size:14px;"></i>
+      <span style="font-weight:900; letter-spacing:0.5px; font-size:12px;">OSINT TERMINAL</span>
+      <span style="font-size:8px; background:rgba(0,255,102,0.15); color:var(--primary); padding:1px 5px; border-radius:4px; font-weight:800; border:1px solid rgba(0,255,102,0.3);">LIVE</span>
     </div>
     <div class="nav-actions">
-      <div class="quota-badge" id="quotaBadge" onclick="openStarsModal()" title="Баланс запросов и покупка Stars">
+      <div class="quota-badge" id="quotaBadge" onclick="openStarsModal()" title="Баланс запросов и Stars">
         <i class="fa-solid fa-star"></i> <span id="quotaSpan">5/5 Запросов</span>
       </div>
       <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="handleUserBadgeClick()">
         <i id="userBadgeIcon" class="fa-solid fa-user-check"></i> <span id="currentUsernameSpan">Позывной</span>
       </div>
-      <button class="btn btn-cyan" onclick="showView('graphView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-project-diagram"></i> Граф</button>
-      <button class="btn btn-primary" onclick="showView('terminalView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-terminal"></i> CLI</button>
-      <button class="btn btn-purple" id="navAttrBtn" onclick="showView('attributionView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-user-secret"></i> Вирты</button>
-      <button class="btn btn-secondary" id="navPhotoBtn" onclick="showView('photoView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-camera"></i> Фото</button>
-      <button class="btn btn-secondary" onclick="showView('decoderView')" style="padding:5px 9px; font-size:11px;"><i class="fa-solid fa-wrench"></i> Лаб</button>
-      <button class="btn btn-secondary" onclick="toggleMatrix()" style="padding:5px 8px; font-size:11px;" title="Матрица"><i class="fa-solid fa-code"></i></button>
+      <button class="btn btn-cyan" onclick="showView('graphView')" style="padding:4px 8px; font-size:10px;"><i class="fa-solid fa-project-diagram"></i> Граф</button>
+      <button class="btn btn-primary" onclick="showView('terminalView')" style="padding:4px 8px; font-size:10px;"><i class="fa-solid fa-terminal"></i> CLI</button>
+      <button class="btn btn-secondary" onclick="showView('decoderView')" style="padding:4px 8px; font-size:10px;"><i class="fa-solid fa-wrench"></i> Лаб</button>
     </div>
   </div>
 
@@ -284,89 +283,58 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
   <!-- ВЬЮ 1: ГЛАВНЫЙ КАТАЛОГ & БЫСТРЫЙ ПОИСК -->
   <div class="view-page active" id="catalogView">
     
-    <!-- STATS HERO BANNER -->
-    <div class="hero-stats-banner">
-      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 46 Утилит Онлайн</div>
-      <div class="stat-pill cyan"><i class="fa-solid fa-brain"></i> AI Profiler & Досье</div>
-      <div class="stat-pill purple"><i class="fa-solid fa-user-secret"></i> Spy Tracker & Сон</div>
-      <div class="stat-pill yellow"><i class="fa-solid fa-shield-halved"></i> Crypto AML & OFAC</div>
-    </div>
-
-    <!-- 🌟 ФЛАГМАНСКИЙ МОДУЛЬ: AI DETECTIVE PROFILER -->
-    <div class="quick-recon-box" style="background: linear-gradient(135deg, #0f0a1e, #1a1033); border: 1px solid #7c3aed; box-shadow: 0 0 25px rgba(124, 58, 237, 0.25);">
-      <div class="quick-title" style="color: #c084fc; justify-content:space-between;">
-        <span><i class="fa-solid fa-brain" style="color:#c084fc;"></i> 🧠 AI Detective Profiler & Психологическое Досье</span>
-        <span class="badge" style="background:rgba(168,85,247,0.25); color:#e9d5ff; border:1px solid #a855f7;">Flagship</span>
+    <!-- ЕДИНЫЙ УМНЫЙ OMNIBAR ПОИСКА -->
+    <div style="background:rgba(12,18,28,0.85); border:1px solid rgba(0,229,255,0.25); border-radius:12px; padding:12px; margin-bottom:12px; box-shadow:0 4px 20px rgba(0,0,0,0.4); backdrop-filter:blur(12px);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="font-size:11px; font-weight:800; color:#fff; display:flex; align-items:center; gap:5px;">
+          <i class="fa-solid fa-crosshairs" style="color:var(--cyan);"></i> Универсальный OSINT Поиск & AI Досье
+        </div>
+        <div class="search-counter" id="searchCounterBadge" style="font-size:9px; padding:3px 7px;">52 утилиты</div>
       </div>
-      <div style="font-size:11px; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">
-        Глубокий анализ личности через нейросеть: расчет <b>Scam/Catfish Score (0–100%)</b>, поведенческий профиль, профессия, образ жизни и детектор скрытых связей.
+      <div style="display:flex; gap:6px;">
+        <input type="text" id="searchInput" class="quick-input" style="flex:1; padding:9px 12px; font-size:12px;" placeholder="Никнейм (@user), кошелек (0x/BTC), домен, телефон или инструмент..." oninput="renderCatalog()" onkeydown="if(event.key==='Enter') runMainOmniSearch()">
+        <button class="btn btn-purple" style="padding:9px 12px; font-size:11px;" onclick="runMainOmniSearch()"><i class="fa-solid fa-brain"></i> AI Досье</button>
       </div>
-      <div class="quick-input-group">
-        <input type="text" id="mainAiProfilerInput" class="quick-input" style="border-color:#7c3aed;" placeholder="Введите никнейм, имя, профиль или почту цели..." onkeydown="if(event.key==='Enter') runMainAiProfilerScan()">
-        <button class="btn btn-purple" onclick="runMainAiProfilerScan()"><i class="fa-solid fa-wand-magic-sparkles"></i> Сформировать Досье</button>
-      </div>
-      <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; font-size:10px; color:#94a3b8;">
-        <span>Примеры:</span>
-        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='durov'; runMainAiProfilerScan();">@durov</span>
-        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='vitalik.eth'; runMainAiProfilerScan();">vitalik.eth</span>
-        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='satoshin'; runMainAiProfilerScan();">satoshin</span>
+      <div style="display:flex; gap:8px; margin-top:6px; font-size:9px; color:#94a3b8; align-items:center;">
+        <span>Быстрый тест:</span>
+        <span style="color:var(--cyan); cursor:pointer; text-decoration:underline;" onclick="setOmniTarget('durov')">@durov</span>
+        <span style="color:var(--cyan); cursor:pointer; text-decoration:underline;" onclick="setOmniTarget('vitalik.eth')">vitalik.eth</span>
+        <span style="color:var(--cyan); cursor:pointer; text-decoration:underline;" onclick="setOmniTarget('sherlock')">sherlock</span>
+        <span style="color:var(--cyan); cursor:pointer; text-decoration:underline;" onclick="setOmniTarget('instagram')">instagram</span>
       </div>
     </div>
 
-    <!-- ⚡ ESSENTIAL LAUNCHPAD: БЫСТРЫЙ ДОСТУП К ГЛАВНЫМ МОДУЛЯМ -->
-    <div style="margin-bottom:14px;">
-      <div style="font-size:11px; font-weight:800; color:var(--cyan); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-bolt"></i> Главные инструменты быстрого запуска
+    <!-- ⚡ БЫСТРЫЙ ДОСТУП К КЛЮЧЕВЫМ МОДУЛЯМ (6 КАРТОЧЕК) -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(115px, 1fr)); gap:5px; margin-bottom:12px;">
+      <div onclick="openToolPage('ai_detective_profiler')" class="essential-btn" style="border-color:rgba(168,85,247,0.35);">
+        <div class="essential-btn-title" style="color:#e9d5ff;"><i class="fa-solid fa-brain" style="color:#a855f7;"></i> AI Досье</div>
+        <div class="essential-btn-sub">Scam Score & Профиль</div>
       </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:6px;">
-        <div onclick="openToolPage('ai_detective_profiler')" style="background:#0b1322; border:1px solid #7c3aed; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#c084fc'" onmouseout="this.style.borderColor='#7c3aed'">
-          <div style="font-size:11px; font-weight:800; color:#e9d5ff;"><i class="fa-solid fa-brain" style="color:#a855f7;"></i> AI Досье</div>
-          <div style="font-size:9px; color:#94a3b8;">Scam Score & Профиль</div>
-        </div>
-        <div onclick="openToolPage('tg_activity_tracker')" style="background:#0b1322; border:1px solid #1e3a5f; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='#1e3a5f'">
-          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-solid fa-user-secret" style="color:var(--cyan);"></i> Spy Tracker</div>
-          <div style="font-size:9px; color:#94a3b8;">Сон & Mutual Spy</div>
-        </div>
-        <div onclick="openToolPage('crypto_aml_auditor')" style="background:#0b1322; border:1px solid #715809; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#facc15'" onmouseout="this.style.borderColor='#715809'">
-          <div style="font-size:11px; font-weight:800; color:#fef08a;"><i class="fa-solid fa-shield-halved" style="color:#facc15;"></i> Crypto AML</div>
-          <div style="font-size:9px; color:#94a3b8;">OFAC & Миксеры</div>
-        </div>
-        <div onclick="openToolPage('sherlock')" style="background:#0b1322; border:1px solid #162842; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='#162842'">
-          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Sherlock</div>
-          <div style="font-size:9px; color:#94a3b8;">480+ Баз никнеймов</div>
-        </div>
-        <div onclick="openToolPage('instaloader')" style="background:#0b1322; border:1px solid #162842; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='#162842'">
-          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-brands fa-instagram" style="color:var(--purple);"></i> Instagram</div>
-          <div style="font-size:9px; color:#94a3b8;">Посты & Подписчики</div>
-        </div>
-        <div onclick="openToolPage('digital_hygiene_audit')" style="background:#0b1322; border:1px solid #501322; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='#501322'">
-          <div style="font-size:11px; font-weight:800; color:#fecdd3;"><i class="fa-solid fa-shield-virus" style="color:var(--danger);"></i> Аудит себя</div>
-          <div style="font-size:9px; color:#94a3b8;">Проверка утечек</div>
-        </div>
+      <div onclick="openToolPage('tg_activity_tracker')" class="essential-btn">
+        <div class="essential-btn-title"><i class="fa-solid fa-user-secret" style="color:var(--cyan);"></i> Spy Tracker</div>
+        <div class="essential-btn-sub">Сон & Mutual Spy</div>
+      </div>
+      <div onclick="openToolPage('crypto_aml_auditor')" class="essential-btn" style="border-color:rgba(250,204,21,0.3);">
+        <div class="essential-btn-title" style="color:#fef08a;"><i class="fa-solid fa-shield-halved" style="color:#facc15;"></i> Crypto AML</div>
+        <div class="essential-btn-sub">OFAC & Миксеры</div>
+      </div>
+      <div onclick="openToolPage('sherlock')" class="essential-btn">
+        <div class="essential-btn-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Sherlock</div>
+        <div class="essential-btn-sub">480+ Баз никнеймов</div>
+      </div>
+      <div onclick="openToolPage('instaloader')" class="essential-btn">
+        <div class="essential-btn-title"><i class="fa-brands fa-instagram" style="color:#f472b6;"></i> Instagram</div>
+        <div class="essential-btn-sub">Посты & Профили</div>
+      </div>
+      <div onclick="openToolPage('digital_hygiene_audit')" class="essential-btn" style="border-color:rgba(255,51,102,0.3);">
+        <div class="essential-btn-title" style="color:#fecdd3;"><i class="fa-solid fa-shield-virus" style="color:var(--danger);"></i> Аудит утечек</div>
+        <div class="essential-btn-sub">Проверка почты/тел.</div>
       </div>
     </div>
 
-    <!-- БЫСТРЫЙ СКАНЕР ПРЯМО НА ГЛАВНОЙ -->
-    <div class="quick-recon-box">
-      <div class="quick-title">
-        <i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> Сквозной Auto-Recon: Sherlock · Instagram · GitHub · Crypto · Dorks
-      </div>
-      <div class="quick-input-group">
-        <input type="text" id="mainQuickTargetInput" class="quick-input" placeholder="Введите никнейм, Instagram, GitHub, кошелек (BTC/ETH/TRX), телефон или домен..." onkeydown="if(event.key==='Enter') runMainQuickScan()">
-        <button class="btn btn-primary" onclick="runMainQuickScan()"><i class="fa-solid fa-bolt"></i> Найти</button>
-      </div>
-    </div>
-
-    <div class="search-box-row">
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" placeholder="Поиск: Instagram, Instaloader, Osintgram, Sherlock, Crypto, Dorks, VK, EXIF..." oninput="renderCatalog()">
-      </div>
-      <div class="search-counter" id="searchCounterBadge">33 утилиты</div>
-    </div>
-
+    <!-- ФИЛЬТР КАТЕГОРИЙ -->
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (46)</div>
+      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (52)</div>
       <div class="chip" onclick="setFilter('killer_monetization', this)"><i class="fa-solid fa-gem" style="color:var(--yellow);"></i> 💎 AI & AML (Premium)</div>
       <div class="chip" onclick="setFilter('social_google_instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram, VK & TikTok</div>
       <div class="chip" onclick="setFilter('deep_archive_recon', this)"><i class="fa-solid fa-clock-rotate-left"></i> Архивы & Auto-Recon</div>
@@ -379,10 +347,11 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
       <div class="chip" onclick="setFilter('amazing_osint', this)"><i class="fa-solid fa-camera"></i> Фото & GeoINT</div>
     </div>
 
+    <!-- СПИСОК КАРТОЧЕК КАТАЛОГА -->
     <div id="catalogContainer"></div>
   </div>
 
-    <!-- ВЬЮ 2: СТРАНИЦА ИНСТРУМЕНТА -->
+  <!-- ВЬЮ 2: СТРАНИЦА ИНСТРУМЕНТА -->
   <div class="view-page" id="toolView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -1086,7 +1055,7 @@ async function runCurrentToolScan() {{
 }}
 
 async function runMainQuickScan() {{
-  const target = document.getElementById('mainQuickTargetInput').value.trim();
+  const target = (document.getElementById('searchInput') || document.getElementById('searchInput')).value.trim();
   if (!target) {{
     alert('Введите никнейм, логин GitHub, телефон или домен');
     return;
@@ -1894,6 +1863,42 @@ async function runMainAiProfilerScan() {{
   }}
   openToolPage('ai_detective_profiler');
   document.getElementById('tvTargetInput').value = target;
+}}
+
+
+function setOmniTarget(val) {{
+  const inp = document.getElementById('searchInput');
+  if (inp) {{
+    inp.value = val;
+    renderCatalog();
+  }}
+}}
+
+async function runMainOmniSearch() {{
+  const inp = document.getElementById('searchInput');
+  const query = (inp ? inp.value : '').trim();
+  if (!query) {{
+    alert('Введите никнейм, кошелек или цель для сканирования');
+    return;
+  }}
+
+  let matchingTool = null;
+  FULL_CATALOG.forEach(g => {{
+    g.tools.forEach(t => {{
+      if (t.id.toLowerCase() === query.toLowerCase() || t.name.toLowerCase().includes(query.toLowerCase())) {{
+        matchingTool = t;
+      }}
+    }});
+  }});
+
+  if (matchingTool) {{
+    openToolPage(matchingTool.id);
+    return;
+  }}
+
+  openToolPage('ai_detective_profiler');
+  document.getElementById('tvTargetInput').value = query;
+  executeToolScan('ai_detective_profiler', query);
 }}
 
 // СТАРТ ПРИЛОЖЕНИЯ
