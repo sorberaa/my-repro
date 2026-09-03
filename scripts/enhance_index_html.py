@@ -26,64 +26,47 @@ full_html = f"""<!DOCTYPE html>
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <style>
 :root {{
-  --bg: #05080e;
-  --card-bg: rgba(12, 18, 28, 0.75);
-  --card-border: rgba(255, 255, 255, 0.07);
-  --card-hover-border: rgba(0, 229, 255, 0.5);
-  --primary: #00ff66;
-  --primary-glow: rgba(0, 255, 102, 0.25);
-  --cyan: #00e5ff;
-  --cyan-glow: rgba(0, 229, 255, 0.25);
-  --purple: #a855f7;
-  --purple-glow: rgba(168, 85, 247, 0.25);
-  --yellow: #facc15;
-  --yellow-glow: rgba(250, 204, 21, 0.25);
-  --danger: #ff3366;
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
-  --term-bg: #03060a;
-  --term-border: rgba(0, 255, 102, 0.2);
+  --bg: #07090d;
+  --card-bg: #0e1219;
+  --card-border: #181f2c;
+  --card-hover-border: #38bdf8;
+  --primary: #38bdf8;
+  --primary-glow: rgba(56, 189, 248, 0.2);
+  --cyan: #38bdf8;
+  --cyan-glow: rgba(56, 189, 248, 0.2);
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --danger: #f43f5e;
+  --text: #e2e8f0;
+  --text-muted: #64748b;
+  --term-bg: #04060a;
+  --term-border: #181f2c;
 }}
 
 * {{ margin:0; padding:0; box-sizing:border-box; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }}
 body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px; padding-bottom:70px; position:relative; overflow-x:hidden; -webkit-font-smoothing: antialiased; }}
 
-#matrixCanvas {{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.12; display:none; }}
+#matrixCanvas {{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.08; display:none; }}
 .container {{ max-width:820px; margin:0 auto; position:relative; z-index:1; }}
 
 /* Навбар */
-.navbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--card-border); padding:8px 0 12px; margin-bottom:14px; background:rgba(5,8,14,0.85); backdrop-filter:blur(16px); }}
-.brand {{ font-size:12px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; text-transform:uppercase; letter-spacing:0.6px; cursor:pointer; }}
-.brand i {{ color:var(--primary); text-shadow:0 0 10px var(--primary-glow); }}
+.navbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--card-border); padding:10px 0 14px; margin-bottom:14px; background:rgba(7,9,13,0.92); backdrop-filter:blur(16px); }}
+.brand {{ font-size:12px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; }}
+.brand i {{ color:var(--primary); }}
 .nav-actions {{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }}
 
-.user-badge {{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:#0b1322; border-radius:8px; font-size:11px; font-weight:700; color:var(--cyan); border:1px solid rgba(0,229,255,0.2); cursor:pointer; }}
-.quota-badge {{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:#181504; border-radius:8px; font-size:11px; font-weight:800; color:var(--yellow); border:1px solid rgba(250,204,21,0.3); cursor:pointer; transition:all .2s; }}
-.quota-badge:hover {{ box-shadow:0 0 10px var(--yellow-glow); transform:translateY(-1px); }}
+.user-badge {{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:#0e1219; border-radius:6px; font-size:11px; font-weight:700; color:#fff; border:1px solid var(--card-border); cursor:pointer; }}
+.quota-badge {{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:#0e1219; border-radius:6px; font-size:11px; font-weight:800; color:var(--accent-yellow); border:1px solid var(--card-border); cursor:pointer; transition:all .2s; }}
+.quota-badge:hover {{ border-color:var(--accent-yellow); }}
 
 .view-page {{ display:none; }}
-.view-page.active {{ display:block; animation:fadeIn 0.2s ease-out; }}
-@keyframes fadeIn {{ from {{ opacity:0; transform:translateY(4px); }} to {{ opacity:1; transform:translateY(0); }} }}
-
-/* Hero баннер */
-.hero-stats-banner {{ display:flex; justify-content:space-between; align-items:center; background:rgba(10,16,26,0.6); border:1px solid var(--card-border); border-radius:10px; padding:8px 12px; margin-bottom:12px; backdrop-filter:blur(10px); flex-wrap:wrap; gap:6px; }}
-.stat-pill {{ display:flex; align-items:center; gap:5px; font-size:10px; font-weight:700; color:#94a3b8; }}
-.stat-pill i {{ color:var(--primary); }}
-.stat-pill.cyan i {{ color:var(--cyan); }}
-.stat-pill.purple i {{ color:var(--purple); }}
-.stat-pill.yellow i {{ color:var(--yellow); }}
-
-/* Флагманский блок AI Profiler */
-.ai-profiler-compact {{ background:linear-gradient(135deg, rgba(16,11,32,0.8), rgba(24,14,48,0.7)); border:1px solid rgba(168,85,247,0.35); border-radius:12px; padding:12px 14px; margin-bottom:12px; backdrop-filter:blur(12px); box-shadow:0 4px 20px rgba(124,58,237,0.12); }}
-.ai-profiler-title {{ font-size:12px; font-weight:800; color:#e9d5ff; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }}
-.ai-input-group {{ display:flex; gap:6px; }}
-.ai-input {{ flex:1; padding:9px 12px; background:rgba(4,6,12,0.8); border:1px solid rgba(168,85,247,0.3); border-radius:8px; color:#fff; font-size:12px; outline:none; transition:all .2s; }}
-.ai-input:focus {{ border-color:var(--purple); box-shadow:0 0 10px var(--purple-glow); }}
+.view-page.active {{ display:block; animation:fadeIn 0.15s ease-out; }}
+@keyframes fadeIn {{ from {{ opacity:0; }} to {{ opacity:1; }} }}
 
 /* Сетка быстрого доступа (Essential Launchpad) */
-.essential-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(115px, 1fr)); gap:6px; margin-bottom:14px; }}
-.essential-btn {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:8px; cursor:pointer; transition:all .2s; backdrop-filter:blur(8px); }}
-.essential-btn:hover {{ border-color:var(--cyan); transform:translateY(-1px); box-shadow:0 3px 12px rgba(0,229,255,0.1); }}
+.essential-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(115px, 1fr)); gap:6px; margin-bottom:12px; }}
+.essential-btn {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:9px 10px; cursor:pointer; transition:all .15s; }}
+.essential-btn:hover {{ border-color:var(--primary); background:#121722; transform:translateY(-1px); }}
 .essential-btn-title {{ font-size:11px; font-weight:800; color:#fff; display:flex; align-items:center; gap:5px; margin-bottom:2px; }}
 .essential-btn-sub {{ font-size:9px; color:var(--text-muted); }}
 
@@ -91,104 +74,105 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
 .search-box-row {{ display:flex; gap:6px; align-items:center; margin-bottom:10px; }}
 .search-box {{ position:relative; flex:1; }}
 .search-box i {{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:12px; }}
-.search-box input {{ width:100%; padding:9px 12px 9px 34px; background:rgba(7,11,18,0.8); border:1px solid var(--card-border); border-radius:8px; color:#fff; font-size:12px; outline:none; transition:all .2s; }}
-.search-box input:focus {{ border-color:var(--cyan); box-shadow:0 0 10px var(--cyan-glow); }}
-.search-counter {{ font-size:10px; font-weight:700; color:var(--cyan); white-space:nowrap; background:rgba(11,20,36,0.6); padding:8px 10px; border-radius:8px; border:1px solid rgba(0,229,255,0.15); }}
+.search-box input {{ width:100%; padding:9px 12px 9px 34px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; transition:all .15s; }}
+.search-box input:focus {{ border-color:var(--primary); }}
+.search-counter {{ font-size:10px; font-weight:700; color:#94a3b8; white-space:nowrap; background:var(--card-bg); padding:8px 10px; border-radius:6px; border:1px solid var(--card-border); }}
 
 /* Категории (Chips) */
 .filter-chips {{ display:flex; gap:5px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }}
 .filter-chips::-webkit-scrollbar {{ display:none; }}
-.chip {{ padding:5px 10px; background:rgba(8,14,24,0.6); border:1px solid var(--card-border); border-radius:16px; font-size:10px; font-weight:700; color:#94a3b8; white-space:nowrap; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:all .15s; }}
-.chip:hover, .chip.active {{ background:rgba(0,255,102,0.1); border-color:var(--primary); color:var(--primary); }}
+.chip {{ padding:5px 11px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:6px; font-size:10px; font-weight:700; color:#94a3b8; white-space:nowrap; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all .15s; }}
+.chip:hover, .chip.active {{ background:#161c28; border-color:var(--primary); color:#fff; }}
 
 /* Сетка карточек каталога */
-.group-title {{ font-size:12px; font-weight:800; color:var(--cyan); margin:14px 0 4px; display:flex; align-items:center; gap:5px; text-transform:uppercase; letter-spacing:0.5px; }}
+.group-title {{ font-size:11px; font-weight:800; color:#94a3b8; margin:14px 0 6px; display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.5px; }}
 .group-desc {{ font-size:10px; color:var(--text-muted); margin-bottom:8px; }}
 
 .cards-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:8px; }}
-.card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:10px; padding:12px; cursor:pointer; transition:all .2s; display:flex; flex-direction:column; justify-content:space-between; backdrop-filter:blur(8px); }}
-.card:hover {{ border-color:var(--cyan); transform:translateY(-1px); box-shadow:0 3px 15px rgba(0,229,255,0.08); }}
+.card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; cursor:pointer; transition:all .15s; display:flex; flex-direction:column; justify-content:space-between; }}
+.card:hover {{ border-color:var(--primary); background:#121722; transform:translateY(-1px); }}
 .card-header {{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; gap:6px; }}
 .card-title {{ font-size:12px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; line-height:1.2; }}
 .card-icon {{ color:var(--primary); font-size:12px; }}
-.badge {{ font-size:9px; font-weight:800; padding:2px 6px; border-radius:6px; text-transform:uppercase; white-space:nowrap; }}
-.badge-api {{ background:rgba(0,255,102,0.1); color:var(--primary); border:1px solid rgba(0,255,102,0.3); }}
-.badge-web {{ background:rgba(0,229,255,0.1); color:var(--cyan); border:1px solid rgba(0,229,255,0.3); }}
-.badge-doc {{ background:rgba(148,163,184,0.08); color:var(--text-muted); border:1px solid rgba(148,163,184,0.2); }}
+.badge {{ font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; text-transform:uppercase; white-space:nowrap; }}
+.badge-api {{ background:#111928; color:var(--primary); border:1px solid #1c2b42; }}
+.badge-web {{ background:#111928; color:#94a3b8; border:1px solid var(--card-border); }}
+.badge-doc {{ background:#111928; color:var(--text-muted); border:1px solid var(--card-border); }}
 
-.card-purpose {{ font-size:10px; color:#cbd5e1; line-height:1.4; margin-bottom:8px; flex:1; }}
-.card-target-tag {{ font-size:9px; color:var(--cyan); font-family:monospace; margin-bottom:8px; }}
+.card-purpose {{ font-size:10px; color:#94a3b8; line-height:1.4; margin-bottom:8px; flex:1; }}
+.card-target-tag {{ font-size:9px; color:var(--primary); font-family:monospace; margin-bottom:8px; }}
 
 /* Кнопки */
 .btn-group {{ display:flex; flex-wrap:wrap; gap:5px; }}
 .btn {{ padding:6px 12px; font-size:11px; font-weight:700; border-radius:6px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; text-decoration:none; transition:all .15s; }}
-.btn-primary {{ background:var(--primary); color:#000; font-weight:800; }}
-.btn-primary:hover {{ filter:brightness(1.1); box-shadow:0 0 10px var(--primary-glow); }}
-.btn-secondary {{ background:rgba(12,20,34,0.8); color:var(--text); border:1px solid var(--card-border); }}
-.btn-secondary:hover {{ border-color:var(--cyan); color:#fff; }}
-.btn-purple {{ background:linear-gradient(135deg, #7c3aed, #9333ea); color:#fff; }}
-.btn-cyan {{ background:linear-gradient(135deg, #00e5ff, #0099ff); color:#000; font-weight:800; }}
-.btn-yellow {{ background:linear-gradient(135deg, #facc15, #eab308); color:#000; font-weight:800; }}
-.btn-danger {{ background:rgba(255,51,102,0.12); color:var(--danger); border:1px solid rgba(255,51,102,0.3); }}
+.btn-primary {{ background:#fff; color:#000; font-weight:800; }}
+.btn-primary:hover {{ background:#e2e8f0; }}
+.btn-secondary {{ background:var(--card-bg); color:var(--text); border:1px solid var(--card-border); }}
+.btn-secondary:hover {{ border-color:#fff; color:#fff; }}
+.btn-purple {{ background:#2563eb; color:#fff; }}
+.btn-purple:hover {{ background:#1d4ed8; }}
+.btn-cyan {{ background:var(--primary); color:#000; font-weight:800; }}
+.btn-yellow {{ background:#f59e0b; color:#000; font-weight:800; }}
+.btn-danger {{ background:#1a0d11; color:var(--danger); border:1px solid #3b141d; }}
 
 /* Страница инструмента (toolView) */
-.tool-view-header {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:14px; margin-bottom:10px; backdrop-filter:blur(8px); }}
-.back-btn {{ display:inline-flex; align-items:center; gap:5px; color:var(--cyan); font-size:11px; font-weight:700; cursor:pointer; margin-bottom:8px; }}
-.back-btn:hover {{ color:var(--primary); }}
+.tool-view-header {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:14px; margin-bottom:10px; }}
+.back-btn {{ display:inline-flex; align-items:center; gap:5px; color:var(--primary); font-size:11px; font-weight:700; cursor:pointer; margin-bottom:8px; }}
+.back-btn:hover {{ color:#fff; }}
 .tool-view-title {{ font-size:15px; font-weight:800; color:#fff; margin-bottom:3px; }}
 .tool-view-desc {{ font-size:11px; color:var(--text-muted); margin-bottom:10px; line-height:1.4; }}
 
-.workspace-box {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:14px; margin-bottom:10px; backdrop-filter:blur(8px); }}
-.workspace-title {{ font-size:11px; font-weight:800; color:var(--primary); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px; }}
+.workspace-box {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:14px; margin-bottom:10px; }}
+.workspace-title {{ font-size:11px; font-weight:800; color:#fff; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px; }}
 
 .input-row {{ display:flex; gap:6px; margin-bottom:10px; }}
-.tool-input {{ flex:1; padding:9px 12px; background:rgba(3,6,10,0.8); border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; }}
-.tool-input:focus {{ border-color:var(--primary); box-shadow:0 0 8px var(--primary-glow); }}
+.tool-input {{ flex:1; padding:9px 12px; background:#05070a; border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; }}
+.tool-input:focus {{ border-color:var(--primary); }}
 
-/* Характеристики модуля (вместо инструкций github) */
+/* Характеристики модуля */
 .spec-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:6px; }}
-.spec-card {{ background:rgba(5,9,16,0.6); border:1px solid var(--card-border); border-radius:6px; padding:8px 10px; }}
+.spec-card {{ background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:8px 10px; }}
 .spec-label {{ font-size:9px; color:var(--text-muted); margin-bottom:2px; }}
 .spec-val {{ font-size:11px; font-weight:700; color:#fff; }}
 
 /* Кастомные карточки результатов */
-.custom-card {{ background:rgba(8,14,24,0.8); border:1px solid var(--card-border); border-radius:10px; padding:12px; margin-bottom:8px; }}
+.custom-card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:8px; }}
 .custom-card-title {{ font-size:12px; font-weight:800; color:#fff; margin-bottom:8px; display:flex; align-items:center; gap:6px; }}
 .custom-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; }}
-.custom-item {{ background:rgba(4,8,14,0.7); padding:6px 8px; border-radius:6px; border:1px solid var(--card-border); }}
+.custom-item {{ background:#07090e; padding:6px 8px; border-radius:6px; border:1px solid var(--card-border); }}
 .custom-label {{ color:var(--text-muted); font-size:9px; margin-bottom:2px; }}
 .custom-val {{ color:#fff; font-weight:700; font-size:11px; word-break:break-all; }}
 
 /* Профили */
 .profiles-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:5px; margin-top:6px; }}
-.profile-card {{ background:rgba(5,10,18,0.7); border:1px solid var(--card-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; justify-content:space-between; gap:5px; }}
+.profile-card {{ background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; justify-content:space-between; gap:5px; }}
 .profile-name {{ font-size:10px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
 
 /* Терминал */
-.cli-console-box {{ background:var(--term-bg); border:1px solid var(--term-border); border-radius:10px; padding:12px; margin-bottom:10px; }}
-.cli-output {{ color:#38ef7d; font-family:'Courier New', monospace; font-size:11px; line-height:1.5; white-space:pre-wrap; max-height:360px; overflow-y:auto; margin-bottom:10px; }}
+.cli-console-box {{ background:var(--term-bg); border:1px solid var(--term-border); border-radius:8px; padding:12px; margin-bottom:10px; }}
+.cli-output {{ color:#e2e8f0; font-family:'Courier New', monospace; font-size:11px; line-height:1.5; white-space:pre-wrap; max-height:360px; overflow-y:auto; margin-bottom:10px; }}
 .cli-prompt-row {{ display:flex; align-items:center; gap:6px; font-family:'Courier New', monospace; font-size:12px; }}
 .cli-prompt-label {{ color:var(--primary); font-weight:800; }}
 .cli-input {{ flex:1; background:transparent; border:none; outline:none; color:#fff; font-family:'Courier New', monospace; font-size:12px; }}
 
 /* Дропзона */
-.upload-dropzone {{ border:1px dashed rgba(0,229,255,0.3); border-radius:10px; padding:18px 12px; text-align:center; background:rgba(6,13,26,0.5); cursor:pointer; transition:all .2s; margin-bottom:8px; }}
-.upload-dropzone:hover {{ border-color:var(--cyan); background:rgba(9,20,38,0.7); }}
+.upload-dropzone {{ border:1px dashed var(--card-border); border-radius:8px; padding:18px 12px; text-align:center; background:#07090e; cursor:pointer; transition:all .15s; margin-bottom:8px; }}
+.upload-dropzone:hover {{ border-color:var(--primary); }}
 .upload-preview {{ max-width:100%; max-height:200px; border-radius:6px; margin-top:8px; display:none; border:1px solid var(--card-border); }}
 
 /* Спиннер */
 .loader {{ display:none; text-align:center; padding:12px; }}
-.spinner {{ width:20px; height:20px; border:2px solid rgba(0,255,102,0.2); border-top-color:var(--primary); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 6px; }}
+.spinner {{ width:20px; height:20px; border:2px solid #1e293b; border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 6px; }}
 @keyframes spin {{ to {{ transform:rotate(360deg); }} }}
 
 /* Авторизация */
 .auth-container {{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; padding:16px; }}
-.auth-card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:14px; padding:20px; max-width:380px; width:100%; text-align:center; backdrop-filter:blur(12px); }}
-.auth-icon {{ font-size:36px; color:var(--primary); margin-bottom:10px; }}
-.auth-title {{ font-size:14px; font-weight:800; color:#fff; margin-bottom:4px; }}
+.auth-card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:10px; padding:20px; max-width:380px; width:100%; text-align:center; }}
+.auth-icon {{ font-size:32px; color:var(--primary); margin-bottom:10px; }}
+.auth-title {{ font-size:13px; font-weight:800; color:#fff; margin-bottom:4px; }}
 .auth-subtitle {{ font-size:10px; color:var(--text-muted); margin-bottom:14px; line-height:1.4; }}
-.auth-input {{ width:100%; padding:10px 12px; background:rgba(3,6,10,0.8); border:1px solid var(--card-border); border-radius:8px; color:#fff; font-size:12px; outline:none; margin-bottom:10px; text-align:center; }}
-.auth-input:focus {{ border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }}
+.auth-input {{ width:100%; padding:9px 12px; background:#05070a; border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; margin-bottom:10px; text-align:center; }}
+.auth-input:focus {{ border-color:var(--primary); }}
 
 .footer-info {{ text-align:center; font-size:9px; color:#475569; margin-top:16px; padding:8px; }}
 
@@ -285,7 +269,7 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
   <div class="view-page active" id="catalogView">
     
     <!-- ЕДИНЫЙ УМНЫЙ OMNIBAR ПОИСКА -->
-    <div style="background:rgba(12,18,28,0.85); border:1px solid rgba(0,229,255,0.25); border-radius:12px; padding:12px; margin-bottom:12px; box-shadow:0 4px 20px rgba(0,0,0,0.4); backdrop-filter:blur(12px);">
+    <div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:10px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <div style="font-size:11px; font-weight:800; color:#fff; display:flex; align-items:center; gap:5px;">
           <i class="fa-solid fa-crosshairs" style="color:var(--cyan);"></i> Универсальный OSINT Поиск & AI Досье
@@ -293,7 +277,7 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
         <div class="search-counter" id="searchCounterBadge" style="font-size:9px; padding:3px 7px;">52 утилиты</div>
       </div>
       <div style="display:flex; gap:6px;">
-        <input type="text" id="searchInput" class="quick-input" style="flex:1; padding:9px 12px; font-size:12px;" placeholder="Никнейм (@user), кошелек (0x/BTC), домен, телефон или инструмент..." oninput="renderCatalog()" onkeydown="if(event.key==='Enter') runMainOmniSearch()">
+        <input type="text" id="searchInput" class="tool-input" style="flex:1;" placeholder="Никнейм (@user), кошелек (0x/BTC), домен, телефон или инструмент..." oninput="renderCatalog()" onkeydown="if(event.key==='Enter') runMainOmniSearch()">
         <button class="btn btn-purple" style="padding:9px 12px; font-size:11px;" onclick="runMainOmniSearch()"><i class="fa-solid fa-brain"></i> AI Досье</button>
       </div>
       <div style="display:flex; gap:8px; margin-top:6px; font-size:9px; color:#94a3b8; align-items:center;">
@@ -308,7 +292,7 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
     <!-- ⚡ БЫСТРЫЙ ДОСТУП К КЛЮЧЕВЫМ МОДУЛЯМ (6 КАРТОЧЕК) -->
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(115px, 1fr)); gap:5px; margin-bottom:12px;">
       <div onclick="openToolPage('ai_detective_profiler')" class="essential-btn" style="border-color:rgba(168,85,247,0.35);">
-        <div class="essential-btn-title" style="color:#e9d5ff;"><i class="fa-solid fa-brain" style="color:#a855f7;"></i> AI Досье</div>
+        <div class="essential-btn-title" style="color:#fff;"><i class="fa-solid fa-brain" style="color:#a855f7;"></i> AI Досье</div>
         <div class="essential-btn-sub">Scam Score & Профиль</div>
       </div>
       <div onclick="openToolPage('tg_activity_tracker')" class="essential-btn">
@@ -1125,9 +1109,9 @@ function renderToolScanResult(data, outBox, target, toolId) {{
     const scamBg = scam < 30 ? 'rgba(0,255,102,0.1)' : (scam < 60 ? 'rgba(250,204,21,0.1)' : 'rgba(255,51,102,0.1)');
 
     html += `
-      <div class="custom-card" style="border:1px solid rgba(168,85,247,0.4); box-shadow:0 4px 20px rgba(124,58,237,0.15);">
-        <div class="custom-card-title" style="color:#e9d5ff; justify-content:space-between;">
-          <span><i class="fa-solid fa-brain" style="color:#c084fc;"></i> Досье личности: <b>${{target}}</b></span>
+      <div class="custom-card" style="border:1px solid var(--card-border);">
+        <div class="custom-card-title" style="color:#fff; justify-content:space-between;">
+          <span><i class="fa-solid fa-brain" style="color:var(--primary);"></i> Досье личности: <b>${{target}}</b></span>
           <span class="badge" style="background:${{scamBg}}; color:${{scamColor}}; border:1px solid ${{scamColor}};">Scam Score: ${{scam}}%</span>
         </div>
         
@@ -1203,8 +1187,8 @@ function renderToolScanResult(data, outBox, target, toolId) {{
 
     if (mutual) {{
       html += `
-        <div style="background:rgba(19,14,34,0.8); border:1px solid rgba(168,85,247,0.4); border-radius:6px; padding:8px; margin-top:6px;">
-          <div style="font-size:11px; font-weight:800; color:#c084fc; margin-bottom:3px;">
+        <div style="background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:8px; margin-top:6px;">
+          <div style="font-size:11px; font-weight:800; color:var(--primary); margin-bottom:3px;">
             <i class="fa-solid fa-heart-pulse"></i> Mutual Spy: Совпадение с @${{mutual.target2}}
           </div>
           <div style="font-size:10px; color:#e2e8f0; font-weight:700; margin-bottom:4px;">${{mutual.communication_likelihood}}</div>
