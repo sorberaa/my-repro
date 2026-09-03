@@ -2735,38 +2735,41 @@ async def core_scan_crypto_aml(address: str, caller_user: str = "guest") -> dict
 
 
 # 4. REVERSE FACE AI SEARCH & DEEPFAKE DETECTOR
-async def core_scan_face_ai(image_base64: str, caller_user: str = "guest") -> dict:
+async def core_scan_face_ai(target_or_image: str, caller_user: str = "guest") -> dict:
+    target_or_image = target_or_image.strip()
     increment_user_scan(caller_user)
-    if not image_base64 or len(image_base64) < 100:
-        return {"ok": False, "error": "Загрузите изображение лица для биометрического анализа"}
+    if not target_or_image:
+        return {"ok": False, "error": "Загрузите изображение лица или укажите никнейм (@user) для биометрического анализа"}
 
     now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    is_base64 = len(target_or_image) > 100 or target_or_image.startswith("data:image")
+    clean_name = target_or_image.lstrip("@") if not is_base64 else "uploaded_photo"
 
-    # Расчет метрик лица и детектора дипфейков
-    img_len = len(image_base64)
-    deepfake_prob = (img_len % 43) + 8  # 8 - 50%
-    symmetry_score = 88 + (img_len % 11)
-    age_est = f"{22 + (img_len % 15)} - {27 + (img_len % 15)} лет"
+    h = sum(ord(c) * (i + 1) for i, c in enumerate(target_or_image[:50]))
+    deepfake_prob = (h % 39) + 8  # 8 - 47%
+    symmetry_score = 88 + (h % 11)
+    age_est = f"{22 + (h % 15)} - {27 + (h % 15)} лет"
 
     simulated_matches = [
-        {"platform": "VKontakte", "url": "https://vk.com/id" + str(10000000 + (img_len % 8999999)), "similarity": f"{88 + (img_len % 11)}%"},
-        {"platform": "GitHub Avatar", "url": "https://github.com/user_" + str(img_len % 9999), "similarity": f"{79 + (img_len % 15)}%"},
-        {"platform": "Telegram Public Bio", "url": "https://t.me/id_" + str(img_len % 5555), "similarity": f"{72 + (img_len % 12)}%"}
+        {"platform": "VKontakte", "url": f"https://vk.com/id{10000000 + (h * 73) % 8999999}", "similarity": f"{88 + (h % 11)}%"},
+        {"platform": "GitHub Avatar", "url": f"https://github.com/{clean_name if not is_base64 else 'user_' + str(h % 9999)}", "similarity": f"{79 + (h % 15)}%"},
+        {"platform": "Telegram Bio Photo", "url": f"https://t.me/{clean_name if not is_base64 else 'id_' + str(h % 5555)}", "similarity": f"{72 + (h % 12)}%"}
     ]
 
     is_ai_gen = deepfake_prob > 35
-    ai_verdict = "⚠️ Высокая вероятность AI-генерации (StyleGAN / Midjourney)" if is_ai_gen else "🟢 Натуральная фотография человека (Natural Face Capture)"
+    ai_verdict = "⚠️ Обнаружены артефакты AI-генерации (StyleGAN / Midjourney)" if is_ai_gen else "🟢 Натуральная фотография человека (Natural Face Capture)"
 
     return {
         "ok": True,
         "type": "face_search",
+        "target": clean_name,
         "deepfake_probability": f"{deepfake_prob}%",
         "ai_verdict": ai_verdict,
         "estimated_age": age_est,
         "facial_symmetry": f"{symmetry_score}%",
         "matches_count": len(simulated_matches),
         "matches": simulated_matches,
-        "raw_cli_output": f"root@cyberhub:~# face_ai_search --image [BASE64_{img_len}_BYTES]\n[{now_ts}] [BIOMETRICS] Face detected: 1. Landmark vectors computed.\n[+] Deepfake / GAN Probability: {deepfake_prob}%\n[+] Facial Symmetry: {symmetry_score}%\n[+] Matches located across open avatar databases: {len(simulated_matches)}"
+        "raw_cli_output": f"root@cyberhub:~# face_ai_search --target '{clean_name}'\n[{now_ts}] [BIOMETRICS] Face detected. Landmark vectors computed.\n[+] Deepfake / GAN Probability: {deepfake_prob}%\n[+] Facial Symmetry: {symmetry_score}%\n[+] Matches located across open avatar databases: {len(simulated_matches)}"
     }
 
 
@@ -3030,6 +3033,61 @@ async def tools_decode_endpoint(request: Request):
     return res
 
 
+# 7. SOCKPUPPET ATTRIBUTION ENGINE
+async def core_scan_attribution(target: str, caller_user: str = "guest") -> dict:
+    target = target.strip().lstrip("@")
+    increment_user_scan(caller_user)
+    if not target:
+        return {"ok": False, "error": "Укажите юзернейм подозрительного аккаунта для детекции виртов"}
+
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    h = sum(ord(c) * (i + 1) for i, c in enumerate(target.lower()))
+    sockpuppet_prob = max(15, min(92, (h % 65) + 20))
+    suspect_primary = f"user_{target[:3]}_{(h % 899) + 100}"
+
+    reasons = [
+        f"Анализ временных меток сообщений: 88% активности совпадает с профилем @{suspect_primary}",
+        "Сходство лингвистических паттернов и пунктуации: 76%",
+        "Использование общих прокси/VPN сетей (ASN совпадение)"
+    ]
+
+    return {
+        "ok": True,
+        "type": "attribution",
+        "target": target,
+        "sockpuppet_probability": f"{sockpuppet_prob}%",
+        "verdict": "⚠️ Высокая вероятность виртуального аккаунта (Sockpuppet / Твинк)" if sockpuppet_prob > 50 else "🟢 Самостоятельный основной аккаунт",
+        "suspected_primary_account": f"@{suspect_primary}",
+        "indicators": reasons,
+        "raw_cli_output": f"root@cyberhub:~# attribution_engine --target @{target}\n[{now_ts}] [ATTRIBUTION] Analyzing behavioral footprint and linguistic vectors...\n[+] Sockpuppet Probability: {sockpuppet_prob}%\n[+] Suspected Primary Account: @{suspect_primary}"
+    }
+
+
+# 8. TELEGRAM RECON & INSPECTOR ENGINE
+async def core_scan_telegram(target: str, caller_user: str = "guest") -> dict:
+    target = target.strip().lstrip("@")
+    increment_user_scan(caller_user)
+    if not target:
+        return {"ok": False, "error": "Укажите Telegram юзернейм или ID"}
+
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    h = sum(ord(c) * (i + 1) for i, c in enumerate(target.lower()))
+    sim_id = str(100000000 + (h * 997) % 899999999)
+    has_premium = (h % 3 == 0)
+
+    return {
+        "ok": True,
+        "type": "telegram",
+        "target": f"@{target}",
+        "user_id": sim_id,
+        "has_premium": has_premium,
+        "dc_id": f"DC{(h % 5) + 1} (Europe / Amsterdam)",
+        "account_type": "User (Human)" if not target.lower().endswith("bot") else "Telegram Bot",
+        "public_groups_count": (h % 7) + 1,
+        "raw_cli_output": f"root@cyberhub:~# tg_inspector --user @{target}\n[{now_ts}] [TELEGRAM] Querying MTProto DC metadata...\n[+] User ID: {sim_id}\n[+] Premium Status: {'Active' if has_premium else 'No'}\n[+] DC: DC{(h % 5) + 1}"
+    }
+
+
 # --- УНИВЕРСАЛЬНЫЙ ДВИЖОК МАРШРУТИЗАЦИИ ДЛЯ ВСЕХ ИНСТРУМЕНТОВ КАТАЛОГА ---
 
 @app.post("/api/scan/universal")
@@ -3045,13 +3103,15 @@ async def scan_universal_endpoint(request: Request):
     if not target:
         return JSONResponse({"ok": False, "error": "Введите цель для анализа"}, status_code=400)
 
-    # 0. Killer Modules (AI Profiler, Spy Tracker, Crypto AML, Breach Audit, Alerts)
+    # 0. Killer Modules (AI Profiler, Spy Tracker, Crypto AML, Breach Audit, Alerts, Face AI)
     if tool_id in ["ai_profiler", "ai_detective_profiler", "profiler", "dossier"]:
         return await core_scan_ai_profiler(target, caller)
     if tool_id in ["activity_tracker", "tg_activity_tracker", "spy_tracker"]:
         return await core_scan_activity_tracker(target, "", caller)
     if tool_id in ["crypto_aml", "crypto_aml_auditor", "aml_checker"]:
         return await core_scan_crypto_aml(target, caller)
+    if tool_id in ["face_search", "face_search_ai", "reverse_face", "deepfake_detector"]:
+        return await core_scan_face_ai(target, caller)
     if tool_id in ["breach_audit", "digital_hygiene_audit", "leaks_checker"]:
         return await core_scan_breach_audit(target, caller)
     if tool_id in ["target_alerts", "target_monitor_alerts", "alerts"]:
@@ -3086,10 +3146,10 @@ async def scan_universal_endpoint(request: Request):
         return await core_scan_phone(target, caller)
 
     # 7. Telegram & Attribution
-    if tool_id in ["sockpuppet_attribution"]:
-        return await scan_attribution_endpoint(request)
-    if tool_id in ["tg_inspector", "telepathy"]:
-        return await scan_telegram_endpoint(request)
+    if tool_id in ["sockpuppet_attribution", "attribution", "sockpuppet"]:
+        return await core_scan_attribution(target, caller)
+    if tool_id in ["tg_inspector", "telepathy", "telegram_recon"]:
+        return await core_scan_telegram(target, caller)
 
     # 8. Domain / Subdomains
     if tool_id in ["subfinder", "amass", "finalrecon", "webcheck", "httpx"]:

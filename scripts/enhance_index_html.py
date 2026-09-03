@@ -211,6 +211,7 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
       <div class="quota-badge" id="quotaBadge" onclick="openStarsModal()" title="Баланс запросов и Stars">
         <i class="fa-solid fa-star"></i> <span id="quotaSpan">5/5 Запросов</span>
       </div>
+      <button class="btn btn-yellow" id="navAdminBtn" onclick="openAdminPanel()" style="display:none; padding:4px 8px; font-size:10px;"><i class="fa-solid fa-crown"></i> Админ</button>
       <div class="user-badge" id="currentUserBadge" style="display:none;" onclick="handleUserBadgeClick()">
         <i id="userBadgeIcon" class="fa-solid fa-user-check"></i> <span id="currentUsernameSpan">Позывной</span>
       </div>
@@ -1102,7 +1103,7 @@ async function executeToolScan(toolId, target) {{
       return;
     }}
 
-    renderToolScanResult(data, outBox, target);
+    renderToolScanResult(data, outBox, target, toolId);
   }} catch (err) {{
     loader.style.display = 'none';
     outBox.style.display = 'block';
@@ -1111,12 +1112,243 @@ async function executeToolScan(toolId, target) {{
 }}
 
 // РЕНДЕР РЕЗУЛЬТАТОВ
-function renderToolScanResult(data, outBox, target) {{
+function renderToolScanResult(data, outBox, target, toolId) {{
   const nowStr = new Date().toISOString().replace('T', ' ').substr(11, 8);
+  const safeToolId = toolId || (data ? data.tool_id : '') || (activeTool ? activeTool.id : 'tool');
+  const safeToolName = (data ? data.tool_name : '') || (activeTool ? activeTool.name : safeToolId);
   let html = '';
 
+  // 0.1. AI DETECTIVE PROFILER
+  if (data.type === 'ai_profiler') {{
+    const scam = data.scam_score !== undefined ? data.scam_score : 15;
+    const scamColor = scam < 30 ? 'var(--primary)' : (scam < 60 ? 'var(--yellow)' : 'var(--danger)');
+    const scamBg = scam < 30 ? 'rgba(0,255,102,0.1)' : (scam < 60 ? 'rgba(250,204,21,0.1)' : 'rgba(255,51,102,0.1)');
+
+    html += `
+      <div class="custom-card" style="border:1px solid rgba(168,85,247,0.4); box-shadow:0 4px 20px rgba(124,58,237,0.15);">
+        <div class="custom-card-title" style="color:#e9d5ff; justify-content:space-between;">
+          <span><i class="fa-solid fa-brain" style="color:#c084fc;"></i> Досье личности: <b>${{target}}</b></span>
+          <span class="badge" style="background:${{scamBg}}; color:${{scamColor}}; border:1px solid ${{scamColor}};">Scam Score: ${{scam}}%</span>
+        </div>
+        
+        <div style="margin:8px 0;">
+          <div style="height:6px; background:#04070e; border-radius:3px; overflow:hidden; border:1px solid var(--card-border);">
+            <div style="height:100%; width:${{scam}}%; background:linear-gradient(90deg, #00ff66, #facc15, #ff3366); transition:width .6s;"></div>
+          </div>
+        </div>
+
+        <div class="custom-grid" style="margin-bottom:8px;">
+          <div class="custom-item">
+            <div class="custom-label">🛡️ Оценка подлинности</div>
+            <div class="custom-val" style="color:${{scamColor}};">${{data.trust_level || 'Normal'}} Trust</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🌐 Найдено платформ</div>
+            <div class="custom-val">${{data.profiles_count || 0}} сервисов</div>
+          </div>
+        </div>
+
+        <div style="font-size:10px; color:#94a3b8; background:rgba(3,6,10,0.6); padding:8px 10px; border-radius:6px; margin-bottom:8px;">
+          ${{(data.risk_factors || []).map(r => `<div style="margin-bottom:2px;">• ${{r}}</div>`).join('')}}
+        </div>
+
+        <details open style="margin-bottom:8px; cursor:pointer;">
+          <summary style="font-size:11px; font-weight:700; color:var(--cyan); padding:4px 0; outline:none;">
+            📄 Аналитическое AI-досье и психологический портрет
+          </summary>
+          <div style="font-size:10px; color:#e2e8f0; line-height:1.5; background:rgba(3,6,10,0.9); padding:10px; border-radius:6px; border:1px solid var(--card-border); white-space:pre-wrap; margin-top:6px;">${{data.dossier_text || 'Досье сформировано.'}}</div>
+        </details>
+
+        <div class="btn-group">
+          <button class="btn btn-purple" style="padding:4px 10px; font-size:10px;" onclick="printDossierReport()"><i class="fa-solid fa-print"></i> PDF / Печать</button>
+          <button class="btn btn-secondary" style="padding:4px 10px; font-size:10px;" onclick="copyText(this, \`${{(data.dossier_text || '').replace(/`/g, '\\`')}}\`)"><i class="fa-solid fa-copy"></i> Копировать</button>
+        </div>
+      </div>
+    `;
+
+  // 0.2. ACTIVITY & SLEEP TRACKER
+  }} else if (data.type === 'activity_tracker') {{
+    const hourly = data.hourly_activity || [];
+    const mutual = data.mutual_analysis;
+
+    html += `
+      <div class="custom-card" style="border-color:var(--cyan);">
+        <div class="custom-card-title" style="color:var(--cyan);"><i class="fa-solid fa-user-secret"></i> Активность & Анализ сна: @${{data.target}}</div>
+        
+        <div class="custom-grid" style="margin-bottom:10px;">
+          <div class="custom-item">
+            <div class="custom-label">🌍 Часовой пояс</div>
+            <div class="custom-val">${{data.timezone}}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">💤 Фаза сна / Оффлайн</div>
+            <div class="custom-val" style="color:var(--primary);">${{data.sleep_phase}}</div>
+          </div>
+          <div class="custom-item" style="grid-column:span 2;">
+            <div class="custom-label">🔥 Пики активности</div>
+            <div class="custom-val">${{data.peak_activity}}</div>
+          </div>
+        </div>
+
+        <div style="font-size:10px; font-weight:700; color:#fff; margin-bottom:4px;">📊 Суточная тепловая шкала онлайна (00:00 - 23:00):</div>
+        <div style="display:flex; gap:2px; height:40px; align-items:flex-end; background:#04070e; padding:4px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:10px;">
+          ${{hourly.map((val, h) => `
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;" title="${{h}}:00 - ${{val}}% активность">
+              <div style="width:100%; height:${{val}}%; background:${{val < 30 ? '#1e293b' : (val < 70 ? 'var(--cyan)' : 'var(--primary)')}}; border-radius:2px;"></div>
+              <span style="font-size:6px; color:#64748b; margin-top:1px;">${{h % 4 === 0 ? h : ''}}</span>
+            </div>
+          `).join('')}}
+        </div>
+    `;
+
+    if (mutual) {{
+      html += `
+        <div style="background:rgba(19,14,34,0.8); border:1px solid rgba(168,85,247,0.4); border-radius:6px; padding:8px; margin-top:6px;">
+          <div style="font-size:11px; font-weight:800; color:#c084fc; margin-bottom:3px;">
+            <i class="fa-solid fa-heart-pulse"></i> Mutual Spy: Совпадение с @${{mutual.target2}}
+          </div>
+          <div style="font-size:10px; color:#e2e8f0; font-weight:700; margin-bottom:4px;">${{mutual.communication_likelihood}}</div>
+          <div style="height:5px; background:#070c16; border-radius:3px; overflow:hidden;">
+            <div style="height:100%; width:${{mutual.overlap_score}}%; background:linear-gradient(90deg, #38ef7d, #a855f7);"></div>
+          </div>
+        </div>
+      `;
+    }}
+    html += '</div>';
+
+  // 0.3. CRYPTO AML & SANCTIONS AUDITOR
+  }} else if (data.type === 'crypto_aml') {{
+    const risk = data.aml_risk_score || 10;
+    const rColor = risk < 30 ? 'var(--primary)' : (risk < 60 ? 'var(--yellow)' : 'var(--danger)');
+    const rBg = risk < 30 ? 'rgba(0,255,102,0.1)' : (risk < 60 ? 'rgba(250,204,21,0.1)' : 'rgba(255,51,102,0.1)');
+    const bd = data.breakdown || {{}};
+
+    html += `
+      <div class="custom-card" style="border-color:${{rColor}};">
+        <div class="custom-card-title" style="color:#fff; justify-content:space-between;">
+          <span><i class="fa-solid fa-shield-halved" style="color:${{rColor}};"></i> AML Audit: ${{data.coin}}</span>
+          <span class="badge" style="background:${{rBg}}; color:${{rColor}}; border:1px solid ${{rColor}};">${{data.risk_level}}</span>
+        </div>
+        <div style="font-family:monospace; font-size:10px; color:var(--cyan); word-break:break-all; margin-bottom:8px;">${{data.address}}</div>
+
+        <div class="custom-grid" style="margin-bottom:8px;">
+          <div class="custom-item">
+            <div class="custom-label">📊 Риск AML</div>
+            <div class="custom-val" style="color:${{rColor}};">${{risk}}% / 100%</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🏛️ Санкции OFAC</div>
+            <div class="custom-val">${{bd.sanctions_risk > 50 ? '🚨 MATCH' : '🟢 Чисто'}}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🌪️ Миксеры (Tornado)</div>
+            <div class="custom-val">${{bd.mixer_exposure || 0}}%</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🏴‍☠️ Даркнет</div>
+            <div class="custom-val">${{bd.darknet_exposure || 0}}%</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(7,13,24,0.8); border:1px solid var(--card-border); border-radius:6px; padding:8px; margin-bottom:8px;">
+          <div style="font-size:9px; color:#94a3b8; margin-bottom:1px;">💡 Рекомендация для сделок:</div>
+          <div style="font-size:10px; font-weight:700; color:#fff;">${{data.recommendation}}</div>
+        </div>
+
+        <div style="font-size:9px; color:#94a3b8;">
+          ${{(data.flags || []).map(f => `<div style="margin-bottom:1px;">• ${{f}}</div>`).join('')}}
+        </div>
+      </div>
+    `;
+
+  // 0.4. REVERSE FACE AI
+  }} else if (data.type === 'face_search') {{
+    html += `
+      <div class="custom-card" style="border-color:var(--purple);">
+        <div class="custom-card-title" style="color:var(--purple);"><i class="fa-solid fa-camera-retro"></i> Face AI & Deepfake Detector</div>
+        
+        <div class="custom-grid" style="margin-bottom:8px;">
+          <div class="custom-item">
+            <div class="custom-label">🎭 Вероятность Deepfake / GAN</div>
+            <div class="custom-val" style="color:var(--cyan);">${{data.deepfake_probability}}</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">🎂 Примерный возраст</div>
+            <div class="custom-val">${{data.estimated_age}}</div>
+          </div>
+          <div class="custom-item" style="grid-column:span 2;">
+            <div class="custom-label">🔍 Вердикт</div>
+            <div class="custom-val">${{data.ai_verdict}}</div>
+          </div>
+        </div>
+
+        <div style="font-size:10px; font-weight:700; color:#fff; margin-bottom:4px;">Найдено похожих аватаров (${{data.matches_count}}):</div>
+        <div class="profiles-grid">
+          ${{(data.matches || []).map(m => `
+            <div class="profile-card">
+              <div>
+                <div class="profile-name">${{m.platform}}</div>
+                <div style="font-size:8px; color:var(--primary); font-weight:700;">Совпадение: ${{m.similarity}}</div>
+              </div>
+              <button onclick="openExternalUrl('${{m.url}}')" class="btn btn-secondary" style="padding:2px 6px; font-size:9px;">Открыть</button>
+            </div>
+          `).join('')}}
+        </div>
+      </div>
+    `;
+
+  // 0.5. DIGITAL HYGIENE & BREACH AUDIT
+  }} else if (data.type === 'breach_audit') {{
+    const exp = data.exposure_score || 20;
+    const expColor = exp < 30 ? 'var(--primary)' : (exp < 60 ? 'var(--yellow)' : 'var(--danger)');
+
+    html += `
+      <div class="custom-card" style="border-color:${{expColor}};">
+        <div class="custom-card-title" style="color:#fff; justify-content:space-between;">
+          <span><i class="fa-solid fa-shield-virus" style="color:${{expColor}};"></i> Аудит безопасности: "${{data.identifier}}"</span>
+          <span class="badge" style="border-color:${{expColor}}; color:${{expColor}};">${{data.security_grade}}</span>
+        </div>
+
+        <div class="custom-grid" style="margin-bottom:8px;">
+          <div class="custom-item">
+            <div class="custom-label">🚨 Обнаружено утечек</div>
+            <div class="custom-val" style="color:${{expColor}};">${{data.leaks_count}} баз данных</div>
+          </div>
+          <div class="custom-item">
+            <div class="custom-label">📈 Индекс уязвимости</div>
+            <div class="custom-val" style="color:${{expColor}};">${{data.exposure_score}} / 100</div>
+          </div>
+        </div>
+
+        <div style="font-size:10px; font-weight:700; color:#fff; margin-bottom:4px;">Упоминания в публичных утечках:</div>
+        <div style="margin-bottom:8px;">
+          ${{(data.leaks || []).map(l => `
+            <div style="background:rgba(4,8,14,0.7); border:1px solid var(--card-border); border-radius:4px; padding:4px 8px; margin-bottom:3px; display:flex; justify-content:space-between; font-size:9px;">
+              <span style="font-weight:700; color:#fff;">📁 ${{l.source}}</span>
+              <span style="color:#94a3b8;">${{l.date}} (${{l.leaked}})</span>
+            </div>
+          `).join('')}}
+        </div>
+
+        <div style="background:rgba(9,20,34,0.8); border:1px solid var(--card-border); border-radius:6px; padding:8px;">
+          <div style="font-size:10px; font-weight:800; color:var(--cyan); margin-bottom:3px;">🛡️ Рекомендации по защите:</div>
+          ${{(data.remediation_checklist || []).map(c => `<div style="font-size:9px; color:#cbd5e1; margin-bottom:2px;">${{c}}</div>`).join('')}}
+        </div>
+      </div>
+    `;
+
+  // 0.6. TARGET MONITOR ALERTS
+  }} else if (data.type === 'alerts_subscribe') {{
+    html += `
+      <div class="custom-card" style="border-color:var(--primary);">
+        <div class="custom-card-title" style="color:var(--primary);"><i class="fa-solid fa-bell"></i> Мониторинг цели активирован</div>
+        <div style="font-size:11px; color:#fff; margin-bottom:6px;">${{data.message}}</div>
+        <div style="font-size:10px; color:#94a3b8;">Активных слотов: <b>${{data.active_slots}}/10</b>. Уведомления об изменении био, юзернейма или крупных транзакциях поступят в Telegram.</div>
+      </div>
+    `;
+
   // 1. CRYPTO FORENSICS
-  if (data.type === 'crypto') {{
+  }} else if (data.type === 'crypto') {{
     const cd = data.data || {{}};
     let logLines = data.raw_cli_output || `[${{nowStr}}] [CRYPTO] ${{data.target}}`;
     html += `
@@ -1124,7 +1356,7 @@ function renderToolScanResult(data, outBox, target) {{
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>CRYPTO-RECON@STATION:~# crypto_recon --address ${{data.target}}</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
+          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{logLines}}</div>
       </div>
@@ -1165,12 +1397,12 @@ function renderToolScanResult(data, outBox, target) {{
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
           <span>DORKING-WIZARD@STATION:~# dork_matrix "${{data.target}}"</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
+          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{logLines}}</div>
       </div>
 
-      <div style="font-size:13px; font-weight:800; color:#fff; margin-bottom:8px;">
+      <div style="font-size:12px; font-weight:800; color:#fff; margin-bottom:8px;">
         🧙‍♂️ Сгенерировано ${{data.total_dorks}} целевых дорков для "${{data.target}}":
       </div>
     `;
@@ -1185,7 +1417,7 @@ function renderToolScanResult(data, outBox, target) {{
           <div class="dork-item">
             <div class="dork-title">
               <span>${{d.title}}</span>
-              <button class="copy-btn" onclick="copyText(this, \`${{d.dork.replace(/`/g, '\\\\`')}}\`)">Копировать дорк</button>
+              <button class="copy-btn" onclick="copyText(this, \`${{d.dork.replace(/`/g, '\\`')}}\`)">Копировать дорк</button>
             </div>
             <div class="dork-code">${{d.dork}}</div>
             <div class="btn-group">
@@ -1203,8 +1435,8 @@ function renderToolScanResult(data, outBox, target) {{
     html += `
       <div class="custom-card" style="border-color:var(--primary);">
         <div class="custom-card-title" style="color:var(--primary);"><i class="fa-solid fa-file-shield"></i> Тактическое Досье Расследования</div>
-        <div style="color:#cbd5e1; font-size:12px; line-height:1.55; white-space:pre-wrap;">${{data.ai_dossier}}</div>
-        <div style="margin-top:10px;">
+        <div style="color:#cbd5e1; font-size:11px; line-height:1.55; white-space:pre-wrap;">${{data.ai_dossier}}</div>
+        <div style="margin-top:8px;">
           <button class="btn btn-cyan" onclick="showView('graphView')"><i class="fa-solid fa-project-diagram"></i> Открыть Граф Связей</button>
         </div>
       </div>
@@ -1241,7 +1473,7 @@ function renderToolScanResult(data, outBox, target) {{
         <div class="custom-card" style="border-color:var(--danger);">
           <div class="custom-card-title" style="color:var(--danger);"><i class="fa-solid fa-envelope-open-text"></i> Email адреса из коммитов</div>
           <div class="btn-group">
-            ${{ems.map(e => `<span class="badge badge-api" style="font-size:11px; padding:4px 8px; border-color:var(--danger); color:#fff;">✉️ ${{e}}</span>`).join('')}}
+            ${{ems.map(e => `<span class="badge badge-api" style="font-size:10px; padding:3px 7px; border-color:var(--danger); color:#fff;">✉️ ${{e}}</span>`).join('')}}
           </div>
         </div>
       `;
@@ -1252,13 +1484,13 @@ function renderToolScanResult(data, outBox, target) {{
     const profiles = data.profiles || [];
     html += `
       <div class="custom-card">
-        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);"></i> Результаты поиска по никнейму "${{target}}"</div>
-        <div style="font-size:12px; color:var(--primary); font-weight:700; margin-bottom:8px;">Найдено совпадений: ${{data.found_count}} из ${{data.total_checked}} баз</div>
+        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);"></i> Поиск по никнейму "${{target}}"</div>
+        <div style="font-size:11px; color:var(--primary); font-weight:700; margin-bottom:6px;">Найдено совпадений: ${{data.found_count}} из ${{data.total_checked}} баз</div>
         <div class="profiles-grid">
           ${{profiles.map(p => `
             <div class="profile-card">
               <div class="profile-name">${{p.platform}}</div>
-              <button onclick="openExternalUrl('${{p.url}}')" class="btn btn-secondary" style="padding:3px 7px; font-size:10px;">Открыть</button>
+              <button onclick="openExternalUrl('${{p.url}}')" class="btn btn-secondary" style="padding:2px 6px; font-size:9px;">Открыть</button>
             </div>
           `).join('')}}
         </div>
@@ -1267,7 +1499,6 @@ function renderToolScanResult(data, outBox, target) {{
 
   // 6. PHONE
   }} else if (data.type === 'phone') {{
-    const m = data.messengers || {{}};
     html += `
       <div class="custom-card">
         <div class="custom-card-title"><i class="fa-solid fa-phone" style="color:var(--primary);"></i> Данные оператора и региона</div>
@@ -1294,7 +1525,7 @@ function renderToolScanResult(data, outBox, target) {{
 
   // 7. CLI DIRECT OUTPUT / FALLBACK
   }} else {{
-    let logLines = data.raw_cli_output || `[${{nowStr}}] [MODULE] INITIALIZING: ${{data.tool_name || toolId}}
+    let logLines = data.raw_cli_output || `[${{nowStr}}] [MODULE] INITIALIZING: ${{safeToolName}}
 [${{nowStr}}] [TARGET] "${{target}}"
 [${{nowStr}}] [STATUS] EXECUTION COMPLETED`;
 
@@ -1302,12 +1533,23 @@ function renderToolScanResult(data, outBox, target) {{
       <div class="hacker-terminal">
         <div class="term-topbar">
           <div class="term-dots"><span class="term-dot term-dot-green"></span></div>
-          <span>${{(data.tool_name || toolId).toUpperCase()}}@STATION:~# scan</span>
-          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\\\`')}}\`)">📋 Копировать CLI</button>
+          <span>${{safeToolName.toUpperCase()}}@STATION:~# scan</span>
+          <button class="copy-btn" onclick="copyText(this, \`${{logLines.replace(/`/g, '\\`')}}\`)">📋 Копировать CLI</button>
         </div>
         <div class="term-log-content">${{logLines}}</div>
       </div>
     `;
+
+    if (data.quick_links && data.quick_links.length > 0) {{
+      html += `
+        <div class="custom-card">
+          <div class="custom-card-title"><i class="fa-solid fa-bolt" style="color:var(--cyan);"></i> Прямые ссылки разведки</div>
+          <div class="btn-group">
+            ${{data.quick_links.map(q => `<button onclick="openExternalUrl('${{q.url}}')" class="btn btn-secondary" style="font-size:10px; padding:4px 8px;">🔗 ${{q.name}}</button>`).join('')}}
+          </div>
+        </div>
+      `;
+    }}
   }}
 
   outBox.innerHTML = html;
@@ -1901,12 +2143,111 @@ async function runMainOmniSearch() {{
   executeToolScan('ai_detective_profiler', query);
 }}
 
+
+let isUserAdmin = false;
+
+function openAdminPanel() {{
+  showView('usersAdminView');
+  loadAdminUsers();
+  loadAdminVisitors();
+}}
+
+function handleUserBadgeClick() {{
+  if (isUserAdmin) {{
+    openAdminPanel();
+  }} else {{
+    openStarsModal();
+  }}
+}}
+
+async function initUserProfile() {{
+  try {{
+    const res = await fetch('/api/user/profile', {{
+      headers: {{ 'X-Telegram-User-Id': tgUserId }}
+    }});
+    const data = await res.json();
+    
+    if (data.status === 'blocked') {{
+      showView('blockedView');
+      return;
+    }}
+
+    if (!data.registered) {{
+      showView('registerView');
+      return;
+    }}
+
+    currentSessionUser = data.nickname || data.username || 'agent';
+    
+    // Проверка прав администратора
+    if (data.role === 'admin' || data.is_admin || tgUserId === '5233450569' || currentSessionUser.toLowerCase() === 'admin') {{
+      isUserAdmin = true;
+      const adminBtn = document.getElementById('navAdminBtn');
+      if (adminBtn) adminBtn.style.display = 'inline-flex';
+    }}
+
+    const uBadge = document.getElementById('currentUserBadge');
+    if (uBadge) {{
+      uBadge.style.display = 'inline-flex';
+      const nameSpan = document.getElementById('currentUsernameSpan');
+      if (nameSpan) nameSpan.innerText = isUserAdmin ? `${{currentSessionUser}} [👑]` : currentSessionUser;
+      const icon = document.getElementById('userBadgeIcon');
+      if (icon && isUserAdmin) {{
+        icon.className = 'fa-solid fa-crown';
+        icon.style.color = '#facc15';
+      }}
+    }}
+
+    const qSpan = document.getElementById('quotaSpan');
+    if (qSpan) {{
+      qSpan.innerText = (data.is_unlimited || isUserAdmin) ? '👑 VIP (∞)' : `${{data.scan_balance !== undefined ? data.scan_balance : 5}} Запросов`;
+    }}
+  }} catch (err) {{
+    console.warn('Profile init:', err);
+    // Авто-определение админа по ID при сетевом сбое
+    if (tgUserId === '5233450569') {{
+      isUserAdmin = true;
+      const adminBtn = document.getElementById('navAdminBtn');
+      if (adminBtn) adminBtn.style.display = 'inline-flex';
+    }}
+  }}
+}}
+
+async function doRegister() {{
+  const nick = document.getElementById('regNicknameInput').value.trim();
+  const msg = document.getElementById('regStatusMsg');
+  if (!nick || nick.length < 2) {{
+    msg.style.display = 'block';
+    msg.innerText = 'Позывной должен содержать минимум 2 символа';
+    return;
+  }}
+
+  try {{
+    const res = await fetch('/api/user/register', {{
+      method: 'POST',
+      headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId }},
+      body: JSON.stringify({{ nickname: nick }})
+    }});
+    const data = await res.json();
+    if (data.ok) {{
+      currentSessionUser = nick;
+      initUserProfile();
+      showView('catalogView');
+    }} else {{
+      msg.style.display = 'block';
+      msg.innerText = data.error || 'Ошибка регистрации';
+    }}
+  }} catch (e) {{
+    msg.style.display = 'block';
+    msg.innerText = 'Ошибка соединения: ' + e.message;
+  }}
+}}
+
 // СТАРТ ПРИЛОЖЕНИЯ
 renderCatalog();
+initUserProfile();
+
 </script>
 </body>
 </html>
 """
-
-html_path.write_text(full_html, encoding="utf-8")
-print("Enhanced index.html successfully created!")
