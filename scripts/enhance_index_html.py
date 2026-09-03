@@ -301,10 +301,64 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
     
     <!-- STATS HERO BANNER -->
     <div class="hero-stats-banner">
-      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 33 Утилиты Онлайн</div>
-      <div class="stat-pill cyan"><i class="fa-solid fa-bolt"></i> Auto-Recon & Граф</div>
-      <div class="stat-pill purple"><i class="fa-brands fa-instagram"></i> Instagram, VK & TikTok</div>
-      <div class="stat-pill yellow"><i class="fa-solid fa-coins"></i> Crypto & Dorks</div>
+      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 46 Утилит Онлайн</div>
+      <div class="stat-pill cyan"><i class="fa-solid fa-brain"></i> AI Profiler & Досье</div>
+      <div class="stat-pill purple"><i class="fa-solid fa-user-secret"></i> Spy Tracker & Сон</div>
+      <div class="stat-pill yellow"><i class="fa-solid fa-shield-halved"></i> Crypto AML & OFAC</div>
+    </div>
+
+    <!-- 🌟 ФЛАГМАНСКИЙ МОДУЛЬ: AI DETECTIVE PROFILER -->
+    <div class="quick-recon-box" style="background: linear-gradient(135deg, #0f0a1e, #1a1033); border: 1px solid #7c3aed; box-shadow: 0 0 25px rgba(124, 58, 237, 0.25);">
+      <div class="quick-title" style="color: #c084fc; justify-content:space-between;">
+        <span><i class="fa-solid fa-brain" style="color:#c084fc;"></i> 🧠 AI Detective Profiler & Психологическое Досье</span>
+        <span class="badge" style="background:rgba(168,85,247,0.25); color:#e9d5ff; border:1px solid #a855f7;">Flagship</span>
+      </div>
+      <div style="font-size:11px; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">
+        Глубокий анализ личности через нейросеть: расчет <b>Scam/Catfish Score (0–100%)</b>, поведенческий профиль, профессия, образ жизни и детектор скрытых связей.
+      </div>
+      <div class="quick-input-group">
+        <input type="text" id="mainAiProfilerInput" class="quick-input" style="border-color:#7c3aed;" placeholder="Введите никнейм, имя, профиль или почту цели..." onkeydown="if(event.key==='Enter') runMainAiProfilerScan()">
+        <button class="btn btn-purple" onclick="runMainAiProfilerScan()"><i class="fa-solid fa-wand-magic-sparkles"></i> Сформировать Досье</button>
+      </div>
+      <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; font-size:10px; color:#94a3b8;">
+        <span>Примеры:</span>
+        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='durov'; runMainAiProfilerScan();">@durov</span>
+        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='vitalik.eth'; runMainAiProfilerScan();">vitalik.eth</span>
+        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='satoshin'; runMainAiProfilerScan();">satoshin</span>
+      </div>
+    </div>
+
+    <!-- ⚡ ESSENTIAL LAUNCHPAD: БЫСТРЫЙ ДОСТУП К ГЛАВНЫМ МОДУЛЯМ -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px; font-weight:800; color:var(--cyan); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-bolt"></i> Главные инструменты быстрого запуска
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:6px;">
+        <div onclick="openToolPage('ai_detective_profiler')" style="background:#0b1322; border:1px solid #7c3aed; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#c084fc'" onmouseout="this.style.borderColor='#7c3aed'">
+          <div style="font-size:11px; font-weight:800; color:#e9d5ff;"><i class="fa-solid fa-brain" style="color:#a855f7;"></i> AI Досье</div>
+          <div style="font-size:9px; color:#94a3b8;">Scam Score & Профиль</div>
+        </div>
+        <div onclick="openToolPage('tg_activity_tracker')" style="background:#0b1322; border:1px solid #1e3a5f; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='#1e3a5f'">
+          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-solid fa-user-secret" style="color:var(--cyan);"></i> Spy Tracker</div>
+          <div style="font-size:9px; color:#94a3b8;">Сон & Mutual Spy</div>
+        </div>
+        <div onclick="openToolPage('crypto_aml_auditor')" style="background:#0b1322; border:1px solid #715809; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#facc15'" onmouseout="this.style.borderColor='#715809'">
+          <div style="font-size:11px; font-weight:800; color:#fef08a;"><i class="fa-solid fa-shield-halved" style="color:#facc15;"></i> Crypto AML</div>
+          <div style="font-size:9px; color:#94a3b8;">OFAC & Миксеры</div>
+        </div>
+        <div onclick="openToolPage('sherlock')" style="background:#0b1322; border:1px solid #162842; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='#162842'">
+          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Sherlock</div>
+          <div style="font-size:9px; color:#94a3b8;">480+ Баз никнеймов</div>
+        </div>
+        <div onclick="openToolPage('instaloader')" style="background:#0b1322; border:1px solid #162842; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='#162842'">
+          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-brands fa-instagram" style="color:var(--purple);"></i> Instagram</div>
+          <div style="font-size:9px; color:#94a3b8;">Посты & Подписчики</div>
+        </div>
+        <div onclick="openToolPage('digital_hygiene_audit')" style="background:#0b1322; border:1px solid #501322; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='#501322'">
+          <div style="font-size:11px; font-weight:800; color:#fecdd3;"><i class="fa-solid fa-shield-virus" style="color:var(--danger);"></i> Аудит себя</div>
+          <div style="font-size:9px; color:#94a3b8;">Проверка утечек</div>
+        </div>
+      </div>
     </div>
 
     <!-- БЫСТРЫЙ СКАНЕР ПРЯМО НА ГЛАВНОЙ -->
@@ -327,7 +381,8 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:10px;
     </div>
 
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (33)</div>
+      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (46)</div>
+      <div class="chip" onclick="setFilter('killer_monetization', this)"><i class="fa-solid fa-gem" style="color:var(--yellow);"></i> 💎 AI & AML (Premium)</div>
       <div class="chip" onclick="setFilter('social_google_instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram, VK & TikTok</div>
       <div class="chip" onclick="setFilter('deep_archive_recon', this)"><i class="fa-solid fa-clock-rotate-left"></i> Архивы & Auto-Recon</div>
       <div class="chip" onclick="setFilter('cyber_tools_lab', this)"><i class="fa-solid fa-coins"></i> Блокчейн & Dorks</div>
@@ -1829,6 +1884,20 @@ function copyText(btn, text) {{
     btn.innerText = 'Скопировано!';
     setTimeout(() => {{ btn.innerText = orig; }}, 1500);
   }});
+}}
+
+
+// ЗАПУСК ГЛАВНОГО AI PROFILER С ПЕРВОГО ЭКРАНА
+async function runMainAiProfilerScan() {{
+  const input = document.getElementById('mainAiProfilerInput');
+  const target = (input ? input.value : '').trim();
+  if (!target) {{
+    alert('Введите никнейм или цель для AI-профайлинга');
+    return;
+  }}
+  openToolPage('ai_detective_profiler');
+  document.getElementById('tvTargetInput').value = target;
+  executeToolScan('ai_detective_profiler', target);
 }}
 
 // СТАРТ ПРИЛОЖЕНИЯ

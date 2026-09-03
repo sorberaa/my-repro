@@ -5,6 +5,145 @@ GeoINT, поиском по соцсетям, инструкциями и зап
 
 CATALOG = [
     {
+        "id": "killer_monetization",
+        "title": "💎 AI-Профайлинг, Шпион активности & AML Аудит (Premium)",
+        "desc": "Высокоточные интеллектуальные модули: генерация психологических досье через нейросети, трекинг активности, AML-аудит криптовалют и Face AI.",
+        "tools": [
+            {
+                "id": "ai_detective_profiler",
+                "name": "🧠 AI Detective Profiler & Досье (Scam Score)",
+                "repo": "https://github.com/sherlock-project/sherlock",
+                "web_url": "",
+                "purpose": "🎯 Сквозной сбор по всем базам + глубокий психологический профайлинг личности: оценка Scam/Catfish Score (0–100%), паттерны поведения, уровень дохода и детектор легенд.",
+                "input": "username / nickname / full name / target",
+                "web_runnable": True,
+                "scan_type": "ai_profiler",
+                "install_guide": {
+                    "git": "# Встроенный в платформу когнитивный аналитический модуль",
+                    "pip_or_pkg": "pip install google-genai httpx",
+                    "docker": "# Работает автономно",
+                    "usage": "Введите никнейм цели для генерации полного психологического досье",
+                    "notes": "Агрегирует данные Sherlock, GitHub, Instagram, Crypto и формирует отчет с AI-заключениями."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Сформировать AI Досье",
+                    "action": "scan_ai_profiler"
+                }
+            },
+            {
+                "id": "tg_activity_tracker",
+                "name": "⏱️ Telegram Activity & Sleep Tracker (Шпион активности)",
+                "repo": "https://github.com/TelegramDB/TelegramDB",
+                "web_url": "",
+                "purpose": "📊 24-часовая тепловая карта активности и режима сна цели. Функция Mutual Spy — сопоставление времени онлайна двух пользователей на предмет тайного общения.",
+                "input": "@username1 [и опционально @username2]",
+                "web_runnable": True,
+                "scan_type": "activity_tracker",
+                "install_guide": {
+                    "git": "# Алгоритмический анализатор временных меток и сессий",
+                    "pip_or_pkg": "pip install httpx asyncio",
+                    "docker": "# Встроенный сервис",
+                    "usage": "Введите юзернейм или два юзернейма через запятую",
+                    "notes": "Определяет часовой пояс, фазы бодрствования и корреляцию активности."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Анализировать активность",
+                    "action": "scan_activity_tracker"
+                }
+            },
+            {
+                "id": "crypto_aml_auditor",
+                "name": "🚨 Crypto AML & Sanctions Risk Auditor (OFAC & Mixers)",
+                "repo": "https://github.com/bitcoin/bitcoin",
+                "web_url": "https://blockchair.com/",
+                "purpose": "🛡️ Проверка криптокошельков BTC, ETH, TRC20 (USDT), SOL на шкалу риска AML (0–100%), связь с санкциями OFAC, миксерами Tornado Cash, даркнетом и дрейнерами.",
+                "input": "BTC / ETH / TRON (TRC20) / SOL address",
+                "web_runnable": True,
+                "scan_type": "crypto_aml",
+                "install_guide": {
+                    "git": "# Движок блокчейн-форензики и проверки списков санкций",
+                    "pip_or_pkg": "pip install httpx",
+                    "docker": "# Встроенный аудит",
+                    "usage": "Введите адрес кошелька для оценки риска чистоты активов",
+                    "notes": "Помогает избежать блокировок на биржах перед приемом оплаты."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Проверить AML Риск",
+                    "action": "scan_crypto_aml"
+                }
+            },
+            {
+                "id": "face_search_ai",
+                "name": "👤 Reverse Face AI Search & Deepfake Detector",
+                "repo": "https://github.com/ageitgey/face_recognition",
+                "web_url": "",
+                "purpose": "🔍 Поиск совпадений человека по фото лица в открытых аватарах соцсетей (Telegram, VK, GitHub) + проверка на AI-генерацию (Deepfake / ThisPersonDoesNotExist).",
+                "input": "фото лица (JPG / PNG / WebP)",
+                "web_runnable": True,
+                "scan_type": "face_search",
+                "install_guide": {
+                    "git": "# Нейросетевой модуль биометрического анализа",
+                    "pip_or_pkg": "pip install Pillow numpy",
+                    "docker": "# Встроенный в WebApp",
+                    "usage": "Загрузите фото для поиска совпадений и анализа артефактов лица",
+                    "notes": "Выявляет фейковые профили в дейтинге и соцсетях."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Анализ лица и Deepfake",
+                    "action": "scan_face_search"
+                }
+            },
+            {
+                "id": "digital_hygiene_audit",
+                "name": "🛡️ Digital Hygiene & Personal Breach Audit (Аудит себя)",
+                "repo": "https://github.com/sherlock-project/sherlock",
+                "web_url": "",
+                "purpose": "🔐 Проверка цифрового следа и истории утечек по email/телефону: расчет индекса уязвимости (Exposure Score) и чек-лист защиты личных данных.",
+                "input": "email / телефон / юзернейм",
+                "web_runnable": True,
+                "scan_type": "breach_audit",
+                "install_guide": {
+                    "git": "# Модуль аудита собственной цифровой гигиены",
+                    "pip_or_pkg": "pip install httpx",
+                    "docker": "# Не требуется",
+                    "usage": "Введите свою почту для проверки наличия в базах утечек",
+                    "notes": "Формирует персональный отчет по закрытию уязвимостей."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Проверить свои утечки",
+                    "action": "scan_breach_audit"
+                }
+            },
+            {
+                "id": "target_monitor_alerts",
+                "name": "🔔 Real-Time Target Monitor (Слежка в Telegram)",
+                "repo": "https://github.com/TelegramDB/TelegramDB",
+                "web_url": "",
+                "purpose": "📡 Постановка цели (профиль TG, канал, криптокошелек) на непрерывное отслеживание: бот присылает уведомление при смене аватарки, био, юзернейма или крупных переводах.",
+                "input": "@username / channel / wallet",
+                "web_runnable": True,
+                "scan_type": "target_alerts",
+                "install_guide": {
+                    "git": "# Фоновый агент мониторинга целей",
+                    "pip_or_pkg": "pip install aiogram httpx",
+                    "docker": "# Работает в фоновом демоне",
+                    "usage": "Укажите цель для добавления в список активного наблюдения",
+                    "notes": "Уведомления приходят прямо в личные сообщения бота."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Поставить на мониторинг",
+                    "action": "subscribe_target_alerts"
+                }
+            }
+        ]
+    },
+    {
         "id": "telegram_osint",
         "title": "✈️ Telegram Разведка & Анализ профилей",
         "desc": "Специализированные инструменты поиска и анализа Telegram-аккаунтов, каналов, групп и метаданных.",

@@ -284,10 +284,64 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     
     <!-- STATS HERO BANNER -->
     <div class="hero-stats-banner">
-      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 33 Утилиты Онлайн</div>
-      <div class="stat-pill cyan"><i class="fa-solid fa-bolt"></i> Auto-Recon & Граф</div>
-      <div class="stat-pill purple"><i class="fa-brands fa-instagram"></i> Instagram, VK & TikTok</div>
-      <div class="stat-pill yellow"><i class="fa-solid fa-coins"></i> Crypto & Dorks</div>
+      <div class="stat-pill"><i class="fa-solid fa-circle-check"></i> 46 Утилит Онлайн</div>
+      <div class="stat-pill cyan"><i class="fa-solid fa-brain"></i> AI Profiler & Досье</div>
+      <div class="stat-pill purple"><i class="fa-solid fa-user-secret"></i> Spy Tracker & Сон</div>
+      <div class="stat-pill yellow"><i class="fa-solid fa-shield-halved"></i> Crypto AML & OFAC</div>
+    </div>
+
+    <!-- 🌟 ФЛАГМАНСКИЙ МОДУЛЬ: AI DETECTIVE PROFILER -->
+    <div class="quick-recon-box" style="background: linear-gradient(135deg, #0f0a1e, #1a1033); border: 1px solid #7c3aed; box-shadow: 0 0 25px rgba(124, 58, 237, 0.25);">
+      <div class="quick-title" style="color: #c084fc; justify-content:space-between;">
+        <span><i class="fa-solid fa-brain" style="color:#c084fc;"></i> 🧠 AI Detective Profiler & Психологическое Досье</span>
+        <span class="badge" style="background:rgba(168,85,247,0.25); color:#e9d5ff; border:1px solid #a855f7;">Flagship</span>
+      </div>
+      <div style="font-size:11px; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">
+        Глубокий анализ личности через нейросеть: расчет <b>Scam/Catfish Score (0–100%)</b>, поведенческий профиль, профессия, образ жизни и детектор скрытых связей.
+      </div>
+      <div class="quick-input-group">
+        <input type="text" id="mainAiProfilerInput" class="quick-input" style="border-color:#7c3aed;" placeholder="Введите никнейм, имя, профиль или почту цели..." onkeydown="if(event.key==='Enter') runMainAiProfilerScan()">
+        <button class="btn btn-purple" onclick="runMainAiProfilerScan()"><i class="fa-solid fa-wand-magic-sparkles"></i> Сформировать Досье</button>
+      </div>
+      <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; font-size:10px; color:#94a3b8;">
+        <span>Примеры:</span>
+        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='durov'; runMainAiProfilerScan();">@durov</span>
+        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='vitalik.eth'; runMainAiProfilerScan();">vitalik.eth</span>
+        <span style="color:#c084fc; cursor:pointer; text-decoration:underline;" onclick="document.getElementById('mainAiProfilerInput').value='satoshin'; runMainAiProfilerScan();">satoshin</span>
+      </div>
+    </div>
+
+    <!-- ⚡ ESSENTIAL LAUNCHPAD: БЫСТРЫЙ ДОСТУП К ГЛАВНЫМ МОДУЛЯМ -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px; font-weight:800; color:var(--cyan); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-bolt"></i> Главные инструменты быстрого запуска
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:6px;">
+        <div onclick="openToolPage('ai_detective_profiler')" style="background:#0b1322; border:1px solid #7c3aed; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#c084fc'" onmouseout="this.style.borderColor='#7c3aed'">
+          <div style="font-size:11px; font-weight:800; color:#e9d5ff;"><i class="fa-solid fa-brain" style="color:#a855f7;"></i> AI Досье</div>
+          <div style="font-size:9px; color:#94a3b8;">Scam Score & Профиль</div>
+        </div>
+        <div onclick="openToolPage('tg_activity_tracker')" style="background:#0b1322; border:1px solid #1e3a5f; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--cyan)'" onmouseout="this.style.borderColor='#1e3a5f'">
+          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-solid fa-user-secret" style="color:var(--cyan);"></i> Spy Tracker</div>
+          <div style="font-size:9px; color:#94a3b8;">Сон & Mutual Spy</div>
+        </div>
+        <div onclick="openToolPage('crypto_aml_auditor')" style="background:#0b1322; border:1px solid #715809; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#facc15'" onmouseout="this.style.borderColor='#715809'">
+          <div style="font-size:11px; font-weight:800; color:#fef08a;"><i class="fa-solid fa-shield-halved" style="color:#facc15;"></i> Crypto AML</div>
+          <div style="font-size:9px; color:#94a3b8;">OFAC & Миксеры</div>
+        </div>
+        <div onclick="openToolPage('sherlock')" style="background:#0b1322; border:1px solid #162842; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='#162842'">
+          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Sherlock</div>
+          <div style="font-size:9px; color:#94a3b8;">480+ Баз никнеймов</div>
+        </div>
+        <div onclick="openToolPage('instaloader')" style="background:#0b1322; border:1px solid #162842; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='#162842'">
+          <div style="font-size:11px; font-weight:800; color:#fff;"><i class="fa-brands fa-instagram" style="color:var(--purple);"></i> Instagram</div>
+          <div style="font-size:9px; color:#94a3b8;">Посты & Подписчики</div>
+        </div>
+        <div onclick="openToolPage('digital_hygiene_audit')" style="background:#0b1322; border:1px solid #501322; border-radius:8px; padding:8px 10px; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='#501322'">
+          <div style="font-size:11px; font-weight:800; color:#fecdd3;"><i class="fa-solid fa-shield-virus" style="color:var(--danger);"></i> Аудит себя</div>
+          <div style="font-size:9px; color:#94a3b8;">Проверка утечек</div>
+        </div>
+      </div>
     </div>
 
     <!-- БЫСТРЫЙ СКАНЕР ПРЯМО НА ГЛАВНОЙ -->
@@ -310,7 +364,8 @@ body { background:var(--bg); color:var(--text); min-height:100vh; padding:10px; 
     </div>
 
     <div class="filter-chips">
-      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (33)</div>
+      <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (46)</div>
+      <div class="chip" onclick="setFilter('killer_monetization', this)"><i class="fa-solid fa-gem" style="color:var(--yellow);"></i> 💎 AI & AML (Premium)</div>
       <div class="chip" onclick="setFilter('social_google_instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram, VK & TikTok</div>
       <div class="chip" onclick="setFilter('deep_archive_recon', this)"><i class="fa-solid fa-clock-rotate-left"></i> Архивы & Auto-Recon</div>
       <div class="chip" onclick="setFilter('cyber_tools_lab', this)"><i class="fa-solid fa-coins"></i> Блокчейн & Dorks</div>
@@ -604,6 +659,145 @@ Examples: 'autorecon torvalds', 'crypto 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'do
 
 <script>
 let FULL_CATALOG = [
+  {
+    "id": "killer_monetization",
+    "title": "💎 AI-Профайлинг, Шпион активности & AML Аудит (Premium)",
+    "desc": "Высокоточные интеллектуальные модули: генерация психологических досье через нейросети, трекинг активности, AML-аудит криптовалют и Face AI.",
+    "tools": [
+      {
+        "id": "ai_detective_profiler",
+        "name": "🧠 AI Detective Profiler & Досье (Scam Score)",
+        "repo": "https://github.com/sherlock-project/sherlock",
+        "web_url": "",
+        "purpose": "🎯 Сквозной сбор по всем базам + глубокий психологический профайлинг личности: оценка Scam/Catfish Score (0–100%), паттерны поведения, уровень дохода и детектор легенд.",
+        "input": "username / nickname / full name / target",
+        "web_runnable": true,
+        "scan_type": "ai_profiler",
+        "install_guide": {
+          "git": "# Встроенный в платформу когнитивный аналитический модуль",
+          "pip_or_pkg": "pip install google-genai httpx",
+          "docker": "# Работает автономно",
+          "usage": "Введите никнейм цели для генерации полного психологического досье",
+          "notes": "Агрегирует данные Sherlock, GitHub, Instagram, Crypto и формирует отчет с AI-заключениями."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Сформировать AI Досье",
+          "action": "scan_ai_profiler"
+        }
+      },
+      {
+        "id": "tg_activity_tracker",
+        "name": "⏱️ Telegram Activity & Sleep Tracker (Шпион активности)",
+        "repo": "https://github.com/TelegramDB/TelegramDB",
+        "web_url": "",
+        "purpose": "📊 24-часовая тепловая карта активности и режима сна цели. Функция Mutual Spy — сопоставление времени онлайна двух пользователей на предмет тайного общения.",
+        "input": "@username1 [и опционально @username2]",
+        "web_runnable": true,
+        "scan_type": "activity_tracker",
+        "install_guide": {
+          "git": "# Алгоритмический анализатор временных меток и сессий",
+          "pip_or_pkg": "pip install httpx asyncio",
+          "docker": "# Встроенный сервис",
+          "usage": "Введите юзернейм или два юзернейма через запятую",
+          "notes": "Определяет часовой пояс, фазы бодрствования и корреляцию активности."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Анализировать активность",
+          "action": "scan_activity_tracker"
+        }
+      },
+      {
+        "id": "crypto_aml_auditor",
+        "name": "🚨 Crypto AML & Sanctions Risk Auditor (OFAC & Mixers)",
+        "repo": "https://github.com/bitcoin/bitcoin",
+        "web_url": "https://blockchair.com/",
+        "purpose": "🛡️ Проверка криптокошельков BTC, ETH, TRC20 (USDT), SOL на шкалу риска AML (0–100%), связь с санкциями OFAC, миксерами Tornado Cash, даркнетом и дрейнерами.",
+        "input": "BTC / ETH / TRON (TRC20) / SOL address",
+        "web_runnable": true,
+        "scan_type": "crypto_aml",
+        "install_guide": {
+          "git": "# Движок блокчейн-форензики и проверки списков санкций",
+          "pip_or_pkg": "pip install httpx",
+          "docker": "# Встроенный аудит",
+          "usage": "Введите адрес кошелька для оценки риска чистоты активов",
+          "notes": "Помогает избежать блокировок на биржах перед приемом оплаты."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Проверить AML Риск",
+          "action": "scan_crypto_aml"
+        }
+      },
+      {
+        "id": "face_search_ai",
+        "name": "👤 Reverse Face AI Search & Deepfake Detector",
+        "repo": "https://github.com/ageitgey/face_recognition",
+        "web_url": "",
+        "purpose": "🔍 Поиск совпадений человека по фото лица в открытых аватарах соцсетей (Telegram, VK, GitHub) + проверка на AI-генерацию (Deepfake / ThisPersonDoesNotExist).",
+        "input": "фото лица (JPG / PNG / WebP)",
+        "web_runnable": true,
+        "scan_type": "face_search",
+        "install_guide": {
+          "git": "# Нейросетевой модуль биометрического анализа",
+          "pip_or_pkg": "pip install Pillow numpy",
+          "docker": "# Встроенный в WebApp",
+          "usage": "Загрузите фото для поиска совпадений и анализа артефактов лица",
+          "notes": "Выявляет фейковые профили в дейтинге и соцсетях."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Анализ лица и Deepfake",
+          "action": "scan_face_search"
+        }
+      },
+      {
+        "id": "digital_hygiene_audit",
+        "name": "🛡️ Digital Hygiene & Personal Breach Audit (Аудит себя)",
+        "repo": "https://github.com/sherlock-project/sherlock",
+        "web_url": "",
+        "purpose": "🔐 Проверка цифрового следа и истории утечек по email/телефону: расчет индекса уязвимости (Exposure Score) и чек-лист защиты личных данных.",
+        "input": "email / телефон / юзернейм",
+        "web_runnable": true,
+        "scan_type": "breach_audit",
+        "install_guide": {
+          "git": "# Модуль аудита собственной цифровой гигиены",
+          "pip_or_pkg": "pip install httpx",
+          "docker": "# Не требуется",
+          "usage": "Введите свою почту для проверки наличия в базах утечек",
+          "notes": "Формирует персональный отчет по закрытию уязвимостей."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Проверить свои утечки",
+          "action": "scan_breach_audit"
+        }
+      },
+      {
+        "id": "target_monitor_alerts",
+        "name": "🔔 Real-Time Target Monitor (Слежка в Telegram)",
+        "repo": "https://github.com/TelegramDB/TelegramDB",
+        "web_url": "",
+        "purpose": "📡 Постановка цели (профиль TG, канал, криптокошелек) на непрерывное отслеживание: бот присылает уведомление при смене аватарки, био, юзернейма или крупных переводах.",
+        "input": "@username / channel / wallet",
+        "web_runnable": true,
+        "scan_type": "target_alerts",
+        "install_guide": {
+          "git": "# Фоновый агент мониторинга целей",
+          "pip_or_pkg": "pip install aiogram httpx",
+          "docker": "# Работает в фоновом демоне",
+          "usage": "Укажите цель для добавления в список активного наблюдения",
+          "notes": "Уведомления приходят прямо в личные сообщения бота."
+        },
+        "launch": {
+          "type": "api",
+          "label": "⚡ Поставить на мониторинг",
+          "action": "subscribe_target_alerts"
+        }
+      }
+    ]
+  },
   {
     "id": "telegram_osint",
     "title": "✈️ Telegram Разведка & Анализ профилей",
@@ -2915,6 +3109,20 @@ function copyText(btn, text) {
     btn.innerText = 'Скопировано!';
     setTimeout(() => { btn.innerText = orig; }, 1500);
   });
+}
+
+
+// ЗАПУСК ГЛАВНОГО AI PROFILER С ПЕРВОГО ЭКРАНА
+async function runMainAiProfilerScan() {
+  const input = document.getElementById('mainAiProfilerInput');
+  const target = (input ? input.value : '').trim();
+  if (!target) {
+    alert('Введите никнейм или цель для AI-профайлинга');
+    return;
+  }
+  openToolPage('ai_detective_profiler');
+  document.getElementById('tvTargetInput').value = target;
+  executeToolScan('ai_detective_profiler', target);
 }
 
 // СТАРТ ПРИЛОЖЕНИЯ

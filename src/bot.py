@@ -193,6 +193,163 @@ async def successful_payment_handler(message: types.Message):
     await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
 
 
+# --- ПОЛЬЗОВАТЕЛЬСКИЕ КОМАНДЫ БЫСТРОГО АНАЛИЗА ---
+
+@dp.message(Command("dossier"))
+@dp.message(Command("profiler"))
+async def cmd_dossier(message: types.Message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("🧠 <b>AI Detective Profiler:</b>\nИспользование: <code>/dossier @username</code> или <code>/dossier Имя Фамилия</code>", parse_mode="HTML")
+        return
+
+    target = parts[1].strip()
+    status_msg = await message.answer(f"⏳ <i>Собираю данные по открытым реестрам и формирую AI-досье на '{target}'...</i>", parse_mode="HTML")
+
+    try:
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            resp = await client.post(
+                f"{LOCAL_API}/api/scan/ai_profiler",
+                json={"target": target, "caller": str(message.from_user.id)},
+                headers={"X-Telegram-User-Id": str(message.from_user.id)}
+            )
+            data = resp.json()
+
+        if not data.get("ok"):
+            await status_msg.edit_text(f"❌ <b>Ошибка:</b> {data.get('error', 'Не удалось сформировать досье')}", parse_mode="HTML")
+            return
+
+        scam = data.get("scam_score", 15)
+        badge = "🟢 Высокая подлинность" if scam < 30 else ("🟡 Требует проверки" if scam < 60 else "🔴 Высокий риск / Фейк")
+        report = data.get("dossier_text", "Досье сформировано.")
+
+        text = (
+            f"🧠 <b>AI DETECTIVE DOSSIER // {target}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🛡️ <b>Scam/Catfish Score:</b> <code>{scam}%</code> ({badge})\n"
+            f"🌐 <b>Обнаружено платформ:</b> <code>{data.get('profiles_count', 0)}</code>\n\n"
+            f"{report[:3600]}"
+        )
+        await status_msg.edit_text(text, reply_markup=get_webapp_keyboard(), parse_mode="Markdown")
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Ошибка соединения: {str(e)}")
+
+
+@dp.message(Command("aml"))
+async def cmd_aml(message: types.Message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("🚨 <b>Crypto AML & Sanctions Auditor:</b>\nИспользование: <code>/aml 0x71C... / bc1q... / T...</code>", parse_mode="HTML")
+        return
+
+    target = parts[1].strip()
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{LOCAL_API}/api/scan/crypto_aml",
+                json={"target": target, "caller": str(message.from_user.id)},
+                headers={"X-Telegram-User-Id": str(message.from_user.id)}
+            )
+            data = resp.json()
+
+        if not data.get("ok"):
+            await message.answer(f"❌ {data.get('error', 'Ошибка проверки AML')}")
+            return
+
+        flags_text = "\n".join([f"• {f}" for f in data.get("flags", [])])
+        text = (
+            f"🚨 <b>CRYPTO AML AUDIT // {data.get('coin')}</b>\n"
+            f"<code>{data.get('address')}</code>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📊 <b>Индекс риска AML:</b> <code>{data.get('aml_risk_score')}% / 100%</code>\n"
+            f"🏷️ <b>Статус:</b> <b>{data.get('risk_level')}</b>\n\n"
+            f"💡 <b>Рекомендация:</b>\n{data.get('recommendation')}\n\n"
+            f"<b>Факторы анализа:</b>\n{flags_text}"
+        )
+        await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка проверки: {str(e)}")
+
+
+@dp.message(Command("spy"))
+async def cmd_spy(message: types.Message):
+    parts = message.text.split(maxsplit=2)
+    if len(parts) < 2:
+        await message.answer("⏱️ <b>Spy Activity & Sleep Tracker:</b>\nИспользование: <code>/spy @username</code> или <code>/spy @user1 @user2</code> (Mutual Spy)", parse_mode="HTML")
+        return
+
+    target1 = parts[1].strip().lstrip("@")
+    target2 = parts[2].strip().lstrip("@") if len(parts) > 2 else ""
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{LOCAL_API}/api/scan/activity_tracker",
+                json={"target": target1, "target2": target2, "caller": str(message.from_user.id)},
+                headers={"X-Telegram-User-Id": str(message.from_user.id)}
+            )
+            data = resp.json()
+
+        if not data.get("ok"):
+            await message.answer(f"❌ {data.get('error', 'Ошибка трекера')}")
+            return
+
+        mutual_block = ""
+        if data.get("mutual_analysis"):
+            m = data["mutual_analysis"]
+            mutual_block = f"\n\n💞 <b>Mutual Spy (Совпадение с @{m['target2']}):</b>\n<b>Индекс связи:</b> <code>{m['overlap_score']}%</code>\n{m['communication_likelihood']}"
+
+        text = (
+            f"⏱️ <b>SPY ACTIVITY REPORT // @{target1}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🌍 <b>Часовой пояс:</b> <code>{data.get('timezone')}</code>\n"
+            f"💤 <b>Режим сна (оффлайн):</b> <code>{data.get('sleep_phase')}</code>\n"
+            f"🔥 <b>Пики активности:</b> <code>{data.get('peak_activity')}</code>"
+            f"{mutual_block}\n\n"
+            f"<i>Подробная почасовая тепловая карта доступна в WebApp.</i>"
+        )
+        await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка трекера: {str(e)}")
+
+
+@dp.message(Command("audit"))
+async def cmd_audit(message: types.Message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("🛡️ <b>Personal Breach & Digital Hygiene Audit:</b>\nИспользование: <code>/audit your_email@domain.com</code> или <code>/audit +380...</code>", parse_mode="HTML")
+        return
+
+    target = parts[1].strip()
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{LOCAL_API}/api/scan/breach_audit",
+                json={"identifier": target, "caller": str(message.from_user.id)},
+                headers={"X-Telegram-User-Id": str(message.from_user.id)}
+            )
+            data = resp.json()
+
+        if not data.get("ok"):
+            await message.answer(f"❌ {data.get('error', 'Ошибка аудита')}")
+            return
+
+        leaks = "\n".join([f"• 📁 <b>{l['source']}</b> ({l['date']})" for l in data.get("leaks", [])])
+        checklist = "\n".join([f"{c}" for c in data.get("remediation_checklist", [])[:3]])
+
+        text = (
+            f"🛡️ <b>DIGITAL HYGIENE AUDIT // {target}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🚨 <b>Упоминаний в утечках:</b> <code>{data.get('leaks_count')} баз данных</code>\n"
+            f"📊 <b>Индекс уязвимости (DEI):</b> <code>{data.get('exposure_score')}/100</code> [<b>{data.get('security_grade')}</b>]\n\n"
+            f"<b>Обнаружено в утечках:</b>\n{leaks}\n\n"
+            f"💡 <b>Рекомендации по защите:</b>\n{checklist}"
+        )
+        await message.answer(text, reply_markup=get_webapp_keyboard(), parse_mode="HTML")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка аудита: {str(e)}")
+
+
 # --- АДМИН-КОМАНДЫ УПРАВЛЕНИЯ ПАНЕЛЬЮ ---
 
 @dp.message(Command("users"))
