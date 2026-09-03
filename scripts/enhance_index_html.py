@@ -1410,7 +1410,7 @@ async function runDecoderAction(action) {{
     resBox.style.display = 'block';
 
     if (data.action === 'hash_id') {{
-      outPre.innerText = `[HASH IDENTIFIER REPORT]\nДлина: ${{data.length}} символов\nАлгоритмы:\n${{(data.possible_algorithms || []).map(a => `  • ${{a}}`).join('\n')}}`;
+      outPre.innerText = `[HASH IDENTIFIER REPORT]\nДлина: ${{data.length}} символов\nАлгоритмы:\n${{(data.possible_algorithms || []).map(a => `  • ${{a}}`).join('\\n')}}`;
     }} else if (data.action === 'jwt_decode') {{
       outPre.innerText = `[JWT STRUCTURE]\nHEADER:\n${{JSON.stringify(data.header, null, 2)}}\nPAYLOAD:\n${{JSON.stringify(data.payload, null, 2)}}`;
     }} else {{
@@ -1461,7 +1461,7 @@ async function executeCliCommand() {{
   if (cmd === 'help') {{
     outputEl.innerText += `AVAILABLE COMMANDS:\n  help, autorecon <target>, crypto <addr>, dorks <query>, sherlock <user>, wayback <url>, crtsh <domain>, github <user>, phone <num>, hash <str>, clear, matrix\n`;
   }} else if (cmd === 'clear') {{
-    outputEl.innerText = 'peace of the island of sor/ber peoples · Terminal Cleared\n';
+    outputEl.innerText = `peace of the island of sor/ber peoples · Terminal Cleared\n`;
   }} else if (cmd === 'matrix') {{
     toggleMatrix();
     outputEl.innerText += `[+] Matrix Rain FX: ${{matrixActive ? 'ENABLED' : 'DISABLED'}}\n`;
@@ -1473,8 +1473,8 @@ async function executeCliCommand() {{
         body: JSON.stringify({{ target: arg, caller: currentSessionUser }})
       }});
       const data = await res.json();
-      outputEl.innerText += (data.raw_cli_output || JSON.stringify(data.data, null, 2)) + '\n';
-    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + '\n'; }}
+      outputEl.innerText += (data.raw_cli_output || JSON.stringify(data.data, null, 2)) + `\n`;
+    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + `\n`; }}
   }} else if (cmd === 'dorks' && arg) {{
     try {{
       const res = await fetch('/api/tools/dorks', {{
@@ -1483,8 +1483,8 @@ async function executeCliCommand() {{
         body: JSON.stringify({{ target: arg }})
       }});
       const data = await res.json();
-      outputEl.innerText += (data.raw_cli_output || 'Dorks generated.') + '\n';
-    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + '\n'; }}
+      outputEl.innerText += (data.raw_cli_output || 'Dorks generated.') + `\n`;
+    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + `\n`; }}
   }} else if (arg) {{
     try {{
       const res = await fetch('/api/scan/universal', {{
@@ -1493,8 +1493,8 @@ async function executeCliCommand() {{
         body: JSON.stringify({{ tool_id: cmd, target: arg, caller: currentSessionUser }})
       }});
       const data = await res.json();
-      outputEl.innerText += (data.raw_cli_output || `[✓] Finished scan for '${{arg}}'.`) + '\n';
-    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + '\n'; }}
+      outputEl.innerText += (data.raw_cli_output || `[✓] Finished scan for '${{arg}}'.`) + `\n`;
+    }} catch (e) {{ outputEl.innerText += '[-] Error: ' + e.message + `\n`; }}
   }} else {{
     outputEl.innerText += `[-] Unknown command: '${{cmd}}'. Type 'help'.\n`;
   }}

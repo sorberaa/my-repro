@@ -2479,8 +2479,7 @@ async function runDecoderAction(action) {
       outPre.innerText = `[HASH IDENTIFIER REPORT]
 Длина: ${data.length} символов
 Алгоритмы:
-${(data.possible_algorithms || []).map(a => `  • ${a}`).join('
-')}`;
+${(data.possible_algorithms || []).map(a => `  • ${a}`).join('\n')}`;
     } else if (data.action === 'jwt_decode') {
       outPre.innerText = `[JWT STRUCTURE]
 HEADER:
@@ -2539,8 +2538,8 @@ root@cyberhub:~# ${cmdRaw}
   help, autorecon <target>, crypto <addr>, dorks <query>, sherlock <user>, wayback <url>, crtsh <domain>, github <user>, phone <num>, hash <str>, clear, matrix
 `;
   } else if (cmd === 'clear') {
-    outputEl.innerText = 'peace of the island of sor/ber peoples · Terminal Cleared
-';
+    outputEl.innerText = `peace of the island of sor/ber peoples · Terminal Cleared
+`;
   } else if (cmd === 'matrix') {
     toggleMatrix();
     outputEl.innerText += `[+] Matrix Rain FX: ${matrixActive ? 'ENABLED' : 'DISABLED'}
@@ -2553,10 +2552,10 @@ root@cyberhub:~# ${cmdRaw}
         body: JSON.stringify({ target: arg, caller: currentSessionUser })
       });
       const data = await res.json();
-      outputEl.innerText += (data.raw_cli_output || JSON.stringify(data.data, null, 2)) + '
-';
-    } catch (e) { outputEl.innerText += '[-] Error: ' + e.message + '
-'; }
+      outputEl.innerText += (data.raw_cli_output || JSON.stringify(data.data, null, 2)) + `
+`;
+    } catch (e) { outputEl.innerText += '[-] Error: ' + e.message + `
+`; }
   } else if (cmd === 'dorks' && arg) {
     try {
       const res = await fetch('/api/tools/dorks', {
@@ -2565,10 +2564,10 @@ root@cyberhub:~# ${cmdRaw}
         body: JSON.stringify({ target: arg })
       });
       const data = await res.json();
-      outputEl.innerText += (data.raw_cli_output || 'Dorks generated.') + '
-';
-    } catch (e) { outputEl.innerText += '[-] Error: ' + e.message + '
-'; }
+      outputEl.innerText += (data.raw_cli_output || 'Dorks generated.') + `
+`;
+    } catch (e) { outputEl.innerText += '[-] Error: ' + e.message + `
+`; }
   } else if (arg) {
     try {
       const res = await fetch('/api/scan/universal', {
@@ -2577,10 +2576,10 @@ root@cyberhub:~# ${cmdRaw}
         body: JSON.stringify({ tool_id: cmd, target: arg, caller: currentSessionUser })
       });
       const data = await res.json();
-      outputEl.innerText += (data.raw_cli_output || `[✓] Finished scan for '${arg}'.`) + '
-';
-    } catch (e) { outputEl.innerText += '[-] Error: ' + e.message + '
-'; }
+      outputEl.innerText += (data.raw_cli_output || `[✓] Finished scan for '${arg}'.`) + `
+`;
+    } catch (e) { outputEl.innerText += '[-] Error: ' + e.message + `
+`; }
   } else {
     outputEl.innerText += `[-] Unknown command: '${cmd}'. Type 'help'.
 `;
