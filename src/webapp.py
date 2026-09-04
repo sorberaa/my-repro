@@ -506,17 +506,20 @@ async def api_auth_login(request: Request):
 def is_admin_request(request: Request) -> bool:
     uid = request.headers.get("x-telegram-user-id", "").strip()
     adm_token = request.headers.get("x-admin-token", "").strip()
-    if ADMIN_TOKEN and adm_token == ADMIN_TOKEN:
+    query_token = request.query_params.get("token", "").strip() or request.query_params.get("admin_token", "").strip()
+    auth_header = request.headers.get("authorization", "").replace("Bearer ", "").strip()
+    
+    if ADMIN_TOKEN and (adm_token == ADMIN_TOKEN or query_token == ADMIN_TOKEN or auth_header == ADMIN_TOKEN):
         return True
-    if ADMIN_CHAT_ID and uid == str(ADMIN_CHAT_ID):
+    if ADMIN_CHAT_ID and (uid == str(ADMIN_CHAT_ID) or query_token == str(ADMIN_CHAT_ID)):
         return True
     return False
 
 
 @app.get("/api/auth/me")
 async def api_auth_me(request: Request):
+    is_adm = is_admin_request(request)
     uid = request.headers.get("x-telegram-user-id", "").strip()
-    is_adm = (uid == str(ADMIN_CHAT_ID)) if (ADMIN_CHAT_ID and uid) else False
     return {
         "ok": True,
         "is_admin": is_adm,
@@ -524,18 +527,19 @@ async def api_auth_me(request: Request):
     }
 
 
-@app.post("/api/user/profile")
+@app.api_route("/api/user/profile", methods=["GET", "POST"])
 async def api_user_profile(request: Request):
     try:
-        body = await request.json()
+        body = await request.json() if request.method == "POST" else {}
     except Exception:
         body = {}
 
-    tg_id = str(body.get("tg_id", "")).strip()
-    tg_username = str(body.get("tg_username", "")).strip().lstrip("@")
-    tg_name = str(body.get("tg_name", "")).strip()
-    nickname_input = str(body.get("nickname", "")).strip()
-    fingerprint = str(body.get("fingerprint", "")).strip()
+    tg_id = str(body.get("tg_id") or request.headers.get("x-telegram-user-id") or request.query_params.get("tg_id") or "").strip()
+    tg_username = str(body.get("tg_username") or request.query_params.get("tg_username") or "").strip().lstrip("@")
+    tg_name = str(body.get("tg_name") or request.query_params.get("tg_name") or "").strip()
+    nickname_input = str(body.get("nickname") or "").strip()
+    fingerprint = str(body.get("fingerprint") or "").strip()
+    admin_token = str(body.get("admin_token") or request.headers.get("x-admin-token") or request.query_params.get("token") or "").strip()
 
     ip = client_ip(request)
     ua = request.headers.get("user-agent", "")[:180]
@@ -544,7 +548,7 @@ async def api_user_profile(request: Request):
     users = load_users()
     user_key = tg_id if tg_id else (tg_username if tg_username else "guest")
 
-    is_admin = (str(tg_id) == str(ADMIN_CHAT_ID)) or (bool(ADMIN_CHAT_ID) and str(ADMIN_CHAT_ID) in [tg_id, tg_username])
+    is_admin = (str(tg_id) == str(ADMIN_CHAT_ID)) or (bool(ADMIN_CHAT_ID) and str(ADMIN_CHAT_ID) in [tg_id, tg_username]) or (bool(ADMIN_TOKEN) and admin_token == ADMIN_TOKEN) or is_admin_request(request)
 
     packages = [
         {"id": "scans_20", "scans": 20, "stars": 35, "title": "⭐️ 20 запросов (35 Stars)", "price_str": "35 ⭐️"},
