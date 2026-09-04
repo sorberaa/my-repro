@@ -3376,6 +3376,224 @@ async def core_scan_telegram(target: str, caller_user: str = "guest") -> dict:
 
 # --- УНИВЕРСАЛЬНЫЙ ДВИЖОК МАРШРУТИЗАЦИИ ДЛЯ ВСЕХ ИНСТРУМЕНТОВ КАТАЛОГА ---
 
+
+# --- 12. MYIP TOOLBOX & LEGENDARY OSINT ENGINES ---
+
+async def core_scan_myip(target_ip: str = "", caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    target_ip = target_ip.strip()
+    if not target_ip:
+        target_ip = "8.8.8.8"
+
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    is_domain = "." in target_ip and not re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", target_ip)
+
+    resolved_ip = target_ip
+    if is_domain:
+        try:
+            loop = asyncio.get_running_loop()
+            resolved_ip = await loop.run_in_executor(None, socket.gethostbyname, target_ip)
+        except Exception:
+            resolved_ip = target_ip
+
+    geo_data = {}
+    async with httpx.AsyncClient(timeout=4.5) as client:
+        try:
+            r = await client.get(f"http://ip-api.com/json/{resolved_ip}?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query,proxy,hosting")
+            if r.status_code == 200:
+                geo_data = r.json()
+        except Exception:
+            pass
+
+    country = geo_data.get("country", "Не определена")
+    city = geo_data.get("city", "—")
+    isp = geo_data.get("isp", "Не определен")
+    asn = geo_data.get("as", "—")
+    is_hosting = geo_data.get("hosting", False) or "hosting" in isp.lower() or "cloud" in isp.lower() or "datacenter" in isp.lower()
+    is_proxy = geo_data.get("proxy", False) or "vpn" in isp.lower() or "tor" in isp.lower()
+    
+    lat = geo_data.get("lat")
+    lon = geo_data.get("lon")
+    maps_url = f"https://www.google.com/maps?q={lat},{lon}" if lat and lon else None
+
+    network_type = "🔴 Хостинг / Датацентр / VPN" if (is_hosting or is_proxy) else "🟢 Домашний / Мобильный провайдер (Residential)"
+
+    leak_tests = [
+        {"name": "MyIP.wtf Live Diagnostic", "url": f"https://myip.wtf/?ip={resolved_ip}"},
+        {"name": "BrowserLeaks WebRTC Test", "url": "https://browserleaks.com/webrtc"},
+        {"name": "DNS Leak Test", "url": "https://www.dnsleaktest.com/"},
+        {"name": "BGP Routing & ASN", "url": f"https://bgp.he.net/ip/{resolved_ip}"},
+        {"name": "Shodan Host Profile", "url": f"https://www.shodan.io/host/{resolved_ip}"},
+        {"name": "AbuseIPDB Threat Score", "url": f"https://www.abuseipdb.com/check/{resolved_ip}"}
+    ]
+
+    cli_lines = [
+        f"root@cyberhub:~# myip_toolbox --target {resolved_ip}",
+        f"[{now_ts}] [INIT] Executing comprehensive IP, DNS & WebRTC audit via MyIP engine...",
+        f"[{now_ts}] [+] Query: {target_ip} -> Resolved IPv4: {resolved_ip}",
+        f"[{now_ts}] [+] GeoIP: {country} / {city} | ISP: {isp}",
+        f"[{now_ts}] [+] ASN: {asn}",
+        f"[{now_ts}] [ANOMALY] Network Profile: {network_type}",
+        f"[{now_ts}] [✓] MyIP network diagnostics completed successfully."
+    ]
+
+    return {
+        "ok": True,
+        "type": "myip",
+        "target": target_ip,
+        "resolved_ip": resolved_ip,
+        "country": country,
+        "city": city,
+        "isp": isp,
+        "asn": asn,
+        "network_type": network_type,
+        "is_proxy_or_hosting": is_hosting or is_proxy,
+        "maps_url": maps_url,
+        "leak_tests": leak_tests,
+        "raw_cli_output": "\n".join(cli_lines)
+    }
+
+
+async def core_scan_legendary_osint(target: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    target = target.strip()
+    if not target:
+        return {"ok": False, "error": "Укажите цель для формирования OSINT-плана расследования"}
+
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Определение вектора расследования
+    if "@" in target and "." in target:
+        vector = "email"
+        vector_title = "📧 Расследование по Email-адресу"
+        tools_list = [
+            {"name": "Holehe", "desc": "Проверка привязки к 120+ сервисам и соцсетям", "url": "https://github.com/megadose/holehe"},
+            {"name": "GHunt", "desc": "Извлечение Google ID, отзывов на картах и альбомов", "url": "https://github.com/mxrch/GHunt"},
+            {"name": "Epieos", "desc": "Быстрый реверс почты без регистрации", "url": "https://epieos.com/"},
+            {"name": "HaveIBeenPwned", "desc": "Проверка утечек баз паролей", "url": f"https://haveibeenpwned.com/account/{target}"},
+            {"name": "DeHashed", "desc": "Глубокий поиск связанных утечек", "url": f"https://dehashed.com/search?query={target}"}
+        ]
+        dorks_list = [
+            {"name": "Google: Точное совпадение", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'"{target}"')}"},
+            {"name": "Google: Упоминания на Pastebin / GitHub", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'"{target}" (site:pastebin.com OR site:github.com)')}"}
+        ]
+    elif re.match(r"^\+?\d{7,15}$", target.replace(" ", "").replace("-", "")):
+        vector = "phone"
+        vector_title = "📱 Расследование по номеру телефона"
+        clean_num = re.sub(r"\D", "", target)
+        tools_list = [
+            {"name": "PhoneInfoga", "desc": "Определение оператора, страны и формата E.164", "url": "https://github.com/sundowndev/phoneinfoga"},
+            {"name": "Ignorant", "desc": "Поиск привязки к Amazon, Instagram, Snapchat", "url": "https://github.com/megadose/ignorant"},
+            {"name": "WhatsApp Web", "desc": "Прямой чат и проверка фото профиля", "url": f"https://wa.me/{clean_num}"},
+            {"name": "Telegram Search", "desc": "Поиск контакта в Telegram", "url": f"https://t.me/+{clean_num}"},
+            {"name": "Truecaller Dork", "desc": "Индексация имени абонента", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'"{target}" site:truecaller.com')}"}
+        ]
+        dorks_list = [
+            {"name": "Google: Объявления Авито/OLX", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'"{target}" (site:avito.ru OR site:youla.ru OR site:olx.ua)')}"},
+            {"name": "Yandex: Базы резюме и контактов", "url": f"https://yandex.ru/search/?text={urllib.parse.quote(f'"{target}"')}"}
+        ]
+    elif target.startswith("0x") or (target.startswith("1") or target.startswith("3") or target.startswith("bc1") or target.startswith("T")) and len(target) >= 26:
+        vector = "crypto"
+        vector_title = "🪙 Расследование по Блокчейн-кошельку"
+        tools_list = [
+            {"name": "Blockchair Universal", "desc": "Мультичейн обозреватель и аналитика", "url": f"https://blockchair.com/search?q={target}"},
+            {"name": "DeBank", "desc": "Портфолио, токены, DeFi-активность и протоколы", "url": f"https://debank.com/profile/{target}"},
+            {"name": "Arkham Intelligence", "desc": "Деанонимизация и граф транзакций", "url": f"https://platform.arkhamintelligence.com/explorer/address/{target}"},
+            {"name": "Etherscan", "desc": "Официальный эксплорер Ethereum и ERC-20", "url": f"https://etherscan.io/address/{target}"},
+            {"name": "AMLBot Check", "desc": "Проверка чистоты и риска санкций", "url": "https://amlbot.com/"}
+        ]
+        dorks_list = [
+            {"name": "Google: Упоминания адреса на форумах", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'"{target}"')}"},
+            {"name": "Twitter/X: Поиск публикаций с кошельком", "url": f"https://x.com/search?q={urllib.parse.quote(target)}"}
+        ]
+    elif "." in target and not target.startswith("@"):
+        vector = "domain"
+        vector_title = "🌐 Расследование по Домену / Инфраструктуре"
+        tools_list = [
+            {"name": "Subfinder", "desc": "Пассивный поиск субдоменов через 40+ API", "url": "https://github.com/projectdiscovery/subfinder"},
+            {"name": "CRT.sh", "desc": "Поиск сертификатов в Certificate Transparency", "url": f"https://crt.sh/?q=%25.{target}"},
+            {"name": "Wayback Machine", "desc": "История снимков и удаленных страниц", "url": f"https://web.archive.org/web/*/{target}"},
+            {"name": "SecurityTrails", "desc": "История DNS и прошлые владельцы", "url": f"https://securitytrails.com/domain/{target}/dns"},
+            {"name": "Shodan Domain", "desc": "Открытые порты и серверная инфраструктура", "url": f"https://www.shodan.io/search?query=hostname:{target}"}
+        ]
+        dorks_list = [
+            {"name": "Google: Индексация поддоменов", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'site:{target} -www.{target}')}"},
+            {"name": "Google: Скрытые конфигурации и документы", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'site:{target} filetype:env OR filetype:sql OR filetype:pdf')}"}
+        ]
+    else:
+        vector = "username"
+        vector_title = "👤 Расследование по Никнейму / Социальным сетям"
+        tools_list = [
+            {"name": "Sherlock Project", "desc": "Сквозной поиск по 400+ сайтам", "url": "https://github.com/sherlock-project/sherlock"},
+            {"name": "Maigret", "desc": "Глубокий сбор досье с извлечением ID и имен", "url": "https://github.com/soxoj/maigret"},
+            {"name": "WhatsMyName", "desc": "Быстрый веб-поиск по социальным сетям", "url": "https://whatsmyname.app/"},
+            {"name": "Blackbird", "desc": "Сверхбыстрый асинхронный поиск аккаунтов", "url": "https://github.com/p1ngul1n0/blackbird"},
+            {"name": "Social Analyzer", "desc": "Анализ профилей и извлечение метаданных", "url": "https://github.com/qeeqbox/social-analyzer"}
+        ]
+        dorks_list = [
+            {"name": "Google: Упоминания никнейма", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'"{target}"')}"},
+            {"name": "Google: Профили в мессенджерах и блогах", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'"{target}" (site:t.me OR site:vk.com OR site:habr.com OR site:github.com)')}"},
+            {"name": "Yandex: Точный поиск", "url": f"https://yandex.ru/search/?text={urllib.parse.quote(f'"{target}"')}"}
+        ]
+
+    playbook_steps = [
+        "1. Проведите первичный сбор по указанным профильным утилитам фреймворка.",
+        "2. Выполните проверку по поисковой матрице Google & Yandex Дорков для извлечения кэшированных страниц.",
+        "3. Сопоставьте найденные временные метки, юзернеймы и геолокацию на графе связей.",
+        "4. Зафиксируйте обнаруженные артефакты в сводном досье расследования."
+    ]
+
+    cli_lines = [
+        f"root@cyberhub:~# legendary_osint --target '{target}' --vector {vector}",
+        f"[{now_ts}] [INIT] Loading Legendary OSINT Knowledge Base & Investigation Matrices...",
+        f"[{now_ts}] [+] Detected Investigation Vector: {vector_title}",
+        f"[{now_ts}] [+] Curated Tools Loaded: {len(tools_list)} specialized utilities.",
+        f"[{now_ts}] [+] Search Matrices & Dorks: {len(dorks_list)} active pivots.",
+        f"[{now_ts}] [✓] Investigation playbook generated from K2SOsint repository."
+    ]
+
+    return {
+        "ok": True,
+        "type": "legendary_osint",
+        "target": target,
+        "vector": vector,
+        "vector_title": vector_title,
+        "repo": "https://github.com/K2SOsint/Legendary_OSINT",
+        "tools": tools_list,
+        "dorks": dorks_list,
+        "playbook_steps": playbook_steps,
+        "raw_cli_output": "\n".join(cli_lines)
+    }
+
+
+@app.post("/api/scan/myip")
+async def scan_myip_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    target = str(body.get("target", "")).strip() or client_ip(request)
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_myip(target, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+@app.post("/api/scan/legendary_osint")
+async def scan_legendary_osint_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    target = str(body.get("target", "")).strip()
+    caller = str(body.get("caller", "guest")).strip()
+    res = await core_scan_legendary_osint(target, caller)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
 @app.post("/api/scan/universal")
 async def scan_universal_endpoint(request: Request):
     try:
@@ -3388,6 +3606,12 @@ async def scan_universal_endpoint(request: Request):
 
     if not target:
         return JSONResponse({"ok": False, "error": "Введите цель для анализа"}, status_code=400)
+
+    # 0.1 MyIP Toolbox & Legendary OSINT
+    if tool_id in ["myip", "myip_toolbox", "ip_toolbox", "dns_leak", "webrtc_leak"]:
+        return await core_scan_myip(target, caller)
+    if tool_id in ["legendary_osint", "legendary", "k2s_osint", "osint_mindmap"]:
+        return await core_scan_legendary_osint(target, caller)
 
     # 0. Killer Modules
     if tool_id in ["ai_profiler", "ai_detective_profiler", "profiler", "dossier"]:

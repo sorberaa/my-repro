@@ -789,6 +789,18 @@ function renderToolScanResult(data, outBox, target, toolId) {
     return;
   }
 
+  // 20. MYIP TOOLBOX
+  if (type === 'myip' || safeToolId === 'myip_toolbox') {
+    renderMyIpResult(data, outBox, target);
+    return;
+  }
+
+  // 21. LEGENDARY OSINT
+  if (type === 'legendary_osint' || safeToolId === 'legendary_osint') {
+    renderLegendaryOsintResult(data, outBox, target);
+    return;
+  }
+
   // 19. CLI UTILITY HUB / FALLBACK
   renderCliToolResult(data, outBox, target);
 }
@@ -1320,6 +1332,129 @@ function renderTelegramResult(data, container, target) {
 }
 
 // 19. CLI UTILITY HUB RENDERER (Для всех утилит из каталога)
+
+// 20. MYIP TOOLBOX RENDERER
+function renderMyIpResult(data, container, target) {
+  const leaks = data.leak_tests || [];
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-network-wired" style="color:var(--primary);"></i> MyIP Toolbox: ${data.resolved_ip || data.target || target}</span>
+        <button class="btn btn-primary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('https://myip.wtf/?ip=${data.resolved_ip || data.target}')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> MyIP.wtf Live
+        </button>
+      </div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🌐 IP АДРЕС</div><div class="custom-val" style="color:var(--primary); font-weight:800;">${data.resolved_ip || data.target}</div></div>
+        <div class="custom-item"><div class="custom-label">📍 СТРАНА / ГОРОД</div><div class="custom-val">${data.country} ${data.city ? `(${data.city})` : ''}</div></div>
+        <div class="custom-item"><div class="custom-label">🏢 ПРОВАЙДЕР / ISP</div><div class="custom-val">${data.isp}</div></div>
+        <div class="custom-item"><div class="custom-label">🔢 BGP ASN</div><div class="custom-val">${data.asn}</div></div>
+      </div>
+      <div style="margin-top:8px; font-size:11px; padding:6px 10px; border-radius:6px; background:#07090e; border:1px solid var(--card-border);">
+        <b>Тип сети:</b> <span style="color:${data.is_proxy_or_hosting ? 'var(--danger)' : 'var(--accent-green)'}; font-weight:700;">${data.network_type}</span>
+      </div>
+    </div>
+
+    <!-- Диагностика Утечек DNS & WebRTC -->
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-shield-virus" style="color:var(--accent-yellow);"></i> Проверка утечек DNS, WebRTC и анализ угроз</div>
+      <div class="btn-group" style="flex-wrap:wrap;">
+        ${leaks.map(l => `
+          <button class="btn btn-secondary" style="padding:5px 9px; font-size:10px;" onclick="openExternalUrl('${l.url}')">
+            <i class="fa-solid fa-shield-halved"></i> ${l.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  if (data.raw_cli_output) {
+    html += `
+      <div class="cli-console-box">
+        <pre class="cli-output" style="white-space:pre-wrap; font-size:10px;">${data.raw_cli_output}</pre>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+// 21. LEGENDARY OSINT RENDERER
+function renderLegendaryOsintResult(data, container, target) {
+  const tools = data.tools || [];
+  const dorks = data.dorks || [];
+  const steps = data.playbook_steps || [];
+
+  let html = `
+    <!-- Заголовок и Вектор Расследования -->
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-book-bookmark" style="color:var(--primary);"></i> ${data.vector_title || 'Legendary OSINT'}</span>
+        <button class="btn btn-secondary" style="padding:3px 8px; font-size:10px;" onclick="openExternalUrl('${data.repo || 'https://github.com/K2SOsint/Legendary_OSINT'}')">
+          <i class="fa-brands fa-github"></i> K2SOsint Repo
+        </button>
+      </div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🎯 ОБЪЕКТ АНАЛИЗА</div><div class="custom-val" style="color:var(--accent-green); font-weight:800;">${data.target || target}</div></div>
+        <div class="custom-item"><div class="custom-label">🧭 ВЕКТОР СБОРА</div><div class="custom-val" style="color:var(--primary); font-size:12px;">${data.vector_title}</div></div>
+      </div>
+    </div>
+
+    <!-- Рекомендованные Профильные Утилиты -->
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-toolbox" style="color:var(--accent-green);"></i> Рекомендованные утилиты Legendary OSINT (${tools.length})</div>
+      <div class="profiles-grid">
+        ${tools.map(t => `
+          <div class="profile-card">
+            <div style="flex:1; overflow:hidden;">
+              <div class="profile-name">${t.name}</div>
+              <div class="profile-cat">${t.desc}</div>
+            </div>
+            <button class="btn btn-secondary" style="padding:3px 7px; font-size:10px;" onclick="openExternalUrl('${t.url}')">
+              Открыть
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Поисковые Дорки и Опорные Точки (Pivots) -->
+    ${dorks.length > 0 ? `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass-nodes" style="color:var(--accent-yellow);"></i> Поисковая матрица и Pivots</div>
+        <div class="btn-group" style="flex-wrap:wrap;">
+          ${dorks.map(d => `
+            <button class="btn btn-secondary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${d.url}')">
+              ${d.name}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+
+    <!-- Пошаговый План Расследования -->
+    ${steps.length > 0 ? `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-list-check" style="color:var(--primary);"></i> План действий аналитика</div>
+        <div style="font-size:11px; line-height:1.6; color:#cbd5e1; background:#07090e; padding:10px; border-radius:6px; border:1px solid var(--card-border);">
+          ${steps.map(s => `<div>${s}</div>`).join('')}
+        </div>
+      </div>
+    ` : ''}
+  `;
+
+  if (data.raw_cli_output) {
+    html += `
+      <div class="cli-console-box" style="margin-top:8px;">
+        <pre class="cli-output" style="white-space:pre-wrap; font-size:10px;">${data.raw_cli_output}</pre>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+
 function renderCliToolResult(data, container, target) {
   const links = data.quick_links || [];
   const guide = data.install_guide || {};

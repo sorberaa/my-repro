@@ -750,6 +750,28 @@ CATALOG = [
         "desc": "Инструменты для построения графов расследования, визуализации связей и сводных OSINT-панелей.",
         "tools": [
             {
+                "id": "legendary_osint",
+                "name": "📚 Legendary OSINT (Ultimate Recon & Investigation Mindmap)",
+                "repo": "https://github.com/K2SOsint/Legendary_OSINT",
+                "web_url": "https://github.com/K2SOsint/Legendary_OSINT",
+                "purpose": "🗺️ Легендарная база знаний и фреймворк OSINT-расследований: многовекторный сбор по никнеймам, почтам, номерам, компаниям, соцсетям, даркнету, GeoINT и спутникам.",
+                "input": "target (никнейм / email / phone / domain / IP)",
+                "web_runnable": True,
+                "scan_type": "legendary_osint",
+                "install_guide": {
+                    "git": "git clone https://github.com/K2SOsint/Legendary_OSINT.git",
+                    "pip_or_pkg": "# Интерактивная база методологий и инструментов",
+                    "docker": "# Не требуется",
+                    "usage": "Введите любой идентификатор цели для получения индивидуального плана расследования и инструментов",
+                    "notes": "Охватывает все направления OSINT: от социальных сетей до реестров компаний и метаданных."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Сформировать OSINT План",
+                    "action": "scan_legendary_osint"
+                }
+            },
+            {
                 "id": "spiderfoot",
                 "name": "SpiderFoot OSINT Framework",
                 "repo": "https://github.com/smicallef/spiderfoot",
@@ -894,6 +916,28 @@ CATALOG = [
         "title": "🛠️ Швейцарский нож аналитика и веб-утилиты",
         "desc": "Универсальные веб-комбайны для декодирования данных, проверки IP, ASN и интерактивные лаборатории.",
         "tools": [
+            {
+                "id": "myip_toolbox",
+                "name": "🌐 MyIP Toolbox (IP, DNS & WebRTC Leak Analyzer)",
+                "repo": "https://github.com/jason5ng32/MyIP",
+                "web_url": "https://myip.wtf/",
+                "purpose": "⚡ Ультимативный инструментарий анализа IP: проверка утечек DNS/WebRTC, GeoIP, определение хостинга/VPN/Tor, BGP ASN, проверка открытых портов и скорости сети.",
+                "input": "ip / domain",
+                "web_runnable": True,
+                "scan_type": "myip",
+                "install_guide": {
+                    "git": "git clone https://github.com/jason5ng32/MyIP.git\ncd MyIP\nnpm install && npm run build",
+                    "pip_or_pkg": "# Доступен встроенный сканер и онлайн-сервис",
+                    "docker": "docker run -d -p 18966:18966 --name myip jason5ng32/myip:latest",
+                    "usage": "Введите IP-адрес для полной сетевой и GeoIP диагностики",
+                    "notes": "Позволяет моментально выявить реальные утечки IP и провайдера через WebRTC и DNS."
+                },
+                "launch": {
+                    "type": "api",
+                    "label": "⚡ Анализ MyIP в WebApp",
+                    "action": "scan_myip"
+                }
+            },
             {
                 "id": "cyberchef",
                 "name": "CyberChef (GCHQ)",
