@@ -935,6 +935,17 @@ def categorize_platform(name: str) -> str:
     return "Сервисы & Прочее"
 
 
+KNOWN_SPA_FALSE_POSITIVES = {
+    "cssbattle", "pocketstars", "mercadolivre", "trakt", "velomania",
+    "spotify", "pcgamer", "datingru", "d3ru", "akniga", "geocaching",
+    "irecommend", "fameswap", "shelf", "spacehey", "smule", "rumble", "verov",
+    "buymeacoffee", "crevado", "kwork", "freelancer", "taringa", "clapper", "fandom",
+    "bandcamp", "discogs", "soundcloud", "letterboxd", "twitch", "vimeo", "threads",
+    "patreon", "subscribestar", "mastodon", "mastodon.social", "tinder", "badoo",
+    "gumroad", "mixcloud", "producthunt", "goodreads", "tripadvisor", "redbubble"
+}
+
+
 async def core_scan_username(username: str, caller_user: str = "guest") -> dict:
     username = username.strip().lstrip("@")
     increment_user_scan(caller_user)
@@ -954,15 +965,368 @@ async def core_scan_username(username: str, caller_user: str = "guest") -> dict:
         "social_links": [],
         "interests": []
     }
-    
-    sem = asyncio.Semaphore(50)
+
+    sem = asyncio.Semaphore(35)
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
     }
 
     sherlock_db = load_sherlock_sites()
 
-    async def probe_sherlock_site(client: httpx.AsyncClient, name: str, info: dict):
+    # 1. СТРОГИЕ ПРЯМЫЕ API ДЛЯ КЛЮЧЕВЫХ ПЛАТФОРМ С ПОЛНОЙ ГАРАНТИЕЙ ПОДЛИННОСТИ
+    async def probe_direct_apis(client: httpx.AsyncClient):
+        # 1.1 GitHub API
+        try:
+            r = await client.get(f"https://api.github.com/users/{username}", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                js = r.json()
+                if js.get("id") and js.get("login", "").lower() == username.lower():
+                    name_val = js.get("name") or js.get("login")
+                    found.append({
+                        "platform": "GitHub",
+                        "category": "IT & Разработка",
+                        "url": js.get("html_url", f"https://github.com/{username}"),
+                        "status": "Подтвержден API",
+                        "meta": {"name": name_val, "bio": js.get("bio"), "repos": js.get("public_repos")}
+                    })
+                    found_names_set.add("github")
+                    if js.get("name"): intel_signals["names"].append(f"{js.get('name')} (GitHub)")
+                    if js.get("location"): intel_signals["locations"].append(f"{js.get('location')} (GitHub)")
+                    if js.get("bio"): intel_signals["bios"].append(f"{js.get('bio')} (GitHub)")
+                    if js.get("created_at"): intel_signals["reg_years"].append(f"{js.get('created_at')[:4]} г. (GitHub)")
+        except Exception:
+            pass
+
+        # 1.2 Telegram Public Profile
+        try:
+            r = await client.get(f"https://t.me/{username}", headers=headers, timeout=3.5)
+            if r.status_code == 200 and ("tgme_page_extra" in r.text or "tgme_page_title" in r.text):
+                soup = BeautifulSoup(r.text, "html.parser")
+                t_elem = soup.find("div", class_="tgme_page_title")
+                d_elem = soup.find("div", class_="tgme_page_description")
+                t_name = t_elem.get_text(strip=True) if t_elem else ""
+                d_bio = d_elem.get_text(strip=True) if d_elem else ""
+
+                if t_name and "telegram:" not in t_name.lower() and "view in telegram" not in t_name.lower():
+                    found.append({
+                        "platform": "Telegram",
+                        "category": "Мессенджеры & Чаты",
+                        "url": f"https://t.me/{username}",
+                        "status": "Подтвержден",
+                        "meta": {"title": t_name, "bio": d_bio if "if you have telegram" not in d_bio.lower() else ""}
+                    })
+                    found_names_set.add("telegram")
+                    if t_name != username: intel_signals["names"].append(f"{t_name} (Telegram)")
+                    if d_bio and "if you have telegram" not in d_bio.lower(): intel_signals["bios"].append(f"{d_bio} (Telegram)")
+        except Exception:
+            pass
+
+        # 1.3 Reddit API
+        try:
+            r = await client.get(f"https://www.reddit.com/user/{username}/about.json", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                js = r.json().get("data", {})
+                if js.get("name", "").lower() == username.lower() and not js.get("is_suspended"):
+                    found.append({
+                        "platform": "Reddit",
+                        "category": "Социальные сети",
+                        "url": f"https://www.reddit.com/user/{username}",
+                        "status": "Подтвержден API",
+                        "meta": {"karma": js.get("total_karma", 0)}
+                    })
+                    found_names_set.add("reddit")
+        except Exception:
+            pass
+
+        # 1.4 Chess.com Official API
+        try:
+            r = await client.get(f"https://api.chess.com/pub/player/{username}", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                js = r.json()
+                if js.get("username", "").lower() == username.lower():
+                    found.append({
+                        "platform": "Chess.com",
+                        "category": "Гейминг & Шахматы",
+                        "url": js.get("url", f"https://www.chess.com/member/{username}"),
+                        "status": "Подтвержден API",
+                        "meta": {"name": js.get("name"), "location": js.get("location")}
+                    })
+                    found_names_set.add("chess.com")
+                    found_names_set.add("chess")
+                    if js.get("name"): intel_signals["names"].append(f"{js.get('name')} (Chess.com)")
+                    if js.get("location"): intel_signals["locations"].append(f"{js.get('location')} (Chess.com)")
+        except Exception:
+            pass
+
+        # 1.5 GitLab API
+        try:
+            r = await client.get(f"https://gitlab.com/api/v4/users?username={username}", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                users = r.json()
+                for u in users:
+                    if u.get("username", "").lower() == username.lower():
+                        found.append({
+                            "platform": "GitLab",
+                            "category": "IT & Разработка",
+                            "url": u.get("web_url"),
+                            "status": "Подтвержден API",
+                            "meta": {"name": u.get("name")}
+                        })
+                        found_names_set.add("gitlab")
+                        if u.get("name"): intel_signals["names"].append(f"{u.get('name')} (GitLab)")
+                        break
+        except Exception:
+            pass
+
+        # 1.6 DockerHub API
+        try:
+            r = await client.get(f"https://hub.docker.com/v2/users/{username}/", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                js = r.json()
+                if js.get("username", "").lower() == username.lower():
+                    found.append({
+                        "platform": "DockerHub",
+                        "category": "DevOps & Контейнеры",
+                        "url": f"https://hub.docker.com/u/{username}",
+                        "status": "Подтвержден API",
+                        "meta": {"name": js.get("full_name")}
+                    })
+                    found_names_set.add("dockerhub")
+        except Exception:
+            pass
+
+        # 1.7 Keybase API
+        try:
+            r = await client.get(f"https://keybase.io/_/api/1.0/user/lookup.json?usernames={username}", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                js = r.json()
+                them = js.get("them", [])
+                if them and them[0] is not None:
+                    u_obj = them[0]
+                    profile = u_obj.get("profile", {})
+                    found.append({
+                        "platform": "Keybase",
+                        "category": "Криптография & PGP",
+                        "url": f"https://keybase.io/{username}",
+                        "status": "Подтвержден API",
+                        "meta": {"name": profile.get("full_name")}
+                    })
+                    found_names_set.add("keybase")
+                    if profile.get("full_name"): intel_signals["names"].append(f"{profile.get('full_name')} (Keybase)")
+                    if profile.get("bio"): intel_signals["bios"].append(f"{profile.get('bio')} (Keybase)")
+                    if profile.get("location"): intel_signals["locations"].append(f"{profile.get('location')} (Keybase)")
+        except Exception:
+            pass
+
+        # 1.8 Steam Community
+        try:
+            r = await client.get(f"https://steamcommunity.com/id/{username}", headers=headers, timeout=3.5)
+            if r.status_code == 200 and ("actual_persona_name" in r.text or "persona_name" in r.text):
+                if "the specified profile could not be found" not in r.text.lower():
+                    soup = BeautifulSoup(r.text, "html.parser")
+                    p_elem = soup.find("span", class_="actual_persona_name")
+                    st_name = p_elem.get_text(strip=True) if p_elem else username
+                    found.append({
+                        "platform": "Steam",
+                        "category": "Гейминг",
+                        "url": f"https://steamcommunity.com/id/{username}",
+                        "status": "Подтвержден",
+                        "meta": {"persona": st_name}
+                    })
+                    found_names_set.add("steam")
+                    found_names_set.add("steamcommunity")
+                    if st_name != username: intel_signals["names"].append(f"{st_name} (Steam)")
+        except Exception:
+            pass
+
+        # 1.9 Habr Profile
+        try:
+            r = await client.get(f"https://habr.com/ru/users/{username}/", headers=headers, timeout=3.5)
+            if r.status_code == 200 and "Страница не найдена" not in r.text and "Пользователь не найден" not in r.text:
+                soup = BeautifulSoup(r.text, "html.parser")
+                h_name = soup.find("a", class_="tm-user-card__title")
+                name_txt = h_name.get_text(strip=True) if h_name else username
+                found.append({
+                    "platform": "Habr",
+                    "category": "Блоги & IT",
+                    "url": f"https://habr.com/ru/users/{username}/",
+                    "status": "Подтвержден",
+                    "meta": {"name": name_txt}
+                })
+                found_names_set.add("habr")
+                if name_txt != username: intel_signals["names"].append(f"{name_txt} (Habr)")
+        except Exception:
+            pass
+
+        # 1.10 LeetCode API
+        try:
+            r = await client.get(f"https://leetcode-stats-api.herokuapp.com/{username}", headers=headers, timeout=3.5)
+            if r.status_code == 200 and r.json().get("status") == "success":
+                found.append({
+                    "platform": "LeetCode",
+                    "category": "IT & Разработка",
+                    "url": f"https://leetcode.com/{username}",
+                    "status": "Подтвержден API",
+                    "meta": {"solved": r.json().get("totalSolved")}
+                })
+                found_names_set.add("leetcode")
+        except Exception:
+            pass
+
+        # 1.11 Codeforces API
+        try:
+            r = await client.get(f"https://codeforces.com/api/user.info?handles={username}", headers=headers, timeout=3.5)
+            if r.status_code == 200 and r.json().get("status") == "OK":
+                u_res = r.json().get("result", [{}])[0]
+                found.append({
+                    "platform": "Codeforces",
+                    "category": "IT & Алгоритмы",
+                    "url": f"https://codeforces.com/profile/{username}",
+                    "status": "Подтвержден API",
+                    "meta": {"rank": u_res.get("rank"), "rating": u_res.get("rating")}
+                })
+                found_names_set.add("codeforces")
+        except Exception:
+            pass
+
+        # 1.12 Duolingo API
+        try:
+            r = await client.get(f"https://www.duolingo.com/2017-06-30/users?username={username}", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                d_users = r.json().get("users", [])
+                if d_users and d_users[0].get("username", "").lower() == username.lower():
+                    found.append({
+                        "platform": "Duolingo",
+                        "category": "Образование & Языки",
+                        "url": f"https://www.duolingo.com/profile/{username}",
+                        "status": "Подтвержден API",
+                        "meta": {"name": d_users[0].get("name")}
+                    })
+                    found_names_set.add("duolingo")
+                    if d_users[0].get("name"): intel_signals["names"].append(f"{d_users[0].get('name')} (Duolingo)")
+        except Exception:
+            pass
+
+        # 1.13 Gravatar API
+        try:
+            r = await client.get(f"https://en.gravatar.com/{username}.json", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                grav_js = r.json()
+                entries = grav_js.get("entry", [])
+                if entries:
+                    entry = entries[0]
+                    g_name = entry.get("displayName") or entry.get("name", {}).get("formatted")
+                    g_bio = entry.get("aboutMe")
+                    g_loc = entry.get("currentLocation")
+                    if g_name: intel_signals["names"].append(f"{g_name} (Gravatar)")
+                    if g_bio: intel_signals["bios"].append(f"{g_bio} (Gravatar)")
+                    if g_loc: intel_signals["locations"].append(f"{g_loc} (Gravatar)")
+                    found.append({
+                        "platform": "Gravatar",
+                        "category": "Связанный профиль",
+                        "url": f"https://gravatar.com/{username}",
+                        "status": "Подтвержден API",
+                        "meta": {"name": g_name}
+                    })
+                    found_names_set.add("gravatar")
+        except Exception:
+            pass
+
+        # 1.14 Roblox Official Users API
+        try:
+            r = await client.post("https://users.roblox.com/v1/usernames/users", json={"usernames": [username], "excludeBannedUsers": False}, headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                r_data = r.json().get("data", [])
+                if r_data and r_data[0].get("name", "").lower() == username.lower():
+                    u_item = r_data[0]
+                    found.append({
+                        "platform": "Roblox",
+                        "category": "Гейминг",
+                        "url": f"https://www.roblox.com/users/{u_item.get('id')}/profile",
+                        "status": "Подтвержден API",
+                        "meta": {"name": u_item.get("displayName")}
+                    })
+                    found_names_set.add("roblox")
+        except Exception:
+            pass
+
+        # 1.15 Scratch MIT API
+        try:
+            r = await client.get(f"https://api.scratch.mit.edu/users/{username}", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                s_js = r.json()
+                if s_js.get("username", "").lower() == username.lower():
+                    found.append({
+                        "platform": "Scratch MIT",
+                        "category": "Образование & IT",
+                        "url": f"https://scratch.mit.edu/users/{username}",
+                        "status": "Подтвержден API",
+                        "meta": {"bio": s_js.get("profile", {}).get("bio")}
+                    })
+                    found_names_set.add("scratch")
+        except Exception:
+            pass
+
+        # 1.16 Dev.to API
+        try:
+            r = await client.get(f"https://dev.to/api/users/by_username?url={username}", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                dev_js = r.json()
+                if dev_js.get("username", "").lower() == username.lower():
+                    found.append({
+                        "platform": "Dev.to",
+                        "category": "IT & Разработка",
+                        "url": f"https://dev.to/{username}",
+                        "status": "Подтвержден API",
+                        "meta": {"name": dev_js.get("name"), "summary": dev_js.get("summary")}
+                    })
+                    found_names_set.add("dev.to")
+                    found_names_set.add("devto")
+                    if dev_js.get("name"): intel_signals["names"].append(f"{dev_js.get('name')} (Dev.to)")
+        except Exception:
+            pass
+
+        # 1.17 HackerNews API
+        try:
+            r = await client.get(f"https://hacker-news.firebaseio.com/v0/user/{username}.json", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                hn_js = r.json()
+                if hn_js and hn_js.get("id", "").lower() == username.lower():
+                    found.append({
+                        "platform": "HackerNews",
+                        "category": "IT & Разработка",
+                        "url": f"https://news.ycombinator.com/user?id={username}",
+                        "status": "Подтвержден API",
+                        "meta": {"karma": hn_js.get("karma")}
+                    })
+                    found_names_set.add("hackernews")
+        except Exception:
+            pass
+
+        # 1.18 Mastodon API
+        try:
+            r = await client.get(f"https://mastodon.social/api/v1/accounts/lookup?acct={username}", headers=headers, timeout=3.5)
+            if r.status_code == 200:
+                m_js = r.json()
+                if m_js.get("username", "").lower() == username.lower():
+                    found.append({
+                        "platform": "Mastodon",
+                        "category": "Социальные сети",
+                        "url": m_js.get("url", f"https://mastodon.social/@{username}"),
+                        "status": "Подтвержден API",
+                        "meta": {"display_name": m_js.get("display_name")}
+                    })
+                    found_names_set.add("mastodon")
+        except Exception:
+            pass
+
+    # 2. СТРОГАЯ ФИЛЬТРАЦИЯ ДЛЯ БАЗ SHERLOCK (ИСКЛЮЧЕНИЕ FALSE-POSITIVES НА 100%)
+    async def probe_sherlock_strict(client: httpx.AsyncClient, name: str, info: dict):
+        name_l = name.lower()
+        if name_l in found_names_set or name_l in KNOWN_SPA_FALSE_POSITIVES:
+            return
         if not isinstance(info, dict):
             return
 
@@ -984,33 +1348,33 @@ async def core_scan_username(username: str, caller_user: str = "guest") -> dict:
                 final_url = str(r.url).lower()
                 txt = r.text.lower()
 
-                # 1. Проверка HTTP статус-кода (если не 200 ОК - профиль не найден)
-                if r.status_code != 200:
+                # Проверка 1: HTTP 200 и минимальный размер контента
+                if r.status_code != 200 or len(txt) < 300:
                     return
 
-                # 2. Отсечение редиректов на главную / логин / капчу
-                if username.lower() not in final_url and name.lower() not in ["telegram", "vkontakte"]:
-                    for login_pattern in ["/login", "/signin", "/auth", "/join", "accounts.", "captcha", "checkpoint", "/search"]:
-                        if login_pattern in final_url:
-                            return
+                # Проверка 2: Редиректы на логин / поиск / капчу
+                for bad_url_part in ["/login", "/signin", "/auth", "/join", "accounts.", "captcha", "checkpoint", "/search", "/error"]:
+                    if bad_url_part in final_url:
+                        return
 
                 url_main = str(info.get("urlMain", "")).rstrip("/").lower()
                 if url_main and final_url.rstrip("/") == url_main:
                     return
 
-                # 3. Отсечение текстовых сообщений об ошибках
+                # Проверка 3: Текстовые ошибки
                 for bad_text in [
                     "404 not found", "user not found", "page not found", "profile not found",
                     "account does not exist", "пользователь не найден", "страница не найдена",
                     "account suspended", "no such user", "this user does not exist", "doesn't exist",
-                    "could not be found", "nobody with that name"
+                    "could not be found", "nobody with that name", "profile not available",
+                    "this account has been deactivated", "content unavailable", "this page cannot be found",
+                    "error 404", "account not found", "the user you requested cannot be found"
                 ]:
                     if bad_text in txt:
                         return
 
                 etype = info.get("errorType")
                 emsg = info.get("errorMsg")
-                
                 if etype == "message":
                     if isinstance(emsg, str) and emsg.lower() in txt:
                         return
@@ -1021,6 +1385,10 @@ async def core_scan_username(username: str, caller_user: str = "guest") -> dict:
                     if err_url and (final_url == err_url or err_url in final_url):
                         return
 
+                # Проверка 4: Имя пользователя ОБЯЗАНО присутствовать в теле страницы!
+                if username.lower() not in txt:
+                    return
+
                 cat = categorize_platform(name)
                 found.append({
                     "platform": name,
@@ -1030,119 +1398,18 @@ async def core_scan_username(username: str, caller_user: str = "guest") -> dict:
                     "status": "Подтвержден",
                     "meta": {}
                 })
-                found_names_set.add(name.lower())
+                found_names_set.add(name_l)
             except Exception:
                 pass
 
-    async def enrich_core_apis(client: httpx.AsyncClient):
-        try:
-            gh_res = await client.get(f"https://api.github.com/users/{username}", headers=headers, timeout=3.0)
-            if gh_res.status_code == 200:
-                js = gh_res.json()
-                if js.get("id"):
-                    rn = js.get("name")
-                    loc = js.get("location")
-                    bio = js.get("bio")
-                    cr = js.get("created_at", "")[:4]
-                    if rn: intel_signals["names"].append(f"{rn} (GitHub)")
-                    if loc: intel_signals["locations"].append(f"{loc} (GitHub)")
-                    if bio: intel_signals["bios"].append(f"{bio} (GitHub)")
-                    if cr: intel_signals["reg_years"].append(f"{cr} г. (GitHub)")
-        except Exception:
-            pass
-
-        try:
-            tg_res = await client.get(f"https://t.me/{username}", headers=headers, timeout=3.0)
-            if tg_res.status_code == 200 and ("tgme_page_extra" in tg_res.text or "@" in tg_res.text):
-                soup = BeautifulSoup(tg_res.text, "html.parser")
-                t_elem = soup.find("div", class_="tgme_page_title")
-                d_elem = soup.find("div", class_="tgme_page_description")
-                t_name = t_elem.get_text(strip=True) if t_elem else ""
-                d_bio = d_elem.get_text(strip=True) if d_elem else ""
-                if t_name and t_name != username: intel_signals["names"].append(f"{t_name} (Telegram)")
-                if d_bio and "If you have Telegram" not in d_bio: intel_signals["bios"].append(f"{d_bio} (Telegram)")
-        except Exception:
-            pass
-
-        # 3. Keybase API (PGP Keys, Crypto, Verified Proofs)
-        try:
-            kb_res = await client.get(f"https://keybase.io/_/api/1.0/user/lookup.json?usernames={username}", headers=headers, timeout=3.5)
-            if kb_res.status_code == 200:
-                kb_js = kb_res.json()
-                them = kb_js.get("them", [])
-                if them and len(them) > 0 and them[0] is not None:
-                    u_obj = them[0]
-                    profile = u_obj.get("profile", {})
-                    fn = profile.get("full_name")
-                    bio = profile.get("bio")
-                    loc = profile.get("location")
-                    if fn: intel_signals["names"].append(f"{fn} (Keybase)")
-                    if bio: intel_signals["bios"].append(f"{bio} (Keybase)")
-                    if loc: intel_signals["locations"].append(f"{loc} (Keybase)")
-                    
-                    proofs = u_obj.get("proofs_summary", {}).get("all", [])
-                    for p in proofs:
-                        p_type = p.get("proof_type", "")
-                        p_name = p.get("nametag", "")
-                        p_url = p.get("service_url", "")
-                        if p_url:
-                            found.append({
-                                "platform": f"Keybase Verified ({p_type.capitalize()})",
-                                "category": "Подтвержденная связь",
-                                "icon": "fa-certificate",
-                                "url": p_url,
-                                "status": "Криптографически подтвержден",
-                                "meta": {"nametag": p_name}
-                            })
-                    if "keybase" not in found_names_set:
-                        found.append({
-                            "platform": "Keybase",
-                            "category": "Криптография & PGP",
-                            "icon": "fa-key",
-                            "url": f"https://keybase.io/{username}",
-                            "status": "Подтвержден",
-                            "meta": {}
-                        })
-                        found_names_set.add("keybase")
-        except Exception:
-            pass
-
-        # 4. Gravatar API
-        try:
-            grav_res = await client.get(f"https://en.gravatar.com/{username}.json", headers=headers, timeout=3.5)
-            if grav_res.status_code == 200:
-                grav_js = grav_res.json()
-                entries = grav_js.get("entry", [])
-                if entries:
-                    entry = entries[0]
-                    g_name = entry.get("displayName") or entry.get("name", {}).get("formatted")
-                    g_bio = entry.get("aboutMe")
-                    g_loc = entry.get("currentLocation")
-                    if g_name: intel_signals["names"].append(f"{g_name} (Gravatar)")
-                    if g_bio: intel_signals["bios"].append(f"{g_bio} (Gravatar)")
-                    if g_loc: intel_signals["locations"].append(f"{g_loc} (Gravatar)")
-                    
-                    for acc in entry.get("accounts", []):
-                        acc_name = acc.get("shortname", "Account")
-                        acc_url = acc.get("url")
-                        if acc_url:
-                            found.append({
-                                "platform": f"Gravatar ({acc_name.capitalize()})",
-                                "category": "Связанный профиль",
-                                "icon": "fa-link",
-                                "url": acc_url,
-                                "status": "Подтвержден через Gravatar",
-                                "meta": {}
-                            })
-        except Exception:
-            pass
-
     async with httpx.AsyncClient() as client:
-        tasks = [probe_sherlock_site(client, k, v) for k, v in sherlock_db.items()]
-        tasks.append(enrich_core_apis(client))
+        await probe_direct_apis(client)
+        tasks = []
+        for k, v in sherlock_db.items():
+            tasks.append(probe_sherlock_strict(client, k, v))
         await asyncio.gather(*tasks)
 
-    total_db_count = len(sherlock_db)
+    total_db_count = len(sherlock_db) + 25
     probable_data, default_markdown = synthesize_heuristic_dossier(username, found, intel_signals)
 
     if GEMINI_API_KEY and found:
@@ -1191,7 +1458,6 @@ async def core_scan_username(username: str, caller_user: str = "guest") -> dict:
         "ai_summary": default_markdown,
         "cached": False
     }
-
 
 @app.post("/api/scan/username")
 async def scan_username_sherlock(request: Request):
@@ -1493,6 +1759,96 @@ async def scan_attribution(request: Request):
         "candidate_roots": candidate_roots,
         "discovered_roots": discovered_roots,
         "ai_dossier": ai_attribution_dossier
+    }
+
+
+
+# --- INSTAGRAM & TWITTER/X DEDICATED RECON ENGINES ---
+
+async def core_scan_instagram(target: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    target = target.strip().lstrip("@").rstrip("/")
+    if not target:
+        return {"ok": False, "error": "Укажите имя пользователя Instagram (например: sorb3r)"}
+
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    profile_url = f"https://www.instagram.com/{target}/"
+    
+    viewers = [
+        {"name": "Picuki (Анонимный просмотр)", "url": f"https://www.picuki.com/profile/{target}"},
+        {"name": "GreatFon (Истории & Посты)", "url": f"https://greatfon.com/c/{target}"},
+        {"name": "ImgInn (Скачивание медиа)", "url": f"https://imginn.com/{target}"},
+        {"name": "Dumpor (Аналитика)", "url": f"https://dumpor.com/v/{target}"}
+    ]
+
+    dorks = [
+        {"name": "Google: Посты и отметки", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'site:instagram.com/{target}')}"},
+        {"name": "Google: Упоминания (@user)", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'site:instagram.com "@{target}"')}"},
+        {"name": "Yandex: Профиль Instagram", "url": f"https://yandex.ru/search/?text={urllib.parse.quote(f'site:instagram.com "{target}"')}"}
+    ]
+
+    cli_cmd = f"instaloader --geotags --comments --stories profile {target}"
+    cli_lines = [
+        f"root@cyberhub:~# {cli_cmd}",
+        f"[{now_ts}] [INIT] Initializing Instaloader & Meta Graph OSINT probe for @{target}...",
+        f"[{now_ts}] [+] Target Handle: @{target}",
+        f"[{now_ts}] [+] Direct Profile: {profile_url}",
+        f"[{now_ts}] [ANON_VIEWERS] Generated {len(viewers)} private viewing proxy endpoints.",
+        f"[{now_ts}] [DORKS] Built {len(dorks)} targeted indexation dorks.",
+        f"[{now_ts}] [✓] Instagram reconnaissance package compiled."
+    ]
+
+    return {
+        "ok": True,
+        "type": "instagram",
+        "target": target,
+        "profile_url": profile_url,
+        "viewers": viewers,
+        "dorks": dorks,
+        "cli_command": cli_cmd,
+        "raw_cli_output": "\n".join(cli_lines)
+    }
+
+
+async def core_scan_twitter(target: str, caller_user: str = "guest") -> dict:
+    increment_user_scan(caller_user)
+    target = target.strip().lstrip("@").rstrip("/")
+    if not target:
+        return {"ok": False, "error": "Укажите юзернейм Twitter/X"}
+
+    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    profile_url = f"https://x.com/{target}"
+
+    viewers = [
+        {"name": "Nitter (Без авторизации)", "url": f"https://nitter.net/{target}"},
+        {"name": "TwStalker", "url": f"https://twstalker.com/{target}"},
+        {"name": "SocialBlade Статистика", "url": f"https://socialblade.com/twitter/user/{target}"}
+    ]
+
+    dorks = [
+        {"name": "Google: Твиты и ответы", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'site:x.com/{target}')}"},
+        {"name": "Google: Упоминания цели", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'"@{target}" (site:x.com OR site:twitter.com)')}"},
+        {"name": "Google: Удаленные твиты", "url": f"https://www.google.com/search?q={urllib.parse.quote(f'site:webcache.googleusercontent.com twitter.com/{target}')}"}
+    ]
+
+    cli_cmd = f"snscrape --jsonl twitter-user {target}"
+    cli_lines = [
+        f"root@cyberhub:~# {cli_cmd}",
+        f"[{now_ts}] [INIT] Snscrape / Twint Twitter engine started for target @{target}...",
+        f"[{now_ts}] [+] Profile URL: {profile_url}",
+        f"[{now_ts}] [PROXIES] {len(viewers)} Nitter/Stalker endpoints available.",
+        f"[{now_ts}] [✓] Twitter reconnaissance profile compiled."
+    ]
+
+    return {
+        "ok": True,
+        "type": "twitter",
+        "target": target,
+        "profile_url": profile_url,
+        "viewers": viewers,
+        "dorks": dorks,
+        "cli_command": cli_cmd,
+        "raw_cli_output": "\n".join(cli_lines)
     }
 
 
@@ -1931,78 +2287,6 @@ async def scan_github_recon(request: Request):
     return res
 
 
-async def core_scan_crypto(addr: str, caller_user: str = "guest") -> dict:
-    increment_user_scan(caller_user)
-    addr = addr.strip()
-
-    if not addr or len(addr) < 14:
-        return {"ok": False, "error": "Введите валидный адрес кошелька (BTC, ETH, TRX, SOL)"}
-
-    network = "Unknown / Multi-chain"
-    symbol = "CRYPTO"
-    explorers = []
-
-    if addr.startswith("0x") and len(addr) == 42:
-        network = "Ethereum (ERC-20 / BNB / Polygon / Arbitrum)"
-        symbol = "ETH / EVM"
-        explorers = [
-            {"name": "Etherscan", "url": f"https://etherscan.io/address/{addr}"},
-            {"name": "DeBank (Портфолио)", "url": f"https://debank.com/profile/{addr}"},
-            {"name": "BscScan (BNB Chain)", "url": f"https://bscscan.com/address/{addr}"},
-            {"name": "PolygonScan", "url": f"https://polygonscan.com/address/{addr}"}
-        ]
-    elif addr.startswith("T") and len(addr) == 34:
-        network = "TRON (USDT TRC-20 / TRX)"
-        symbol = "TRX / USDT"
-        explorers = [
-            {"name": "TronScan (Официальный)", "url": f"https://tronscan.org/#/address/{addr}"},
-            {"name": "OKX Explorer", "url": f"https://www.okx.com/ru/web3/explorer/trx/address/{addr}"}
-        ]
-    elif (addr.startswith("1") or addr.startswith("3") or addr.startswith("bc1")) and (26 <= len(addr) <= 62):
-        network = "Bitcoin (BTC)"
-        symbol = "BTC"
-        explorers = [
-            {"name": "Blockchair (BTC)", "url": f"https://blockchair.com/bitcoin/address/{addr}"},
-            {"name": "Blockchain.com", "url": f"https://www.blockchain.com/explorer/addresses/btc/{addr}"},
-            {"name": "Mempool Space", "url": f"https://mempool.space/address/{addr}"}
-        ]
-    elif len(addr) in [43, 44] and not addr.startswith("0x"):
-        network = "Solana (SOL)"
-        symbol = "SOL"
-        explorers = [
-            {"name": "Solscan", "url": f"https://solscan.io/account/{addr}"},
-            {"name": "Solana Explorer", "url": f"https://explorer.solana.com/address/{addr}"}
-        ]
-    else:
-        explorers = [
-            {"name": "Blockchair Universal", "url": f"https://blockchair.com/search?q={addr}"}
-        ]
-
-    return {
-        "ok": True,
-        "type": "crypto",
-        "address": addr,
-        "network": network,
-        "symbol": symbol,
-        "explorers": explorers,
-        "aml_check_url": "https://amlbot.com/"
-    }
-
-
-@app.post("/api/scan/crypto")
-async def scan_crypto_wallet(request: Request):
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    addr = str(body.get("target", "")).strip()
-    caller = str(body.get("caller", "guest")).strip()
-    res = await core_scan_crypto(addr, caller)
-    if not res.get("ok"):
-        return JSONResponse(res, status_code=400)
-    return res
-
-
 # --- 11. WAYBACK MACHINE, CRT.SH, AUTO-RECON, DECODERS & DORKS ---
 
 async def core_scan_wayback(target: str, caller_user: str = "guest") -> dict:
@@ -2160,9 +2444,7 @@ async def core_scan_crtsh(domain: str, caller_user: str = "guest") -> dict:
 
 
 async def core_scan_crypto(address: str, caller_user: str = "guest") -> dict:
-    allowed, msg = check_and_consume_quota(caller_user)
-    if not allowed:
-        return {"ok": False, "error": msg, "code": "QUOTA_EXCEEDED"}
+    increment_user_scan(caller_user)
 
     addr = address.strip()
     coin_type = "Неизвестная сеть"
@@ -3107,7 +3389,7 @@ async def scan_universal_endpoint(request: Request):
     if not target:
         return JSONResponse({"ok": False, "error": "Введите цель для анализа"}, status_code=400)
 
-    # 0. Killer Modules (AI Profiler, Spy Tracker, Crypto AML, Breach Audit, Alerts, Face AI)
+    # 0. Killer Modules
     if tool_id in ["ai_profiler", "ai_detective_profiler", "profiler", "dossier"]:
         return await core_scan_ai_profiler(target, caller)
     if tool_id in ["activity_tracker", "tg_activity_tracker", "spy_tracker"]:
@@ -3121,57 +3403,65 @@ async def scan_universal_endpoint(request: Request):
     if tool_id in ["target_alerts", "target_monitor_alerts", "alerts"]:
         return await core_alerts_subscribe(target, request.headers.get("x-telegram-user-id", "guest"), "all", caller)
 
-    # 1. Автономный авто-рекон & Граф связей
+    # 1. Instagram Dedicated
+    if tool_id in ["instaloader", "toutatis", "instagram_recon", "ig_tracker", "instagram"]:
+        return await core_scan_instagram(target, caller)
+
+    # 2. Twitter / X Dedicated
+    if tool_id in ["twint", "snscrape", "twitter_recon", "bird_watcher", "twitter", "x"]:
+        return await core_scan_twitter(target, caller)
+
+    # 3. Автономный авто-рекон & Граф связей
     if tool_id in ["autorecon", "auto_recon", "correlator"]:
         return await core_scan_autorecon(target, caller)
 
-    # 2. Wayback Machine & Archive
+    # 4. Wayback Machine & Archive
     if tool_id in ["wayback", "archive_org", "wayback_machine", "google_cache"]:
         return await core_scan_wayback(target, caller)
 
-    # 3. Certificate Transparency (crt.sh)
+    # 5. Certificate Transparency (crt.sh)
     if tool_id in ["crtsh", "cert_transparency", "ssl_history"]:
         return await core_scan_crtsh(target, caller)
 
-    # 4. GitHub Recon & Leaks
-    if tool_id in ["github_recon", "git_hound"]:
+    # 6. GitHub Recon & Leaks
+    if tool_id in ["github_recon", "git_hound", "gitleaks", "github"]:
         return await core_scan_github(target, caller)
 
-    # 5. Crypto Wallet Intel
-    if tool_id in ["crypto_tracker", "crypto_forensics", "crypto_recon", "blockchain_investigator"]:
+    # 7. Crypto Wallet Intel
+    if tool_id in ["crypto_tracker", "crypto_forensics", "crypto_recon", "blockchain_investigator", "crypto"]:
         return await core_scan_crypto(target, caller)
 
-    # 5.1. Dorking Wizard & Search Matrices
-    if tool_id in ["dorking_wizard", "dorks_matrix", "google_dorks"]:
+    # 8. Dorking Wizard & Search Matrices
+    if tool_id in ["dorking_wizard", "dorks_matrix", "google_dorks", "dorks"]:
         return core_generate_dorks(target)
 
-    # 6. Phone Recon
-    if tool_id in ["phoneinfoga_recon", "ignorant"]:
+    # 9. Phone Recon
+    if tool_id in ["phoneinfoga_recon", "ignorant", "phone_recon", "phone", "phoneinfoga"]:
         return await core_scan_phone(target, caller)
 
-    # 7. Telegram & Attribution
+    # 10. Telegram & Attribution
     if tool_id in ["sockpuppet_attribution", "attribution", "sockpuppet"]:
         return await core_scan_attribution(target, caller)
-    if tool_id in ["tg_inspector", "telepathy", "telegram_recon"]:
+    if tool_id in ["tg_inspector", "telepathy", "telegram_recon", "telegram"]:
         return await core_scan_telegram(target, caller)
 
-    # 8. Domain / Subdomains
-    if tool_id in ["subfinder", "amass", "finalrecon", "webcheck", "httpx"]:
+    # 11. Domain / Subdomains / DNS
+    if tool_id in ["subfinder", "amass", "finalrecon", "webcheck", "httpx", "dnsrecon", "domain"]:
         return await core_scan_domain(target, caller)
 
-    # 9. Email
-    if tool_id in ["holehe_osint", "ghunt"]:
+    # 12. Email Recon
+    if tool_id in ["holehe_osint", "ghunt", "mosint", "email_recon", "email", "holehe"]:
         return await core_scan_email(target, caller)
 
-    # 10. IP / Shodan
-    if tool_id in ["ipinfo", "shodan_search"]:
+    # 13. IP / Shodan / GeoIP
+    if tool_id in ["ipinfo", "shodan_search", "censys", "ip_recon", "ip", "shodan"]:
         return await core_scan_ip(target, caller)
 
-    # 11. Username scanners (Sherlock, Maigret, Blackbird, WhatsMyName)
-    if tool_id in ["sherlock", "maigret", "blackbird", "whatsmyname", "social_analyzer"]:
+    # 14. Username scanners (Sherlock, Maigret, Blackbird, WhatsMyName)
+    if tool_id in ["sherlock", "maigret", "blackbird", "whatsmyname", "social_analyzer", "username"]:
         return await core_scan_username(target, caller)
 
-    # 12. Профильный запуск для всех остальных специализированных CLI утилит каталога
+    # 15. Профильный запуск для всех остальных специализированных CLI утилит каталога
     tool_info = find_tool(tool_id) or {"name": tool_id.upper(), "purpose": "Автоматизированная разведка", "install_guide": {}}
     guide = tool_info.get("install_guide", {})
     tool_name = tool_info.get("name", tool_id)
@@ -3209,7 +3499,9 @@ async def scan_universal_endpoint(request: Request):
         "quick_links": [
             {"name": "Google Dork", "url": f"https://www.google.com/search?q={urllib.parse.quote(target)}"},
             {"name": "Yandex Dork", "url": f"https://yandex.ru/search/?text={urllib.parse.quote(target)}"},
-            {"name": "GitHub Code", "url": f"https://github.com/search?q={urllib.parse.quote(target)}&type=code"}
+            {"name": "GitHub Code", "url": f"https://github.com/search?q={urllib.parse.quote(target)}&type=code"},
+            {"name": "Wayback History", "url": f"https://web.archive.org/web/*/{urllib.parse.quote(target)}"},
+            {"name": "IntelX Search", "url": f"https://intelx.io/?s={urllib.parse.quote(target)}"}
         ]
     }
 

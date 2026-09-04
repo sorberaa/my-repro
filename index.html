@@ -672,63 +672,128 @@ async function executeToolScan(toolId, target) {
 // --- 🌟 БОГАТЫЙ И ИНТЕРАКТИВНЫЙ РЕНДЕРИНГ РЕЗУЛЬТАТОВ С ССЫЛКАМИ ---
 // =====================================================================
 
+// =====================================================================
+// --- 🌟 БОГАТЫЙ И ИНТЕРАКТИВНЫЙ РЕНДЕРИНГ РЕЗУЛЬТАТОВ ВСЕХ УТИЛИТ ---
+// =====================================================================
+
 function renderToolScanResult(data, outBox, target, toolId) {
   if (!outBox) return;
   const type = data.type || '';
   const safeToolId = toolId || data.tool_id || (activeTool ? activeTool.id : '');
 
-  // 1. AI PROFILER & DOSSIER (Полный интерактивный рендер всех платформ и ссылок!)
+  // 1. AI PROFILER & DOSSIER
   if (type === 'ai_profiler' || safeToolId === 'ai_detective_profiler') {
     renderAiProfilerRichResult(data, outBox, target);
     return;
   }
 
-  // 2. ACTIVITY & SLEEP TRACKER
-  if (type === 'activity_tracker' || safeToolId === 'tg_activity_tracker') {
-    renderActivityTrackerResult(data, outBox);
-    return;
-  }
-
-  // 3. CRYPTO AML AUDITOR
-  if (type === 'crypto_aml' || safeToolId === 'crypto_aml_auditor') {
-    renderCryptoAmlResult(data, outBox);
-    return;
-  }
-
-  // 4. BREACH AUDIT
-  if (type === 'breach_audit' || safeToolId === 'digital_hygiene_audit') {
-    renderBreachAuditResult(data, outBox);
-    return;
-  }
-
-  // 5. FACE SEARCH
-  if (type === 'face_search' || safeToolId === 'face_search_ai') {
-    renderFaceSearchResult(data, outBox);
-    return;
-  }
-
-  // 6. DORKS MATRIX
-  if (type === 'dorks') {
-    renderDorksResult(data, outBox);
-    return;
-  }
-
-  // 7. USERNAME / SHERLOCK
+  // 2. USERNAME / SHERLOCK / MAIGRET / SOCIAL
   if (type === 'username') {
     renderProfilesGridResult(data, outBox, target);
     return;
   }
 
-  // 8. GITHUB RECON
+  // 3. INSTAGRAM (INSTALOADER / TOUTATIS)
+  if (type === 'instagram') {
+    renderInstagramResult(data, outBox, target);
+    return;
+  }
+
+  // 4. TWITTER / X (TWINT / SNSCRAPE)
+  if (type === 'twitter') {
+    renderTwitterResult(data, outBox, target);
+    return;
+  }
+
+  // 5. EMAIL (HOLEHE / GHUNT)
+  if (type === 'email') {
+    renderEmailResult(data, outBox, target);
+    return;
+  }
+
+  // 6. PHONE (PHONEINFOGA)
+  if (type === 'phone') {
+    renderPhoneResult(data, outBox, target);
+    return;
+  }
+
+  // 7. DOMAIN / DNS / SUBDOMAINS
+  if (type === 'domain') {
+    renderDomainResult(data, outBox, target);
+    return;
+  }
+
+  // 8. IP / SHODAN / GEOIP
+  if (type === 'ip') {
+    renderIpResult(data, outBox, target);
+    return;
+  }
+
+  // 9. CRYPTO WALLET
+  if (type === 'crypto') {
+    renderCryptoResult(data, outBox, target);
+    return;
+  }
+
+  // 10. WAYBACK MACHINE & ARCHIVES
+  if (type === 'wayback') {
+    renderWaybackResult(data, outBox, target);
+    return;
+  }
+
+  // 11. CRTSH SSL CERTIFICATES
+  if (type === 'crtsh') {
+    renderCrtshResult(data, outBox, target);
+    return;
+  }
+
+  // 12. GITHUB RECON
   if (type === 'github') {
     renderGithubResult(data, outBox);
     return;
   }
 
-  // 9. DOMAIN / EMAIL / PHONE / IP / FALLBACK
-  renderGenericOrCliResult(data, outBox);
+  // 13. ACTIVITY & SLEEP TRACKER
+  if (type === 'activity_tracker' || safeToolId === 'tg_activity_tracker') {
+    renderActivityTrackerResult(data, outBox);
+    return;
+  }
+
+  // 14. CRYPTO AML AUDITOR
+  if (type === 'crypto_aml' || safeToolId === 'crypto_aml_auditor') {
+    renderCryptoAmlResult(data, outBox);
+    return;
+  }
+
+  // 15. BREACH AUDIT
+  if (type === 'breach_audit' || safeToolId === 'digital_hygiene_audit') {
+    renderBreachAuditResult(data, outBox);
+    return;
+  }
+
+  // 16. FACE SEARCH
+  if (type === 'face_search' || safeToolId === 'face_search_ai') {
+    renderFaceSearchResult(data, outBox);
+    return;
+  }
+
+  // 17. DORKS MATRIX
+  if (type === 'dorks') {
+    renderDorksResult(data, outBox);
+    return;
+  }
+
+  // 18. TELEGRAM
+  if (type === 'telegram' || type === 'telegram_id') {
+    renderTelegramResult(data, outBox, target);
+    return;
+  }
+
+  // 19. CLI UTILITY HUB / FALLBACK
+  renderCliToolResult(data, outBox, target);
 }
 
+// 1. AI PROFILER
 function renderAiProfilerRichResult(data, container, target) {
   const profiles = data.profiles || [];
   const emails = data.emails || [];
@@ -738,7 +803,6 @@ function renderAiProfilerRichResult(data, container, target) {
   const trustLabel = scamScore < 30 ? '🟢 Высокая подлинность (High Trust)' : (scamScore < 60 ? '🟡 Средний риск' : '🔴 Подозрение на фейк / Scam');
 
   let html = `
-    <!-- Главные Метрики Досье -->
     <div class="custom-card">
       <div class="custom-card-title"><i class="fa-solid fa-brain" style="color:var(--primary);"></i> AI Досье и Цифровой След: @${target}</div>
       <div class="custom-grid">
@@ -762,22 +826,19 @@ function renderAiProfilerRichResult(data, container, target) {
     </div>
   `;
 
-  // СЕТКА НАЙДЕННЫХ АККАУНТОВ С ПРЯМЫМИ ССЫЛКАМИ И КНОПКАМИ ПЕРЕХОДА
   if (profiles.length > 0) {
     html += `
       <div class="custom-card">
         <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
-          <span><i class="fa-solid fa-link" style="color:var(--primary);"></i> Обнаруженные публичные аккаунты (${profiles.length})</span>
-          <span style="font-size:10px; color:var(--text-muted);">Кликните для перехода</span>
+          <span><i class="fa-solid fa-link" style="color:var(--primary);"></i> Подтвержденные публичные аккаунты (${profiles.length})</span>
+          <span style="font-size:10px; color:var(--text-muted);">Прямой переход</span>
         </div>
         <div class="profiles-grid">
     `;
-
     profiles.forEach(p => {
       const platName = p.platform || 'Сервис';
       const platUrl = p.url || '#';
       const platCat = p.category || 'Профиль';
-
       html += `
         <div class="profile-card">
           <div style="flex:1; overflow:hidden;">
@@ -790,15 +851,13 @@ function renderAiProfilerRichResult(data, container, target) {
         </div>
       `;
     });
-
     html += `</div></div>`;
   }
 
-  // АНАЛИТИЧЕСКИЙ РАЗБОР
   html += `
     <div class="custom-card">
       <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
-        <span><i class="fa-solid fa-file-lines" style="color:var(--primary);"></i> Аналитический разбор и заключение</span>
+        <span><i class="fa-solid fa-file-lines" style="color:var(--primary);"></i> Экспертное заключение</span>
         <button class="btn btn-secondary" style="padding:3px 8px; font-size:10px;" onclick="copyText(this, \`${(data.dossier_text || '').replace(/`/g, '\\`')}\`)">
           <i class="fa-solid fa-copy"></i> Копировать
         </button>
@@ -806,24 +865,34 @@ function renderAiProfilerRichResult(data, container, target) {
       <div style="font-size:11px; line-height:1.6; color:#cbd5e1; white-space:pre-wrap; background:#07090e; padding:10px; border-radius:6px; border:1px solid var(--card-border);">${data.dossier_text || 'Досье сформировано успешно.'}</div>
     </div>
   `;
-
   container.innerHTML = html;
 }
 
+// 2. USERNAME PROFILES GRID
 function renderProfilesGridResult(data, container, target) {
   const profiles = data.profiles || [];
   let html = `
     <div class="custom-card">
       <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Результаты поиска по никнейму "${target}"</div>
-      <div style="font-size:11px; color:var(--accent-green); font-weight:700; margin-bottom:8px;">Найдено совпадений: ${data.found_count || profiles.length} из ${data.total_checked || '750+'} баз</div>
-      <div class="profiles-grid">
+      <div style="font-size:11px; color:var(--accent-green); font-weight:700; margin-bottom:8px;">Найдено подтвержденных аккаунтов: ${data.found_count || profiles.length} из ${data.total_checked || '750+'} баз</div>
   `;
 
+  if (profiles.length === 0) {
+    html += `
+      <div style="font-size:12px; color:var(--text-muted); padding:10px; text-align:center; background:#07090e; border-radius:6px; border:1px solid var(--card-border);">
+        🔍 По никнейму <b>@${target}</b> активных подтвержденных аккаунтов не обнаружено.
+      </div>
+    </div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  html += `<div class="profiles-grid">`;
   profiles.forEach(p => {
     html += `
       <div class="profile-card">
         <div style="flex:1; overflow:hidden;">
-          <div class="profile-name">${p.platform}</div>
+          <div class="profile-name"><i class="fa-solid fa-circle-check" style="font-size:9px; color:var(--accent-green); margin-right:4px;"></i>${p.platform}</div>
           <div class="profile-cat">${p.category || 'Профиль'}</div>
         </div>
         <button class="btn btn-secondary" style="padding:3px 7px; font-size:10px;" onclick="openExternalUrl('${p.url}')">
@@ -832,149 +901,480 @@ function renderProfilesGridResult(data, container, target) {
       </div>
     `;
   });
-
   html += `</div></div>`;
   container.innerHTML = html;
 }
 
-function renderGithubResult(data, container) {
-  const ems = data.emails_discovered || [];
+// 3. INSTAGRAM DEDICATED RENDERER
+function renderInstagramResult(data, container, target) {
+  const viewers = data.viewers || [];
+  const dorks = data.dorks || [];
+
   let html = `
     <div class="custom-card">
-      <div class="custom-card-title"><i class="fa-brands fa-github" style="color:var(--primary);"></i> GitHub Профиль & Коммит-Email</div>
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-brands fa-instagram" style="color:#e1306c;"></i> Instagram OSINT: @${data.target}</span>
+        <button class="btn btn-primary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${data.profile_url}')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Открыть Instagram
+        </button>
+      </div>
       <div class="custom-grid">
-        <div class="custom-item"><div class="custom-label">👤 Логин</div><div class="custom-val">${data.login || '—'}</div></div>
-        <div class="custom-item"><div class="custom-label">🪪 ФИО</div><div class="custom-val">${data.name || '—'}</div></div>
-        <div class="custom-item"><div class="custom-label">📦 Репозиториев</div><div class="custom-val">${data.public_repos_count || 0}</div></div>
-        <div class="custom-item"><div class="custom-label">📍 Локация</div><div class="custom-val">${data.location || 'Скрыта'}</div></div>
+        <div class="custom-item"><div class="custom-label">🎯 ЦЕЛЬ</div><div class="custom-val">@${data.target}</div></div>
+        <div class="custom-item"><div class="custom-label">🛡️ ПРЯМАЯ ССЫЛКА</div><div class="custom-val" style="color:var(--primary);"><a href="${data.profile_url}" target="_blank" style="color:var(--primary); text-decoration:none;">instagram.com/${data.target}</a></div></div>
+      </div>
+    </div>
+
+    <!-- Анонимные Просмотрщики Историй и Постов -->
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-eye-slash" style="color:var(--primary);"></i> Анонимный просмотр без регистрации (Web Viewers)</div>
+      <div class="btn-group" style="flex-wrap:wrap;">
+        ${viewers.map(v => `
+          <button class="btn btn-secondary" style="padding:5px 10px; font-size:10px;" onclick="openExternalUrl('${v.url}')">
+            <i class="fa-solid fa-globe"></i> ${v.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Google & Yandex Дорки Instagram -->
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass-chart" style="color:var(--accent-yellow);"></i> Поисковая матрица постов и отметок</div>
+      <div class="btn-group" style="flex-wrap:wrap;">
+        ${dorks.map(d => `
+          <button class="btn btn-secondary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${d.url}')">
+            ${d.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Консольная команда Instaloader -->
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-terminal" style="color:var(--primary);"></i> Локальный запуск Instaloader CLI</span>
+        <button class="btn btn-secondary" style="padding:3px 7px; font-size:9px;" onclick="copyText(this, '${data.cli_command}')">
+          <i class="fa-solid fa-copy"></i> Скопировать CLI
+        </button>
+      </div>
+      <div class="cli-console-box" style="margin-top:5px;">
+        <pre class="cli-output" style="margin:0; font-size:11px; white-space:pre-wrap;">${data.cli_command}</pre>
       </div>
     </div>
   `;
-  if (ems.length > 0) {
+
+  container.innerHTML = html;
+}
+
+// 4. TWITTER / X DEDICATED RENDERER
+function renderTwitterResult(data, container, target) {
+  const viewers = data.viewers || [];
+  const dorks = data.dorks || [];
+
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-brands fa-x-twitter" style="color:#fff;"></i> Twitter / X OSINT: @${data.target}</span>
+        <button class="btn btn-primary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${data.profile_url}')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Открыть X.com
+        </button>
+      </div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🎯 ЦЕЛЬ</div><div class="custom-val">@${data.target}</div></div>
+        <div class="custom-item"><div class="custom-label">🛡️ ПРЯМАЯ ССЫЛКА</div><div class="custom-val"><a href="${data.profile_url}" target="_blank" style="color:var(--primary); text-decoration:none;">x.com/${data.target}</a></div></div>
+      </div>
+    </div>
+
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-feather" style="color:var(--primary);"></i> Nitter & Альтернативные зеркала</div>
+      <div class="btn-group" style="flex-wrap:wrap;">
+        ${viewers.map(v => `
+          <button class="btn btn-secondary" style="padding:5px 10px; font-size:10px;" onclick="openExternalUrl('${v.url}')">
+            ${v.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass-chart" style="color:var(--accent-yellow);"></i> Индексация твитов и упоминаний</div>
+      <div class="btn-group" style="flex-wrap:wrap;">
+        ${dorks.map(d => `
+          <button class="btn btn-secondary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${d.url}')">
+            ${d.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-terminal" style="color:var(--primary);"></i> Snscrape CLI Команда</span>
+        <button class="btn btn-secondary" style="padding:3px 7px; font-size:9px;" onclick="copyText(this, '${data.cli_command}')">
+          <i class="fa-solid fa-copy"></i> Копировать
+        </button>
+      </div>
+      <div class="cli-console-box" style="margin-top:5px;">
+        <pre class="cli-output" style="margin:0; font-size:11px; white-space:pre-wrap;">${data.cli_command}</pre>
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+// 5. EMAIL RECON RENDERER
+function renderEmailResult(data, container, target) {
+  const d = data.data || data;
+  const accounts = d.linked_accounts || [];
+  const gravProfile = d.gravatar_profile || {};
+
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-envelope" style="color:var(--primary);"></i> Email Разведка: ${d.email || target}</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🌐 ДОМЕН</div><div class="custom-val">${d.domain || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">📬 MX СЕРВЕРЫ</div><div class="custom-val" style="color:${d.mx_found ? 'var(--accent-green)' : 'var(--danger)'};">${d.mx_found ? 'Обнаружены (Активен)' : 'Не найдены'}</div></div>
+        <div class="custom-item"><div class="custom-label">🖼️ GRAVATAR АВАТАР</div><div class="custom-val">${d.gravatar ? '🟢 Привязан' : '⚪ Нет'}</div></div>
+        <div class="custom-item"><div class="custom-label">📍 ДОМЕННЫЕ IP</div><div class="custom-val">${(d.domain_ips || []).join(', ') || '—'}</div></div>
+      </div>
+    </div>
+  `;
+
+  if (gravProfile.name || gravProfile.bio || accounts.length > 0) {
     html += `
-      <div class="custom-card" style="border-color:var(--accent-yellow);">
-        <div class="custom-card-title" style="color:var(--accent-yellow);"><i class="fa-solid fa-envelope"></i> Найденные Email адреса</div>
-        <div class="btn-group">
-          ${ems.map(e => `<span class="badge badge-api" style="padding:4px 8px; font-size:11px;">✉️ ${e}</span>`).join('')}
-        </div>
-      </div>
-    `;
-  }
-  container.innerHTML = html;
-}
-
-function renderActivityTrackerResult(data, container) {
-  let html = `
-    <div class="custom-card">
-      <div class="custom-card-title"><i class="fa-solid fa-clock" style="color:var(--accent-yellow);"></i> Суточный цикл активности & Фаза сна: @${data.target}</div>
-      <div class="custom-grid">
-        <div class="custom-item"><div class="custom-label">🕒 ПИКИ АКТИВНОСТИ</div><div class="custom-val">${data.peak_hours || '14:00 - 23:00'}</div></div>
-        <div class="custom-item"><div class="custom-label">🌙 ФАЗА СНА</div><div class="custom-val">${data.sleep_phase || '02:00 - 08:30'}</div></div>
-        <div class="custom-item"><div class="custom-label">🌍 ЧАСОВОЙ ПОЯС</div><div class="custom-val">${data.estimated_timezone || 'UTC+2 / UTC+3'}</div></div>
-        <div class="custom-item"><div class="custom-label">📊 ИНТЕНСИВНОСТЬ</div><div class="custom-val" style="color:var(--accent-green);">${data.activity_score || '85%'} (Высокая)</div></div>
-      </div>
-    </div>
-  `;
-  container.innerHTML = html;
-}
-
-function renderCryptoAmlResult(data, container) {
-  const riskColor = (data.aml_risk_score || 0) < 30 ? 'var(--accent-green)' : ((data.aml_risk_score || 0) < 65 ? 'var(--accent-yellow)' : 'var(--danger)');
-  let html = `
-    <div class="custom-card">
-      <div class="custom-card-title"><i class="fa-solid fa-shield-halved" style="color:var(--accent-green);"></i> Результат AML-аудита: ${data.address}</div>
-      <div class="custom-grid">
-        <div class="custom-item"><div class="custom-label">🚨 ИНДЕКС РИСКА AML</div><div class="custom-val" style="color:${riskColor}; font-size:14px;">${data.aml_risk_score || 0}% (${data.risk_level || 'Clean'})</div></div>
-        <div class="custom-item"><div class="custom-label">🪙 БЛОКЧЕЙН</div><div class="custom-val">${data.coin || 'Crypto'}</div></div>
-      </div>
-      <div style="margin-top:8px; font-size:11px; color:#cbd5e1; line-height:1.5;"><b>Рекомендация:</b> ${data.recommendation || 'Транзакции разрешены.'}</div>
-    </div>
-  `;
-  container.innerHTML = html;
-}
-
-function renderBreachAuditResult(data, container) {
-  const leaks = data.leaks_found || [];
-  let html = `
-    <div class="custom-card">
-      <div class="custom-card-title"><i class="fa-solid fa-user-shield" style="color:#a855f7;"></i> Аудит утечек данных: ${data.target}</div>
-      <div style="font-size:11px; color:${data.exposure_index > 50 ? 'var(--danger)' : 'var(--accent-green)'}; font-weight:800; margin-bottom:8px;">
-        Индекс уязвимости: ${data.exposure_index || 0}% (${data.verdict || 'Чисто'})
-      </div>
-      <div class="profiles-grid">
-        ${leaks.map(l => `
-          <div class="profile-card">
-            <div class="profile-name" style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> ${l.source}</div>
-            <div class="profile-cat">${l.leaked}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-  container.innerHTML = html;
-}
-
-function renderFaceSearchResult(data, container) {
-  const matches = data.matches || [];
-  let html = `
-    <div class="custom-card">
-      <div class="custom-card-title"><i class="fa-solid fa-user-astronaut" style="color:var(--cyan);"></i> Результаты биометрического поиска Face AI</div>
-      <div class="custom-grid">
-        <div class="custom-item"><div class="custom-label">🤖 ВЕРОЯТНОСТЬ AI ДИПФЕЙКА</div><div class="custom-val">${data.deepfake_probability || '12%'}</div></div>
-        <div class="custom-item"><div class="custom-label">👤 ОЦЕНКА ВОЗРАСТА</div><div class="custom-val">${data.estimated_age || '23-28 лет'}</div></div>
-      </div>
-      <div class="profiles-grid" style="margin-top:8px;">
-        ${matches.map(m => `
-          <div class="profile-card">
-            <div style="flex:1; overflow:hidden;">
-              <div class="profile-name">${m.platform}</div>
-              <div class="profile-cat">Сходство: ${m.similarity}</div>
-            </div>
-            <button class="btn btn-secondary" style="padding:3px 7px; font-size:10px;" onclick="openExternalUrl('${m.url}')">Открыть</button>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-  container.innerHTML = html;
-}
-
-function renderDorksResult(data, container) {
-  let html = `<div class="custom-card"><div class="custom-card-title"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-yellow);"></i> Матрица Google & Yandex Дорков</div>`;
-  (data.categories || []).forEach(cat => {
-    html += `<div style="font-size:11px; font-weight:800; color:#fff; margin:10px 0 4px;">${cat.category}</div>`;
-    (cat.dorks || []).forEach(d => {
-      html += `
-        <div style="background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:6px 8px; margin-bottom:5px; font-size:10px;">
-          <div style="color:#cbd5e1; font-weight:700; margin-bottom:2px;">${d.title}</div>
-          <div style="font-family:monospace; color:var(--primary); margin-bottom:4px; word-break:break-all;">${d.dork}</div>
-          <div class="btn-group">
-            <button class="btn btn-primary" style="padding:2px 6px; font-size:9px;" onclick="openExternalUrl('${d.google}')">Google</button>
-            <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px;" onclick="openExternalUrl('${d.yandex}')">Яндекс</button>
-            <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px;" onclick="copyText(this, \`${d.dork.replace(/`/g, '\\`')}\`)">Копировать</button>
-          </div>
-        </div>
-      `;
-    });
-  });
-  html += `</div>`;
-  container.innerHTML = html;
-}
-
-function renderGenericOrCliResult(data, container) {
-  if (data.raw_cli_output) {
-    container.innerHTML = `
-      <div class="cli-console-box">
-        <pre class="cli-output">${data.raw_cli_output}</pre>
-      </div>
-    `;
-  } else {
-    container.innerHTML = `
       <div class="custom-card">
-        <pre style="font-family:monospace; font-size:11px; color:#cbd5e1; white-space:pre-wrap;">${JSON.stringify(data, null, 2)}</pre>
+        <div class="custom-card-title"><i class="fa-solid fa-id-card" style="color:var(--accent-yellow);"></i> Профиль Gravatar & Связанные сервисы</div>
+        ${gravProfile.name ? `<div style="font-size:12px; font-weight:700; color:#fff; margin-bottom:4px;">👤 Имя: ${gravProfile.name}</div>` : ''}
+        ${gravProfile.location ? `<div style="font-size:11px; color:#94a3b8; margin-bottom:4px;">📍 Локация: ${gravProfile.location}</div>` : ''}
+        ${gravProfile.bio ? `<div style="font-size:11px; color:#cbd5e1; margin-bottom:8px; font-style:italic;">"${gravProfile.bio}"</div>` : ''}
+        ${accounts.length > 0 ? `
+          <div class="profiles-grid" style="margin-top:6px;">
+            ${accounts.map(a => `
+              <div class="profile-card">
+                <div class="profile-name">${a.name}</div>
+                <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px;" onclick="openExternalUrl('${a.url}')">Открыть</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
       </div>
     `;
   }
+
+  if (data.raw_cli_output) {
+    html += `
+      <div class="cli-console-box">
+        <pre class="cli-output" style="white-space:pre-wrap; font-size:10px;">${data.raw_cli_output}</pre>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+// 6. PHONE RECON RENDERER
+function renderPhoneResult(data, container, target) {
+  const d = data.data || data;
+  const rawDigits = (d.clean_phone || target || '').replace(/\D/g, '');
+
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-phone" style="color:var(--accent-green);"></i> OSINT Телефона: ${d.raw_phone || target}</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🌍 СТРАНА</div><div class="custom-val">${d.country || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">🏢 ОПЕРАТОР / CARRIER</div><div class="custom-val">${d.carrier || 'Не определен'}</div></div>
+        <div class="custom-item"><div class="custom-label">📍 РЕГИОН / ГОРОД</div><div class="custom-val">${d.location || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">🕒 ЧАСОВОЙ ПОЯС</div><div class="custom-val">${d.timezones || '—'}</div></div>
+      </div>
+    </div>
+
+    <!-- Быстрые действия с номером -->
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-bolt" style="color:var(--primary);"></i> Прямые переходы и мессенджеры</div>
+      <div class="btn-group" style="flex-wrap:wrap;">
+        <button class="btn btn-primary" style="padding:5px 10px; font-size:10px;" onclick="openExternalUrl('https://wa.me/${rawDigits}')">
+          <i class="fa-brands fa-whatsapp"></i> Чат WhatsApp
+        </button>
+        <button class="btn btn-secondary" style="padding:5px 10px; font-size:10px;" onclick="openExternalUrl('https://t.me/+${rawDigits}')">
+          <i class="fa-brands fa-telegram"></i> Поиск в Telegram
+        </button>
+        <button class="btn btn-secondary" style="padding:5px 10px; font-size:10px;" onclick="openExternalUrl('https://www.google.com/search?q=${encodeURIComponent('\"' + (d.clean_phone || target) + '\"')}')">
+          <i class="fa-brands fa-google"></i> Google Поиск
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (data.raw_cli_output) {
+    html += `
+      <div class="cli-console-box">
+        <pre class="cli-output" style="white-space:pre-wrap; font-size:10px;">${data.raw_cli_output}</pre>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+// 7. DOMAIN RENDERER
+function renderDomainResult(data, container, target) {
+  const d = data.data || data;
+  const subs = d.subdomains_discovered || d.subdomains || [];
+
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-globe" style="color:var(--primary);"></i> Доменная разведка: ${d.domain || target}</span>
+        <button class="btn btn-primary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('https://${d.domain || target}')">
+          Открыть сайт
+        </button>
+      </div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🖥️ IP АДРЕСА (A)</div><div class="custom-val">${(d.a_records || []).join(', ') || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">📬 ПОЧТОВЫЕ СЕРВЕРЫ (MX)</div><div class="custom-val">${(d.mx_records || []).slice(0, 2).join(', ') || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">🔒 HTTPS СТАТУС</div><div class="custom-val" style="color:var(--accent-green);">${d.http_status ? `HTTP ${d.http_status}` : '200 OK'}</div></div>
+        <div class="custom-item"><div class="custom-label">📜 ПОДДОМЕНОВ</div><div class="custom-val" style="color:var(--primary); font-weight:700;">${subs.length} шт.</div></div>
+      </div>
+    </div>
+  `;
+
+  if (subs.length > 0) {
+    html += `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-sitemap" style="color:var(--primary);"></i> Обнаруженные поддомены (${subs.length})</div>
+        <div class="profiles-grid" style="max-height:180px; overflow-y:auto;">
+          ${subs.map(s => `
+            <div class="profile-card">
+              <div class="profile-name">${s}</div>
+              <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px;" onclick="openExternalUrl('https://${s}')">Перейти</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+// 8. IP / SHODAN RENDERER
+function renderIpResult(data, container, target) {
+  const d = data.data || data;
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-network-wired" style="color:var(--primary);"></i> Инфраструктура IP: ${d.ip || target}</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">📍 ГЕОЛОКАЦИЯ</div><div class="custom-val">${d.country || 'Global'} ${d.city ? `(${d.city})` : ''}</div></div>
+        <div class="custom-item"><div class="custom-label">🏢 ПРОВАЙДЕР / ISP</div><div class="custom-val">${d.isp || d.org || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">🔢 ASN АВТОНОМНАЯ СИСТЕМА</div><div class="custom-val">${d.as || d.asn || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">🌐 REVERSE DNS</div><div class="custom-val">${d.reverse || '—'}</div></div>
+      </div>
+    </div>
+
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-shield-halved" style="color:var(--accent-yellow);"></i> Проверка портов и уязвимостей</div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" style="padding:5px 10px; font-size:10px;" onclick="openExternalUrl('https://www.shodan.io/host/${d.ip || target}')">
+          <i class="fa-solid fa-eye"></i> Shodan Host
+        </button>
+        <button class="btn btn-secondary" style="padding:5px 10px; font-size:10px;" onclick="openExternalUrl('https://www.abuseipdb.com/check/${d.ip || target}')">
+          <i class="fa-solid fa-shield-virus"></i> AbuseIPDB
+        </button>
+        <button class="btn btn-secondary" style="padding:5px 10px; font-size:10px;" onclick="openExternalUrl('https://bgp.he.net/ip/${d.ip || target}')">
+          <i class="fa-solid fa-route"></i> BGP Routing
+        </button>
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+// 9. CRYPTO RENDERER
+function renderCryptoResult(data, container, target) {
+  const d = data.data || data;
+  const explorers = d.explorers || [];
+
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-brands fa-bitcoin" style="color:var(--accent-yellow);"></i> Криптокошелек: ${d.symbol || 'CRYPTO'}</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🪙 СЕТЬ</div><div class="custom-val" style="color:var(--primary);">${d.network || d.coin_type || 'Multi-Chain'}</div></div>
+        <div class="custom-item"><div class="custom-label">💰 ТЕКУЩИЙ БАЛАНС</div><div class="custom-val" style="color:var(--accent-green); font-weight:800;">${d.balance || '0.00'}</div></div>
+        <div class="custom-item"><div class="custom-label">📊 ВСЕГО ТРАНЗАКЦИЙ</div><div class="custom-val">${d.tx_count || 0}</div></div>
+        <div class="custom-item"><div class="custom-label">🕒 ПОСЛЕДНЯЯ АКТИВНОСТЬ</div><div class="custom-val">${d.last_seen || '—'}</div></div>
+      </div>
+    </div>
+  `;
+
+  if (explorers.length > 0 || d.explorer_url) {
+    html += `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-arrow-up-right-from-square" style="color:var(--primary);"></i> Блокчейн Эксплореры</div>
+        <div class="btn-group" style="flex-wrap:wrap;">
+          ${explorers.map(e => `
+            <button class="btn btn-secondary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${e.url}')">
+              ${e.name}
+            </button>
+          `).join('')}
+          ${d.explorer_url && explorers.length === 0 ? `
+            <button class="btn btn-primary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${d.explorer_url}')">
+              Открыть в Эксплорере
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+// 10. WAYBACK MACHINE RENDERER
+function renderWaybackResult(data, container, target) {
+  const snaps = data.snapshots || [];
+  const latest = data.latest_snapshot || {};
+  const links = data.archive_links || {};
+
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);"></i> Архивные снимки Wayback Machine: ${data.target || target}</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">📦 ВСЕГО СНИМКОВ В CDX</div><div class="custom-val" style="color:var(--primary);">${snaps.length} шт.</div></div>
+        <div class="custom-item"><div class="custom-label">🕒 ПОСЛЕДНИЙ СНИМОК</div><div class="custom-val">${latest.timestamp || (snaps[0] ? snaps[0].timestamp : '—')}</div></div>
+      </div>
+    </div>
+
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-box-archive" style="color:var(--accent-yellow);"></i> Сервисы веб-архивации</div>
+      <div class="btn-group" style="flex-wrap:wrap;">
+        <button class="btn btn-primary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${links.wayback_calendar || `https://web.archive.org/web/*/${data.target}`}')">
+          Календарь Archive.org
+        </button>
+        <button class="btn btn-secondary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${links.archive_today || `https://archive.today/${data.target}`}')">
+          Archive.today
+        </button>
+        <button class="btn btn-secondary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${links.google_cache || `https://webcache.googleusercontent.com/search?q=cache:${data.target}`}')">
+          Google Кэш
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (snaps.length > 0) {
+    html += `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-camera-retro" style="color:var(--primary);"></i> Сохраненные исторические версии</div>
+        <div class="profiles-grid" style="max-height:180px; overflow-y:auto;">
+          ${snaps.map(s => `
+            <div class="profile-card">
+              <div style="flex:1; overflow:hidden;">
+                <div class="profile-name">${s.timestamp}</div>
+                <div class="profile-cat">HTTP ${s.status} | ${s.mimetype}</div>
+              </div>
+              <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px;" onclick="openExternalUrl('${s.view_url}')">Смотреть</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+// 11. CRTSH RENDERER
+function renderCrtshResult(data, container, target) {
+  const subs = data.subdomains || [];
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-certificate" style="color:var(--primary);"></i> SSL Certificate Transparency: ${data.domain || target}</div>
+      <div style="font-size:11px; color:var(--accent-green); font-weight:700; margin-bottom:8px;">Извлечено поддоменов: ${data.total_subdomains || subs.length}</div>
+      <div class="profiles-grid" style="max-height:220px; overflow-y:auto;">
+        ${subs.map(s => `
+          <div class="profile-card">
+            <div class="profile-name">${s}</div>
+            <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px;" onclick="openExternalUrl('https://${s}')">Открыть</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+// 18. TELEGRAM RENDERER
+function renderTelegramResult(data, container, target) {
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-brands fa-telegram" style="color:var(--primary);"></i> Telegram Профиль: @${data.username || target}</span>
+        <button class="btn btn-primary" style="padding:4px 8px; font-size:10px;" onclick="openExternalUrl('${data.url || `https://t.me/${data.username || target}`}')">
+          Открыть в Telegram
+        </button>
+      </div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">👤 НАЗВАНИЕ / ИМЯ</div><div class="custom-val">${data.title || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">🏷️ ТИП АККАУНТА</div><div class="custom-val">${data.account_type || 'Пользователь'}</div></div>
+        ${data.estimated_year ? `<div class="custom-item"><div class="custom-label">📅 ПЕРИОД СОЗДАНИЯ</div><div class="custom-val">${data.estimated_year}</div></div>` : ''}
+      </div>
+      ${data.description ? `<div style="margin-top:8px; font-size:11px; color:#cbd5e1; background:#07090e; padding:8px; border-radius:6px; border:1px solid var(--card-border);"><b>Описание:</b> ${data.description}</div>` : ''}
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+// 19. CLI UTILITY HUB RENDERER (Для всех утилит из каталога)
+function renderCliToolResult(data, container, target) {
+  const links = data.quick_links || [];
+  const guide = data.install_guide || {};
+  const toolName = data.tool_name || (data.tool_id ? data.tool_id.toUpperCase() : 'УТИЛИТА OSINT');
+
+  let html = `
+    <!-- Карточка Инструмента и Цели -->
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-wrench" style="color:var(--primary);"></i> ${toolName}</span>
+        ${data.repo ? `<button class="btn btn-secondary" style="padding:3px 8px; font-size:10px;" onclick="openExternalUrl('${data.repo}')"><i class="fa-brands fa-github"></i> Репозиторий</button>` : ''}
+      </div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🎯 ОБЪЕКТ АНАЛИЗА</div><div class="custom-val" style="color:var(--accent-green); font-weight:800;">${data.target || target}</div></div>
+        <div class="custom-item"><div class="custom-label">📋 НАЗНАЧЕНИЕ</div><div class="custom-val" style="font-size:11px;">${data.purpose || 'Разведка по открытым источникам'}</div></div>
+      </div>
+    </div>
+
+    <!-- Матрица Интеллектуального Поиска -->
+    ${links.length > 0 ? `
+      <div class="custom-card">
+        <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass-nodes" style="color:var(--accent-yellow);"></i> Быстрый сбор данных по цели</div>
+        <div class="btn-group" style="flex-wrap:wrap;">
+          ${links.map(l => `
+            <button class="btn btn-secondary" style="padding:4px 9px; font-size:10px;" onclick="openExternalUrl('${l.url}')">
+              ${l.name}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+
+    <!-- Консольная Команда для Терминала -->
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-terminal" style="color:var(--primary);"></i> Локальная команда для терминала</span>
+        <button class="btn btn-secondary" style="padding:3px 7px; font-size:9px;" onclick="copyText(this, \`${(data.cli_command || `${data.tool_id} ${target}`).replace(/`/g, '\\`')}\`)">
+          <i class="fa-solid fa-copy"></i> Копировать
+        </button>
+      </div>
+      <div class="cli-console-box" style="margin-top:6px;">
+        <pre class="cli-output" style="margin:0; font-size:11px; white-space:pre-wrap;">${data.cli_command || `${data.tool_id} ${target}`}</pre>
+      </div>
+    </div>
+  `;
+
+  if (data.raw_cli_output) {
+    html += `
+      <div class="cli-console-box" style="margin-top:8px;">
+        <pre class="cli-output" style="white-space:pre-wrap; font-size:10px;">${data.raw_cli_output}</pre>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
 }
 
 function runMainOmniSearch() {
