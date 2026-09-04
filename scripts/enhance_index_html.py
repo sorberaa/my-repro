@@ -2,18 +2,10 @@ import json
 import sys
 from pathlib import Path
 
-root_dir = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(root_dir / "src"))
-sys.path.insert(0, str(root_dir))
+sys.path.insert(0, "d:/osint-bot/src")
+from catalog import CATALOG
 
-try:
-    from catalog import CATALOG
-except Exception:
-    from src.catalog import CATALOG
-
-html_path = root_dir / "index.html"
-
-catalog_json = json.dumps(CATALOG, ensure_ascii=False, indent=2)
+catalog_json = json.dumps(CATALOG, ensure_ascii=False)
 
 full_html = f"""<!DOCTYPE html>
 <html lang="ru">
@@ -25,7 +17,7 @@ full_html = f"""<!DOCTYPE html>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <style>
-:root {{
+:root {
   --bg: #07090d;
   --card-bg: #0e1219;
   --card-border: #181f2c;
@@ -41,146 +33,148 @@ full_html = f"""<!DOCTYPE html>
   --text-muted: #64748b;
   --term-bg: #04060a;
   --term-border: #181f2c;
-}}
+}
 
-* {{ margin:0; padding:0; box-sizing:border-box; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }}
-body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px; padding-bottom:70px; position:relative; overflow-x:hidden; -webkit-font-smoothing: antialiased; }}
+* { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background:var(--bg); color:var(--text); min-height:100vh; padding:12px; padding-bottom:70px; position:relative; overflow-x:hidden; -webkit-font-smoothing: antialiased; }
 
-#matrixCanvas {{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.08; display:none; }}
-.container {{ max-width:820px; margin:0 auto; position:relative; z-index:1; }}
+.container { max-width:820px; margin:0 auto; position:relative; z-index:1; }
 
 /* Навбар */
-.navbar {{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--card-border); padding:10px 0 14px; margin-bottom:14px; background:rgba(7,9,13,0.92); backdrop-filter:blur(16px); }}
-.brand {{ font-size:12px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; }}
-.brand i {{ color:var(--primary); }}
-.nav-actions {{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }}
+.navbar { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--card-border); padding:10px 0 14px; margin-bottom:14px; background:rgba(7,9,13,0.92); backdrop-filter:blur(16px); }
+.brand { font-size:12px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; }
+.brand i { color:var(--primary); }
+.nav-actions { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 
-.user-badge {{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:#0e1219; border-radius:6px; font-size:11px; font-weight:700; color:#fff; border:1px solid var(--card-border); cursor:pointer; }}
-.quota-badge {{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:#0e1219; border-radius:6px; font-size:11px; font-weight:800; color:var(--accent-yellow); border:1px solid var(--card-border); cursor:pointer; transition:all .2s; }}
-.quota-badge:hover {{ border-color:var(--accent-yellow); }}
+.user-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:#0e1219; border-radius:6px; font-size:11px; font-weight:700; color:#fff; border:1px solid var(--card-border); cursor:pointer; }
+.quota-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 9px; background:#0e1219; border-radius:6px; font-size:11px; font-weight:800; color:var(--accent-yellow); border:1px solid var(--card-border); cursor:pointer; transition:all .2s; }
+.quota-badge:hover { border-color:var(--accent-yellow); }
 
-.view-page {{ display:none; }}
-.view-page.active {{ display:block; animation:fadeIn 0.15s ease-out; }}
-@keyframes fadeIn {{ from {{ opacity:0; }} to {{ opacity:1; }} }}
+.view-page { display:none; }
+.view-page.active { display:block; animation:fadeIn 0.15s ease-out; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
-/* Сетка быстрого доступа (Essential Launchpad) */
-.essential-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(115px, 1fr)); gap:6px; margin-bottom:12px; }}
-.essential-btn {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:9px 10px; cursor:pointer; transition:all .15s; }}
-.essential-btn:hover {{ border-color:var(--primary); background:#121722; transform:translateY(-1px); }}
-.essential-btn-title {{ font-size:11px; font-weight:800; color:#fff; display:flex; align-items:center; gap:5px; margin-bottom:2px; }}
-.essential-btn-sub {{ font-size:9px; color:var(--text-muted); }}
+/* Сетка быстрого доступа */
+.essential-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(115px, 1fr)); gap:6px; margin-bottom:12px; }
+.essential-btn { background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:9px 10px; cursor:pointer; transition:all .15s; }
+.essential-btn:hover { border-color:var(--primary); background:#121722; transform:translateY(-1px); }
+.essential-btn-title { font-size:11px; font-weight:800; color:#fff; display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+.essential-btn-sub { font-size:9px; color:var(--text-muted); }
 
 /* Поиск по каталогу */
-.search-box-row {{ display:flex; gap:6px; align-items:center; margin-bottom:10px; }}
-.search-box {{ position:relative; flex:1; }}
-.search-box i {{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:12px; }}
-.search-box input {{ width:100%; padding:9px 12px 9px 34px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; transition:all .15s; }}
-.search-box input:focus {{ border-color:var(--primary); }}
-.search-counter {{ font-size:10px; font-weight:700; color:#94a3b8; white-space:nowrap; background:var(--card-bg); padding:8px 10px; border-radius:6px; border:1px solid var(--card-border); }}
+.search-box-row { display:flex; gap:6px; align-items:center; margin-bottom:10px; }
+.search-box { position:relative; flex:1; }
+.search-box i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:12px; }
+.search-box input { width:100%; padding:9px 12px 9px 34px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; transition:all .15s; }
+.search-box input:focus { border-color:var(--primary); }
+.search-counter { font-size:10px; font-weight:700; color:#94a3b8; white-space:nowrap; background:var(--card-bg); padding:8px 10px; border-radius:6px; border:1px solid var(--card-border); }
 
-/* Категории (Chips) */
-.filter-chips {{ display:flex; gap:5px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }}
-.filter-chips::-webkit-scrollbar {{ display:none; }}
-.chip {{ padding:5px 11px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:6px; font-size:10px; font-weight:700; color:#94a3b8; white-space:nowrap; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all .15s; }}
-.chip:hover, .chip.active {{ background:#161c28; border-color:var(--primary); color:#fff; }}
+/* Категории */
+.filter-chips { display:flex; gap:5px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.filter-chips::-webkit-scrollbar { display:none; }
+.chip { padding:5px 11px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:6px; font-size:10px; font-weight:700; color:#94a3b8; white-space:nowrap; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all .15s; }
+.chip:hover, .chip.active { background:#161c28; border-color:var(--primary); color:#fff; }
 
 /* Сетка карточек каталога */
-.group-title {{ font-size:11px; font-weight:800; color:#94a3b8; margin:14px 0 6px; display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.5px; }}
-.group-desc {{ font-size:10px; color:var(--text-muted); margin-bottom:8px; }}
+.group-title { font-size:11px; font-weight:800; color:#94a3b8; margin:14px 0 6px; display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.5px; }
+.group-desc { font-size:10px; color:var(--text-muted); margin-bottom:8px; }
 
-.cards-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:8px; }}
-.card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; cursor:pointer; transition:all .15s; display:flex; flex-direction:column; justify-content:space-between; }}
-.card:hover {{ border-color:var(--primary); background:#121722; transform:translateY(-1px); }}
-.card-header {{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; gap:6px; }}
-.card-title {{ font-size:12px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; line-height:1.2; }}
-.card-icon {{ color:var(--primary); font-size:12px; }}
-.badge {{ font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; text-transform:uppercase; white-space:nowrap; }}
-.badge-api {{ background:#111928; color:var(--primary); border:1px solid #1c2b42; }}
-.badge-web {{ background:#111928; color:#94a3b8; border:1px solid var(--card-border); }}
-.badge-doc {{ background:#111928; color:var(--text-muted); border:1px solid var(--card-border); }}
+.cards-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:8px; }
+.card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; cursor:pointer; transition:all .15s; display:flex; flex-direction:column; justify-content:space-between; }
+.card:hover { border-color:var(--primary); background:#121722; transform:translateY(-1px); }
+.card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; gap:6px; }
+.card-title { font-size:12px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; line-height:1.2; }
+.card-icon { color:var(--primary); font-size:12px; }
+.badge { font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; text-transform:uppercase; white-space:nowrap; }
+.badge-api { background:#111928; color:var(--primary); border:1px solid #1c2b42; }
+.badge-web { background:#111928; color:#94a3b8; border:1px solid var(--card-border); }
+.badge-doc { background:#111928; color:var(--text-muted); border:1px solid var(--card-border); }
 
-.card-purpose {{ font-size:10px; color:#94a3b8; line-height:1.4; margin-bottom:8px; flex:1; }}
-.card-target-tag {{ font-size:9px; color:var(--primary); font-family:monospace; margin-bottom:8px; }}
+.card-purpose { font-size:10px; color:#94a3b8; line-height:1.4; margin-bottom:8px; flex:1; }
+.card-target-tag { font-size:9px; color:var(--primary); font-family:monospace; margin-bottom:8px; }
 
 /* Кнопки */
-.btn-group {{ display:flex; flex-wrap:wrap; gap:5px; }}
-.btn {{ padding:6px 12px; font-size:11px; font-weight:700; border-radius:6px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; text-decoration:none; transition:all .15s; }}
-.btn-primary {{ background:#fff; color:#000; font-weight:800; }}
-.btn-primary:hover {{ background:#e2e8f0; }}
-.btn-secondary {{ background:var(--card-bg); color:var(--text); border:1px solid var(--card-border); }}
-.btn-secondary:hover {{ border-color:#fff; color:#fff; }}
-.btn-purple {{ background:#2563eb; color:#fff; }}
-.btn-purple:hover {{ background:#1d4ed8; }}
-.btn-cyan {{ background:var(--primary); color:#000; font-weight:800; }}
-.btn-yellow {{ background:#f59e0b; color:#000; font-weight:800; }}
-.btn-danger {{ background:#1a0d11; color:var(--danger); border:1px solid #3b141d; }}
+.btn-group { display:flex; flex-wrap:wrap; gap:5px; }
+.btn { padding:6px 12px; font-size:11px; font-weight:700; border-radius:6px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; text-decoration:none; transition:all .15s; }
+.btn-primary { background:#fff; color:#000; font-weight:800; }
+.btn-primary:hover { background:#e2e8f0; }
+.btn-secondary { background:var(--card-bg); color:var(--text); border:1px solid var(--card-border); }
+.btn-secondary:hover { border-color:#fff; color:#fff; }
+.btn-purple { background:#2563eb; color:#fff; }
+.btn-cyan { background:var(--primary); color:#000; font-weight:800; }
+.btn-yellow { background:#f59e0b; color:#000; font-weight:800; }
+.btn-danger { background:#1a0d11; color:var(--danger); border:1px solid #3b141d; }
 
-/* Страница инструмента (toolView) */
-.tool-view-header {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:14px; margin-bottom:10px; }}
-.back-btn {{ display:inline-flex; align-items:center; gap:5px; color:var(--primary); font-size:11px; font-weight:700; cursor:pointer; margin-bottom:8px; }}
-.back-btn:hover {{ color:#fff; }}
-.tool-view-title {{ font-size:15px; font-weight:800; color:#fff; margin-bottom:3px; }}
-.tool-view-desc {{ font-size:11px; color:var(--text-muted); margin-bottom:10px; line-height:1.4; }}
+/* Страница инструмента */
+.tool-view-header { background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:14px; margin-bottom:10px; }
+.back-btn { display:inline-flex; align-items:center; gap:5px; color:var(--primary); font-size:11px; font-weight:700; cursor:pointer; margin-bottom:8px; }
+.back-btn:hover { color:#fff; }
+.tool-view-title { font-size:15px; font-weight:800; color:#fff; margin-bottom:3px; }
+.tool-view-desc { font-size:11px; color:var(--text-muted); margin-bottom:10px; line-height:1.4; }
 
-.workspace-box {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:14px; margin-bottom:10px; }}
-.workspace-title {{ font-size:11px; font-weight:800; color:#fff; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px; }}
+.workspace-box { background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:14px; margin-bottom:10px; }
+.workspace-title { font-size:11px; font-weight:800; color:#fff; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:5px; }
 
-.input-row {{ display:flex; gap:6px; margin-bottom:10px; }}
-.tool-input {{ flex:1; padding:9px 12px; background:#05070a; border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; }}
-.tool-input:focus {{ border-color:var(--primary); }}
+.input-row { display:flex; gap:6px; margin-bottom:10px; }
+.tool-input { flex:1; padding:9px 12px; background:#05070a; border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; }
+.tool-input:focus { border-color:var(--primary); }
 
 /* Характеристики модуля */
-.spec-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:6px; }}
-.spec-card {{ background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:8px 10px; }}
-.spec-label {{ font-size:9px; color:var(--text-muted); margin-bottom:2px; }}
-.spec-val {{ font-size:11px; font-weight:700; color:#fff; }}
+.spec-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:6px; }
+.spec-card { background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:8px 10px; }
+.spec-label { font-size:9px; color:var(--text-muted); margin-bottom:2px; }
+.spec-val { font-size:11px; font-weight:700; color:#fff; }
 
 /* Кастомные карточки результатов */
-.custom-card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:8px; }}
-.custom-card-title {{ font-size:12px; font-weight:800; color:#fff; margin-bottom:8px; display:flex; align-items:center; gap:6px; }}
-.custom-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; }}
-.custom-item {{ background:#07090e; padding:6px 8px; border-radius:6px; border:1px solid var(--card-border); }}
-.custom-label {{ color:var(--text-muted); font-size:9px; margin-bottom:2px; }}
-.custom-val {{ color:#fff; font-weight:700; font-size:11px; word-break:break-all; }}
+.custom-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:8px; }
+.custom-card-title { font-size:12px; font-weight:800; color:#fff; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.custom-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; }
+.custom-item { background:#07090e; padding:6px 8px; border-radius:6px; border:1px solid var(--card-border); }
+.custom-label { color:var(--text-muted); font-size:9px; margin-bottom:2px; }
+.custom-val { color:#fff; font-weight:700; font-size:11px; word-break:break-all; }
 
 /* Профили */
-.profiles-grid {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:5px; margin-top:6px; }}
-.profile-card {{ background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:6px 8px; display:flex; align-items:center; justify-content:space-between; gap:5px; }}
-.profile-name {{ font-size:10px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.profiles-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:6px; margin-top:8px; }
+.profile-card { background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:8px 10px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.profile-name { font-size:11px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.profile-cat { font-size:9px; color:var(--text-muted); }
 
 /* Терминал */
-.cli-console-box {{ background:var(--term-bg); border:1px solid var(--term-border); border-radius:8px; padding:12px; margin-bottom:10px; }}
-.cli-output {{ color:#e2e8f0; font-family:'Courier New', monospace; font-size:11px; line-height:1.5; white-space:pre-wrap; max-height:360px; overflow-y:auto; margin-bottom:10px; }}
-.cli-prompt-row {{ display:flex; align-items:center; gap:6px; font-family:'Courier New', monospace; font-size:12px; }}
-.cli-prompt-label {{ color:var(--primary); font-weight:800; }}
-.cli-input {{ flex:1; background:transparent; border:none; outline:none; color:#fff; font-family:'Courier New', monospace; font-size:12px; }}
+.cli-console-box { background:var(--term-bg); border:1px solid var(--term-border); border-radius:8px; padding:12px; margin-bottom:10px; }
+.cli-output { color:#e2e8f0; font-family:'Courier New', monospace; font-size:11px; line-height:1.5; white-space:pre-wrap; max-height:360px; overflow-y:auto; margin-bottom:10px; }
+.cli-prompt-row { display:flex; align-items:center; gap:6px; font-family:'Courier New', monospace; font-size:12px; }
+.cli-prompt-label { color:var(--primary); font-weight:800; }
+.cli-input { flex:1; background:transparent; border:none; outline:none; color:#fff; font-family:'Courier New', monospace; font-size:12px; }
 
 /* Дропзона */
-.upload-dropzone {{ border:1px dashed var(--card-border); border-radius:8px; padding:18px 12px; text-align:center; background:#07090e; cursor:pointer; transition:all .15s; margin-bottom:8px; }}
-.upload-dropzone:hover {{ border-color:var(--primary); }}
-.upload-preview {{ max-width:100%; max-height:200px; border-radius:6px; margin-top:8px; display:none; border:1px solid var(--card-border); }}
+.upload-dropzone { border:1px dashed var(--card-border); border-radius:8px; padding:18px 12px; text-align:center; background:#07090e; cursor:pointer; transition:all .15s; margin-bottom:8px; }
+.upload-dropzone:hover { border-color:var(--primary); }
+.upload-preview { max-width:100%; max-height:200px; border-radius:6px; margin-top:8px; display:none; border:1px solid var(--card-border); }
 
 /* Спиннер */
-.loader {{ display:none; text-align:center; padding:12px; }}
-.spinner {{ width:20px; height:20px; border:2px solid #1e293b; border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 6px; }}
-@keyframes spin {{ to {{ transform:rotate(360deg); }} }}
+.loader { display:none; text-align:center; padding:12px; }
+.spinner { width:20px; height:20px; border:2px solid #1e293b; border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 6px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Админ-таблица */
+.admin-table { width:100%; border-collapse:collapse; font-size:11px; }
+.admin-table th { background:#07090e; color:var(--text-muted); padding:8px 10px; text-align:left; border-bottom:1px solid var(--card-border); font-size:10px; text-transform:uppercase; }
+.admin-table td { padding:8px 10px; border-bottom:1px solid var(--card-border); color:#cbd5e1; }
+.admin-table tr:hover td { background:#121722; }
 
 /* Авторизация */
-.auth-container {{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; padding:16px; }}
-.auth-card {{ background:var(--card-bg); border:1px solid var(--card-border); border-radius:10px; padding:20px; max-width:380px; width:100%; text-align:center; }}
-.auth-icon {{ font-size:32px; color:var(--primary); margin-bottom:10px; }}
-.auth-title {{ font-size:13px; font-weight:800; color:#fff; margin-bottom:4px; }}
-.auth-subtitle {{ font-size:10px; color:var(--text-muted); margin-bottom:14px; line-height:1.4; }}
-.auth-input {{ width:100%; padding:9px 12px; background:#05070a; border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; margin-bottom:10px; text-align:center; }}
-.auth-input:focus {{ border-color:var(--primary); }}
+.auth-container { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; padding:16px; }
+.auth-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:10px; padding:20px; max-width:380px; width:100%; text-align:center; }
+.auth-icon { font-size:32px; color:var(--primary); margin-bottom:10px; }
+.auth-title { font-size:13px; font-weight:800; color:#fff; margin-bottom:4px; }
+.auth-subtitle { font-size:10px; color:var(--text-muted); margin-bottom:14px; line-height:1.4; }
+.auth-input { width:100%; padding:9px 12px; background:#05070a; border:1px solid var(--card-border); border-radius:6px; color:#fff; font-size:12px; outline:none; margin-bottom:10px; text-align:center; }
+.auth-input:focus { border-color:var(--primary); }
 
-.footer-info {{ text-align:center; font-size:9px; color:#475569; margin-top:16px; padding:8px; }}
-
+.footer-info { text-align:center; font-size:9px; color:#475569; margin-top:16px; padding:8px; }
 </style>
 </head>
 <body>
-
-<canvas id="matrixCanvas"></canvas>
 
 <div class="container">
   
@@ -189,7 +183,7 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
     <div class="brand" onclick="showView('catalogView')">
       <i class="fa-solid fa-shield-halved" style="color:var(--primary); font-size:14px;"></i>
       <span style="font-weight:900; letter-spacing:0.5px; font-size:12px;">peace of the island of sor/ber peoples</span>
-      <span style="font-size:8px; background:rgba(0,255,102,0.15); color:var(--primary); padding:1px 5px; border-radius:4px; font-weight:800; border:1px solid rgba(0,255,102,0.3);">LIVE</span>
+      <span style="font-size:8px; background:#111928; color:var(--primary); padding:1px 5px; border-radius:4px; font-weight:800; border:1px solid #1c2b42;">LIVE</span>
     </div>
     <div class="nav-actions">
       <div class="quota-badge" id="quotaBadge" onclick="openStarsModal()" title="Баланс запросов и Stars">
@@ -207,9 +201,9 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
 
   <!-- MODAL: ПОКУПКА ЗВЕЗД (STARS) -->
   <div id="starsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;">
-    <div style="background:#090f1d; border:2px solid #eab308; border-radius:16px; padding:20px; max-width:440px; width:100%; box-shadow:0 0 40px rgba(234,179,8,0.25);">
+    <div style="background:#090f1d; border:1px solid var(--accent-yellow); border-radius:12px; padding:20px; max-width:440px; width:100%;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <div style="font-size:15px; font-weight:800; color:#facc15; display:flex; align-items:center; gap:8px;">
+        <div style="font-size:14px; font-weight:800; color:var(--accent-yellow); display:flex; align-items:center; gap:8px;">
           <i class="fa-solid fa-star"></i> Пополнение баланса (Telegram Stars)
         </div>
         <button onclick="closeStarsModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
@@ -219,120 +213,91 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
         Для продолжения расследований выберите тариф пополнения:
       </div>
       <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
-        <div onclick="buyStarsPkg('pkg_20')" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#eab308'" onmouseout="this.style.borderColor='#1e293b'">
+        <div onclick="buyStarsPkg('pkg_20')" style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;">
           <div>
-            <div style="font-weight:800; font-size:13px; color:#fff;">🌟 20 OSINT Запросов</div>
+            <div style="font-weight:800; font-size:12px; color:#fff;">🌟 20 OSINT Запросов</div>
             <div style="font-size:10px; color:#94a3b8;">Тариф «Разведчик»</div>
           </div>
-          <button class="btn btn-yellow" style="padding:6px 12px; font-size:11px;">35 ⭐️</button>
+          <button class="btn btn-yellow" style="padding:5px 10px; font-size:11px;">35 ⭐️</button>
         </div>
-        <div onclick="buyStarsPkg('pkg_50')" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#eab308'" onmouseout="this.style.borderColor='#1e293b'">
+        <div onclick="buyStarsPkg('pkg_50')" style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;">
           <div>
-            <div style="font-weight:800; font-size:13px; color:#fff;">🌟 50 OSINT Запросов</div>
-            <div style="font-size:10px; color:#94a3b8;">Тариф «Оперативник» (Популярно)</div>
+            <div style="font-weight:800; font-size:12px; color:#fff;">🌟 50 OSINT Запросов</div>
+            <div style="font-size:10px; color:#94a3b8;">Тариф «Оперативник»</div>
           </div>
-          <button class="btn btn-yellow" style="padding:6px 12px; font-size:11px;">88 ⭐️</button>
+          <button class="btn btn-yellow" style="padding:5px 10px; font-size:11px;">88 ⭐️</button>
         </div>
-        <div onclick="buyStarsPkg('pkg_100')" style="background:#0f172a; border:1px solid #1e293b; border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;" onmouseover="this.style.borderColor='#eab308'" onmouseout="this.style.borderColor='#1e293b'">
+        <div onclick="buyStarsPkg('pkg_100')" style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s;">
           <div>
-            <div style="font-weight:800; font-size:13px; color:#fff;">🌟 100 OSINT Запросов</div>
+            <div style="font-weight:800; font-size:12px; color:#fff;">🌟 100 OSINT Запросов</div>
             <div style="font-size:10px; color:#94a3b8;">Тариф «Архимаг OSINT»</div>
           </div>
-          <button class="btn btn-yellow" style="padding:6px 12px; font-size:11px;">235 ⭐️</button>
+          <button class="btn btn-yellow" style="padding:5px 10px; font-size:11px;">235 ⭐️</button>
         </div>
       </div>
-      <div style="font-size:10px; color:#64748b; text-align:center;">
-        Оплата происходит мгновенно через официальные Telegram Stars. Также доступна команда <code>/buy</code> в боте.
-      </div>
+      <button class="btn btn-secondary" style="width:100%; justify-content:center;" onclick="closeStarsModal()">Закрыть</button>
     </div>
   </div>
 
-  <!-- ВЬЮ 0: СТРАНИЦА РЕГИСТРАЦИИ -->
-  <div class="view-page" id="registerView">
-    <div class="auth-container">
-      <div class="auth-card">
-        <i class="fa-solid fa-shield-halved auth-icon"></i>
-        <div class="auth-title">peace of the island of sor/ber peoples</div>
-        <div class="auth-subtitle">
-          Для доступа к системе расследований, базам Sherlock, поиску по Instagram, VK, GitHub и блокчейн-разведке зарегистрируйте рабочий позывной:
-        </div>
-        <input type="text" id="regNicknameInput" class="auth-input" placeholder="Введите ваш позывной (например: Ghost_OSINT)" onkeydown="if(event.key==='Enter') doRegister()">
-        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:13px; font-size:13px;" onclick="doRegister()">
-          <i class="fa-solid fa-check"></i> Зарегистрироваться и получить 5 запросов
-        </button>
-        <div id="regStatusMsg" style="margin-top:12px; font-size:12px; color:var(--danger); display:none;"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ВЬЮ 1: ГЛАВНЫЙ КАТАЛОГ & БЫСТРЫЙ ПОИСК -->
+  <!-- ВЬЮ 1: КАТАЛОГ -->
   <div class="view-page active" id="catalogView">
     
-    <!-- ЕДИНЫЙ УМНЫЙ OMNIBAR ПОИСКА -->
-    <div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:10px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div style="font-size:11px; font-weight:800; color:#fff; display:flex; align-items:center; gap:5px;">
-          <i class="fa-solid fa-crosshairs" style="color:var(--cyan);"></i> Универсальный OSINT Поиск & AI Досье
+    <!-- Единый лаконичный Omnibar -->
+    <div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; padding:10px; margin-bottom:10px;">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input id="searchInput" placeholder="Введите никнейм, кошелек, email, телефон или инструмент..." oninput="renderCatalog()" onkeydown="if(event.key==='Enter') runMainOmniSearch()">
         </div>
-        <div class="search-counter" id="searchCounterBadge" style="font-size:9px; padding:3px 7px;">52 утилиты</div>
-      </div>
-      <div style="display:flex; gap:6px;">
-        <input type="text" id="searchInput" class="tool-input" style="flex:1;" placeholder="Никнейм (@user), кошелек (0x/BTC), домен, телефон или инструмент..." oninput="renderCatalog()" onkeydown="if(event.key==='Enter') runMainOmniSearch()">
-        <button class="btn btn-purple" style="padding:9px 12px; font-size:11px;" onclick="runMainOmniSearch()"><i class="fa-solid fa-brain"></i> AI Досье</button>
-      </div>
-      <div style="display:flex; gap:8px; margin-top:6px; font-size:9px; color:#94a3b8; align-items:center;">
-        <span>Быстрый тест:</span>
-        <span style="color:var(--cyan); cursor:pointer; text-decoration:underline;" onclick="setOmniTarget('durov')">@durov</span>
-        <span style="color:var(--cyan); cursor:pointer; text-decoration:underline;" onclick="setOmniTarget('vitalik.eth')">vitalik.eth</span>
-        <span style="color:var(--cyan); cursor:pointer; text-decoration:underline;" onclick="setOmniTarget('sherlock')">sherlock</span>
-        <span style="color:var(--cyan); cursor:pointer; text-decoration:underline;" onclick="setOmniTarget('instagram')">instagram</span>
+        <button class="btn btn-primary" onclick="runMainOmniSearch()" style="padding:9px 14px; font-size:11px; white-space:nowrap;">
+          <i class="fa-solid fa-bolt"></i> AI Досье
+        </button>
       </div>
     </div>
 
-    <!-- ⚡ БЫСТРЫЙ ДОСТУП К КЛЮЧЕВЫМ МОДУЛЯМ (6 КАРТОЧЕК) -->
-    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(115px, 1fr)); gap:5px; margin-bottom:12px;">
-      <div onclick="openToolPage('ai_detective_profiler')" class="essential-btn" style="border-color:rgba(168,85,247,0.35);">
-        <div class="essential-btn-title" style="color:#fff;"><i class="fa-solid fa-brain" style="color:#a855f7;"></i> AI Досье</div>
+    <!-- 6 Главных Прорывных Модулей (Essential Launchpad) -->
+    <div class="essential-grid">
+      <div class="essential-btn" onclick="openToolPage('ai_detective_profiler')">
+        <div class="essential-btn-title"><i class="fa-solid fa-brain" style="color:var(--primary);"></i> AI Досье</div>
         <div class="essential-btn-sub">Scam Score & Профиль</div>
       </div>
-      <div onclick="openToolPage('tg_activity_tracker')" class="essential-btn">
-        <div class="essential-btn-title"><i class="fa-solid fa-user-secret" style="color:var(--cyan);"></i> Spy Tracker</div>
-        <div class="essential-btn-sub">Сон & Mutual Spy</div>
+      <div class="essential-btn" onclick="openToolPage('tg_activity_tracker')">
+        <div class="essential-btn-title"><i class="fa-solid fa-clock" style="color:var(--accent-yellow);"></i> Трекер сна</div>
+        <div class="essential-btn-sub">График онлайна & Spy</div>
       </div>
-      <div onclick="openToolPage('crypto_aml_auditor')" class="essential-btn" style="border-color:rgba(250,204,21,0.3);">
-        <div class="essential-btn-title" style="color:#fef08a;"><i class="fa-solid fa-shield-halved" style="color:#facc15;"></i> Crypto AML</div>
-        <div class="essential-btn-sub">OFAC & Миксеры</div>
+      <div class="essential-btn" onclick="openToolPage('crypto_aml_auditor')">
+        <div class="essential-btn-title"><i class="fa-solid fa-shield-halved" style="color:var(--accent-green);"></i> AML Аудит</div>
+        <div class="essential-btn-sub">OFAC & Darknet риск</div>
       </div>
-      <div onclick="openToolPage('sherlock')" class="essential-btn">
-        <div class="essential-btn-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Sherlock</div>
-        <div class="essential-btn-sub">480+ Баз никнеймов</div>
+      <div class="essential-btn" onclick="openToolPage('face_search_ai')">
+        <div class="essential-btn-title"><i class="fa-solid fa-user-astronaut" style="color:var(--cyan);"></i> Face AI</div>
+        <div class="essential-btn-sub">Поиск лица & Deepfake</div>
       </div>
-      <div onclick="openToolPage('instaloader')" class="essential-btn">
-        <div class="essential-btn-title"><i class="fa-brands fa-instagram" style="color:#f472b6;"></i> Instagram</div>
-        <div class="essential-btn-sub">Посты & Профили</div>
+      <div class="essential-btn" onclick="openToolPage('digital_hygiene_audit')">
+        <div class="essential-btn-title"><i class="fa-solid fa-user-shield" style="color:#a855f7;"></i> Аудит себя</div>
+        <div class="essential-btn-sub">Сливы & Базы данных</div>
       </div>
-      <div onclick="openToolPage('digital_hygiene_audit')" class="essential-btn" style="border-color:rgba(255,51,102,0.3);">
-        <div class="essential-btn-title" style="color:#fecdd3;"><i class="fa-solid fa-shield-virus" style="color:var(--danger);"></i> Аудит утечек</div>
-        <div class="essential-btn-sub">Проверка почты/тел.</div>
+      <div class="essential-btn" onclick="openToolPage('target_monitor_alerts')">
+        <div class="essential-btn-title"><i class="fa-solid fa-bell" style="color:#f43f5e;"></i> Слежка TG</div>
+        <div class="essential-btn-sub">Уведомления онлайн</div>
       </div>
     </div>
 
-    <!-- ФИЛЬТР КАТЕГОРИЙ -->
+    <!-- Фильтры по категориям (Chips) -->
     <div class="filter-chips">
       <div class="chip active" onclick="setFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Все (52)</div>
-      <div class="chip" onclick="setFilter('killer_monetization', this)"><i class="fa-solid fa-gem" style="color:var(--yellow);"></i> 💎 AI & AML (Premium)</div>
-      <div class="chip" onclick="setFilter('social_google_instagram', this)"><i class="fa-brands fa-instagram"></i> Instagram, VK & TikTok</div>
-      <div class="chip" onclick="setFilter('deep_archive_recon', this)"><i class="fa-solid fa-clock-rotate-left"></i> Архивы & Auto-Recon</div>
-      <div class="chip" onclick="setFilter('cyber_tools_lab', this)"><i class="fa-solid fa-coins"></i> Блокчейн & Dorks</div>
-      <div class="chip" onclick="setFilter('telegram_osint', this)"><i class="fa-brands fa-telegram"></i> Telegram & Вирты</div>
-      <div class="chip" onclick="setFilter('username_osint', this)"><i class="fa-solid fa-magnifying-glass"></i> Sherlock Никнеймы</div>
-      <div class="chip" onclick="setFilter('email_checks', this)"><i class="fa-solid fa-phone"></i> Телефон & Email</div>
-      <div class="chip" onclick="setFilter('hacker_crypto_git', this)"><i class="fa-brands fa-github"></i> GitHub Recon</div>
-      <div class="chip" onclick="setFilter('web_infra_secrets', this)"><i class="fa-solid fa-network-wired"></i> Домены & Серверы</div>
-      <div class="chip" onclick="setFilter('amazing_osint', this)"><i class="fa-solid fa-camera"></i> Фото & GeoINT</div>
+      <div class="chip" onclick="setFilter('killer_monetization', this)"><i class="fa-solid fa-gem" style="color:var(--accent-yellow);"></i> Топ Программы</div>
+      <div class="chip" onclick="setFilter('telegram_intel', this)"><i class="fa-brands fa-telegram" style="color:#38bdf8;"></i> Telegram</div>
+      <div class="chip" onclick="setFilter('geoint_recon', this)"><i class="fa-solid fa-earth-americas" style="color:#10b981;"></i> GeoINT</div>
+      <div class="chip" onclick="setFilter('username_recon', this)"><i class="fa-solid fa-user-tag" style="color:#a855f7;"></i> Никнеймы</div>
+      <div class="chip" onclick="setFilter('social_media', this)"><i class="fa-brands fa-instagram" style="color:#ec4899;"></i> Соцсети</div>
+      <div class="chip" onclick="setFilter('web_infra', this)"><i class="fa-solid fa-globe" style="color:#38bdf8;"></i> Домены & IP</div>
+      <div class="chip" onclick="setFilter('search_dorks', this)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#f59e0b;"></i> Дорки</div>
+      <div class="chip" onclick="setFilter('crypto_darknet', this)"><i class="fa-solid fa-coins" style="color:#eab308;"></i> Крипта</div>
+      <div class="chip" onclick="setFilter('forensics_decoders', this)"><i class="fa-solid fa-terminal" style="color:#94a3b8;"></i> Декодеры</div>
     </div>
 
-    <!-- СПИСОК КАРТОЧЕК КАТАЛОГА -->
+    <!-- Каталог карточек -->
     <div id="catalogContainer"></div>
   </div>
 
@@ -343,192 +308,82 @@ body {{ background:var(--bg); color:var(--text); min-height:100vh; padding:12px;
     </div>
 
     <div class="tool-view-header">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
-        <div class="tool-view-title" id="tvTitle">Название утилиты</div>
-        <div id="tvHeaderButtons" class="btn-group"></div>
-      </div>
-      <div class="tool-view-desc" id="tvPurpose">Описание</div>
+      <div class="tool-view-title" id="tvTitle">Название инструмента</div>
+      <div class="tool-view-desc" id="tvDesc">Описание инструмента</div>
+      <div class="btn-group" id="tvTags"></div>
     </div>
 
     <div class="workspace-box">
-      <div class="workspace-title"><i class="fa-solid fa-bolt"></i> Запуск сканера</div>
-      
-      <div id="tvPhotoUploaderBox" style="display:none;">
-        <div class="upload-dropzone" onclick="document.getElementById('tvFileInput').click()" ondragover="event.preventDefault()" ondrop="handlePhotoDrop(event, 'tvFileInput')">
-          <i class="fa-solid fa-cloud-arrow-up" style="font-size:26px; color:var(--cyan); margin-bottom:4px;"></i>
-          <div style="font-weight:700; color:#fff; font-size:12px;">Загрузите фото для анализа</div>
-          <div style="font-size:10px; color:var(--text-muted);">EXIF-теги, GPS, дата, модель камеры и биометрия лица</div>
-          <input type="file" id="tvFileInput" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
-        </div>
-        <img id="tvPhotoPreview" class="upload-preview">
-      </div>
-
-      <div class="input-row" id="tvTextInputRow">
-        <input class="tool-input" id="tvTargetInput" placeholder="Введите цель..." onkeydown="if(event.key==='Enter') runCurrentToolScan()">
-        <button class="btn btn-primary" onclick="runCurrentToolScan()"><i class="fa-solid fa-play"></i> Старт</button>
+      <div class="workspace-title"><i class="fa-solid fa-play"></i> Запуск анализа</div>
+      <div class="input-row">
+        <input class="tool-input" id="tvTargetInput" placeholder="Введите цель..." onkeydown="if(event.key==='Enter') executeActiveToolScan()">
+        <button class="btn btn-primary" onclick="executeActiveToolScan()"><i class="fa-solid fa-bolt"></i> Сканировать</button>
       </div>
 
       <div class="loader" id="tvLoader">
         <div class="spinner"></div>
-        <span style="font-size:11px; color:var(--cyan);" id="tvLoaderText">Выполняется сканирование...</span>
+        <span style="font-size:11px; color:var(--primary);">Выполнение расследования по открытым базам...</span>
       </div>
 
-      <div id="tvOutputBox" style="display:none; margin-top:10px;"></div>
+      <div id="tvResultBox" style="margin-top:12px;"></div>
     </div>
 
-    <!-- ХАРАКТЕРИСТИКИ И ВОЗМОЖНОСТИ МОДУЛЯ (ВМЕСТО GIT CLONE) -->
+    <!-- Спецификация и возможности модуля -->
     <div class="workspace-box">
-      <div class="workspace-title"><i class="fa-solid fa-circle-info"></i> Спецификация и возможности модуля</div>
-      <div class="spec-grid" id="tvSpecGrid">
-        <div class="spec-card">
-          <div class="spec-label">⚡ Движок</div>
-          <div class="spec-val" style="color:var(--primary);">Cloud API (Zero-Log)</div>
-        </div>
-        <div class="spec-card">
-          <div class="spec-label">🎯 Формат цели</div>
-          <div class="spec-val" id="tvTargetFormat">username / handle</div>
-        </div>
-        <div class="spec-card">
-          <div class="spec-label">⏱️ Время ответа</div>
-          <div class="spec-val">~1.2 - 2.5 сек</div>
-        </div>
-        <div class="spec-card">
-          <div class="spec-label">🔒 Приватность</div>
-          <div class="spec-val" style="color:var(--cyan);">Анонимный запрос</div>
-        </div>
-      </div>
+      <div class="workspace-title"><i class="fa-solid fa-microchip"></i> Спецификация и возможности модуля</div>
+      <div class="spec-grid" id="tvSpecGrid"></div>
     </div>
   </div>
 
-  <!-- ВЬЮ 3: ИНТЕРАКТИВНЫЙ ХАКЕРСКИЙ CLI ТЕРМИНАЛ -->
+  <!-- ВЬЮ 3: CLI ТЕРМИНАЛ -->
   <div class="view-page" id="terminalView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
     </div>
 
     <div class="cli-console-box">
-      <div class="term-topbar">
-        <div class="term-dots">
-          <span class="term-dot term-dot-red"></span>
-          <span class="term-dot term-dot-yellow"></span>
-          <span class="term-dot term-dot-green"></span>
-        </div>
-        <span>CYBER-TERMINAL v2.5 [ROOT SESSION]</span>
-        <span style="color:var(--primary); font-size:10px;">● ONLINE</span>
-      </div>
-      
-      <div class="cli-output" id="cliOutputContent">peace of the island of sor/ber peoples · Terminal Console
-Type 'help' to see available commands, or execute any tool directly.
-Examples: 'autorecon torvalds', 'crypto 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'dorks target', 'wayback github.com/user'
-----------------------------------------------------------------------
-</div>
-
+      <div class="workspace-title" style="color:#fff; margin-bottom:6px;"><i class="fa-solid fa-terminal"></i> OSINT Terminal Console</div>
+      <pre class="cli-output" id="globalCliOutput">root@peace-island:~# welcome to osint intelligence terminal
+[SYSTEM] 52 specialized engines online. Ready for queries.</pre>
       <div class="cli-prompt-row">
         <span class="cli-prompt-label">root@cyberhub:~#</span>
-        <input type="text" id="cliInputField" class="cli-input" placeholder="Введите команду (help, autorecon, crypto, dorks, sherlock, wayback, crtsh, clear)..." autofocus onkeydown="handleCliKeyDown(event)">
-        <button class="btn btn-primary" style="padding:5px 12px; font-size:11px;" onclick="executeCliCommand()">RUN</button>
+        <input class="cli-input" id="globalCliInput" placeholder="help, sherlock <user>, aml <addr>, dork <target>..." onkeydown="if(event.key==='Enter') handleGlobalCliCommand()">
       </div>
     </div>
   </div>
 
-  <!-- ВЬЮ 4: ИНТЕРАКТИВНЫЙ ГРАФ СВЯЗЕЙ (VIS.JS) -->
+  <!-- ВЬЮ 4: ГРАФ СВЯЗЕЙ -->
   <div class="view-page" id="graphView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
     </div>
 
     <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--cyan); display:flex; justify-content:space-between; align-items:center;">
-        <span><i class="fa-solid fa-project-diagram"></i> Интерактивный Граф Связей Расследования</span>
+      <div class="workspace-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-project-diagram"></i> Интерактивный Граф Связей</span>
         <button class="btn btn-secondary" style="padding:3px 8px; font-size:10px;" onclick="exportCurrentGraph()"><i class="fa-solid fa-camera"></i> Сохранить PNG</button>
       </div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
-        Визуализация цифровых связей между профилями, коммит-email, блокчейн-кошельками и инфраструктурой.
-      </div>
-
       <div class="input-row">
-        <input class="tool-input" id="graphTargetInput" placeholder="Введите никнейм, логин GitHub, домен или кошелек..." onkeydown="if(event.key==='Enter') runGraphDirectScan()">
-        <button class="btn btn-cyan" onclick="runGraphDirectScan()"><i class="fa-solid fa-bolt"></i> Построить граф</button>
+        <input class="tool-input" id="graphTargetInput" placeholder="Введите никнейм, email или кошелек..." onkeydown="if(event.key==='Enter') runGraphDirectScan()">
+        <button class="btn btn-primary" onclick="runGraphDirectScan()"><i class="fa-solid fa-bolt"></i> Построить граф</button>
       </div>
 
       <div class="loader" id="graphLoader">
-        <div class="spinner" style="border-top-color:var(--cyan);"></div>
-        <span style="font-size:11px; color:var(--cyan);">Сквозной сбор узлов и построение графа связей...</span>
+        <div class="spinner"></div>
+        <span style="font-size:11px; color:var(--primary);">Построение графа связей...</span>
       </div>
 
       <div id="graphContainerBox" style="display:none;">
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px; font-size:10px; color:#cbd5e1;">
-          <span>🟢 Цель</span> · <span>🔵 Профиль</span> · <span>🔴 Commit Email</span> · <span>🟣 ФИО</span> · <span>🪙 Крипто</span> · <span>🌐 Сервер/IP</span>
-        </div>
-        <div id="visNetworkCanvas" style="width:100%; height:400px; background:#020509; border:1px solid #162a44; border-radius:12px; margin-bottom:12px;"></div>
-        
-        <div class="custom-card" id="graphDossierBox" style="border-color:var(--primary);">
-          <div class="custom-card-title" style="color:var(--primary); display:flex; justify-content:space-between;">
-            <span><i class="fa-solid fa-file-shield"></i> Тактическое Досье по Графу</span>
-            <button class="btn btn-primary" style="padding:3px 8px; font-size:10px;" onclick="printDossierReport()"><i class="fa-solid fa-print"></i> Печать / PDF</button>
-          </div>
-          <div id="graphDossierContent" class="ai-dossier-text" style="color:#cbd5e1; font-size:12px; line-height:1.55; white-space:pre-wrap;"></div>
+        <div id="visNetworkCanvas" style="width:100%; height:380px; background:#04060a; border:1px solid var(--card-border); border-radius:8px; margin-bottom:10px;"></div>
+        <div class="custom-card" id="graphDossierBox">
+          <div class="custom-card-title"><i class="fa-solid fa-file-shield"></i> Тактическое Досье по Графу</div>
+          <div id="graphDossierContent" style="color:#cbd5e1; font-size:11px; line-height:1.5; white-space:pre-wrap;"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ВЬЮ 5: АТРИБУЦИЯ ВИРТОВ -->
-  <div class="view-page" id="attributionView">
-    <div class="back-btn" onclick="showView('catalogView')">
-      <i class="fa-solid fa-arrow-left"></i> Назад в каталог
-    </div>
-
-    <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--purple);"><i class="fa-solid fa-user-secret"></i> Детектор виртов & Атрибуция основы</div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
-        Сопоставление цифровых следов виртов, купленных аккаунтов Telegram и поиск истинного владельца через мутации и метаданные ID.
-      </div>
-
-      <div class="input-row">
-        <input class="tool-input" id="attrTargetInput" placeholder="Введите юзернейм или ID вирта (например: @sock_puppet)" onkeydown="if(event.key==='Enter') runAttributionScanDirect()">
-        <button class="btn btn-purple" onclick="runAttributionScanDirect()"><i class="fa-solid fa-bolt"></i> Найти основу</button>
-      </div>
-
-      <div style="margin-bottom:10px;">
-        <input class="tool-input" id="attrTextSample" placeholder="Образец сообщений жертвы (опционально, для стилометрического анализа)...">
-      </div>
-
-      <div class="loader" id="attrLoader">
-        <div class="spinner" style="border-top-color:var(--purple);"></div>
-        <span style="font-size:11px; color:var(--purple);">Анализ мутаций никнеймов и цифровых следов...</span>
-      </div>
-
-      <div id="attrResultBox"></div>
-    </div>
-  </div>
-
-  <!-- ВЬЮ 6: ФОТО & EXIF GEOLOCATION -->
-  <div class="view-page" id="photoView">
-    <div class="back-btn" onclick="showView('catalogView')">
-      <i class="fa-solid fa-arrow-left"></i> Назад в каталог
-    </div>
-
-    <div class="workspace-box">
-      <div class="workspace-title" style="color:var(--cyan);"><i class="fa-solid fa-camera"></i> Разведка по Фото & Извлечение EXIF/GPS</div>
-      <div class="upload-dropzone" onclick="document.getElementById('directPhotoInput').click()" ondragover="event.preventDefault()" ondrop="handlePhotoDrop(event, 'directPhotoInput')">
-        <i class="fa-solid fa-cloud-arrow-up" style="font-size:36px; color:var(--cyan); margin-bottom:8px;"></i>
-        <div style="font-weight:700; color:#fff; font-size:14px;">Нажмите или перетащите фото для анализа</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">Извлечение GPS координат, камеры, даты съемки и поиск дубликатов в Сети</div>
-        <input type="file" id="directPhotoInput" accept="image/*" style="display:none;" onchange="processDirectPhoto(this)">
-      </div>
-      <img id="directPhotoPreview" class="upload-preview">
-
-      <div class="loader" id="photoLoader">
-        <div class="spinner" style="border-top-color:var(--cyan);"></div>
-        <span style="font-size:11px; color:var(--cyan);">Анализ структуры снимка и поиск совпадений...</span>
-      </div>
-
-      <div id="photoResultBox" style="margin-top:12px;"></div>
-    </div>
-  </div>
-
-  <!-- ВЬЮ 7: ДЕКОДЕРЫ & DORK BUILDER -->
+  <!-- ВЬЮ 5: ДЕКОДЕРЫ -->
   <div class="view-page" id="decoderView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -536,9 +391,9 @@ Examples: 'autorecon torvalds', 'crypto 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'do
 
     <div class="workspace-box">
       <div class="workspace-title"><i class="fa-solid fa-wrench"></i> Лаборатория Кибер-Декодеров</div>
-      <textarea class="tool-input" id="decoderInputData" placeholder="Вставьте зашифрованную строку, хеш (MD5/SHA256) или JWT токен..." style="width:100%; height:80px; resize:vertical; margin-bottom:8px;"></textarea>
+      <textarea class="tool-input" id="decoderInputData" placeholder="Вставьте зашифрованную строку, хеш или JWT..." style="width:100%; height:75px; resize:vertical; margin-bottom:8px;"></textarea>
 
-      <div class="btn-group" style="margin-bottom:12px;">
+      <div class="btn-group" style="margin-bottom:10px;">
         <button class="btn btn-primary" onclick="runDecoderAction('hash_id')"><i class="fa-solid fa-fingerprint"></i> Хеш-Идентификатор</button>
         <button class="btn btn-cyan" onclick="runDecoderAction('jwt_decode')"><i class="fa-solid fa-shield-halved"></i> JWT Token</button>
         <button class="btn btn-secondary" onclick="runDecoderAction('base64_decode')">Base64 Decode</button>
@@ -549,12 +404,12 @@ Examples: 'autorecon torvalds', 'crypto 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'do
 
       <div id="decoderResultBox" style="display:none;" class="custom-card">
         <div class="custom-card-title"><i class="fa-solid fa-terminal"></i> Результат обработки</div>
-        <pre id="decoderOutputPre" style="font-family:monospace; color:var(--primary); font-size:12px; white-space:pre-wrap; word-break:break-all; max-height:250px; overflow-y:auto;"></pre>
+        <pre id="decoderOutputPre" style="font-family:monospace; color:var(--primary); font-size:11px; white-space:pre-wrap; word-break:break-all; max-height:250px; overflow-y:auto;"></pre>
       </div>
     </div>
   </div>
 
-  <!-- ВЬЮ 8: АДМИН-ПАНЕЛЬ -->
+  <!-- ВЬЮ 6: АДМИН-ПАНЕЛЬ -->
   <div class="view-page" id="usersAdminView">
     <div class="back-btn" onclick="showView('catalogView')">
       <i class="fa-solid fa-arrow-left"></i> Назад в каталог
@@ -566,7 +421,7 @@ Examples: 'autorecon torvalds', 'crypto 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'do
         <button class="btn btn-purple" onclick="toggleAddUserModal()"><i class="fa-solid fa-plus"></i> Добавить</button>
       </div>
 
-      <div id="addUserFormBox" style="display:none; background:#0d1524; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid #1e293b;">
+      <div id="addUserFormBox" style="display:none; background:#07090e; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid var(--card-border);">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px;">
           <input class="tool-input" id="newUsername" placeholder="Позывной / Никнейм">
           <input class="tool-input" id="newNotes" placeholder="Telegram ID / Примечание">
@@ -615,15 +470,13 @@ Examples: 'autorecon torvalds', 'crypto 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'do
     </div>
   </div>
 
-  <!-- ВЬЮ 9: ЭКРАН БЛОКИРОВКИ -->
+  <!-- ВЬЮ 7: ЭКРАН БЛОКИРОВКИ -->
   <div class="view-page" id="blockedView">
     <div class="auth-container">
-      <div style="background:#13090e; border:2px solid var(--danger); border-radius:16px; padding:28px 22px; max-width:400px; width:100%; box-shadow:0 0 40px rgba(255,51,102,0.35); text-align:center;">
-        <i class="fa-solid fa-ban" style="font-size:52px; color:var(--danger); margin-bottom:14px;"></i>
-        <div style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">ДОСТУП ЗАБЛОКИРОВАН</div>
-        <div style="font-size:12px; color:#cbd5e1; line-height:1.55;">
-          Ваш аккаунт деактивирован администратором.<br>Доступ к платформе закрыт.
-        </div>
+      <div class="auth-card" style="border-color:var(--danger);">
+        <i class="fa-solid fa-ban auth-icon" style="color:var(--danger);"></i>
+        <div class="auth-title">ДОСТУП ЗАБЛОКИРОВАН</div>
+        <div class="auth-subtitle">Ваш аккаунт деактивирован администратором. Доступ закрыт.</div>
       </div>
     </div>
   </div>
@@ -634,229 +487,707 @@ Examples: 'autorecon torvalds', 'crypto 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'do
 </div>
 
 <script>
-let FULL_CATALOG = {catalog_json};
+const FULL_CATALOG = [{"id": "killer_monetization", "title": "💎 AI-Профайлинг, Шпион активности & AML Аудит (Premium)", "desc": "Высокоточные интеллектуальные модули: генерация психологических досье через нейросети, трекинг активности, AML-аудит криптовалют и Face AI.", "tools": [{"id": "ai_detective_profiler", "name": "🧠 AI Detective Profiler & Досье (Scam Score)", "repo": "https://github.com/sherlock-project/sherlock", "web_url": "", "purpose": "🎯 Сквозной сбор по всем базам + глубокий психологический профайлинг личности: оценка Scam/Catfish Score (0–100%), паттерны поведения, уровень дохода и детектор легенд.", "input": "username / nickname / full name / target", "web_runnable": true, "scan_type": "ai_profiler", "install_guide": {"git": "# Встроенный в платформу когнитивный аналитический модуль", "pip_or_pkg": "pip install google-genai httpx", "docker": "# Работает автономно", "usage": "Введите никнейм цели для генерации полного психологического досье", "notes": "Агрегирует данные Sherlock, GitHub, Instagram, Crypto и формирует отчет с AI-заключениями."}, "launch": {"type": "api", "label": "⚡ Сформировать AI Досье", "action": "scan_ai_profiler"}}, {"id": "tg_activity_tracker", "name": "⏱️ Telegram Activity & Sleep Tracker (Шпион активности)", "repo": "https://github.com/TelegramDB/TelegramDB", "web_url": "", "purpose": "📊 24-часовая тепловая карта активности и режима сна цели. Функция Mutual Spy — сопоставление времени онлайна двух пользователей на предмет тайного общения.", "input": "@username1 [и опционально @username2]", "web_runnable": true, "scan_type": "activity_tracker", "install_guide": {"git": "# Алгоритмический анализатор временных меток и сессий", "pip_or_pkg": "pip install httpx asyncio", "docker": "# Встроенный сервис", "usage": "Введите юзернейм или два юзернейма через запятую", "notes": "Определяет часовой пояс, фазы бодрствования и корреляцию активности."}, "launch": {"type": "api", "label": "⚡ Анализировать активность", "action": "scan_activity_tracker"}}, {"id": "crypto_aml_auditor", "name": "🚨 Crypto AML & Sanctions Risk Auditor (OFAC & Mixers)", "repo": "https://github.com/bitcoin/bitcoin", "web_url": "https://blockchair.com/", "purpose": "🛡️ Проверка криптокошельков BTC, ETH, TRC20 (USDT), SOL на шкалу риска AML (0–100%), связь с санкциями OFAC, миксерами Tornado Cash, даркнетом и дрейнерами.", "input": "BTC / ETH / TRON (TRC20) / SOL address", "web_runnable": true, "scan_type": "crypto_aml", "install_guide": {"git": "# Движок блокчейн-форензики и проверки списков санкций", "pip_or_pkg": "pip install httpx", "docker": "# Встроенный аудит", "usage": "Введите адрес кошелька для оценки риска чистоты активов", "notes": "Помогает избежать блокировок на биржах перед приемом оплаты."}, "launch": {"type": "api", "label": "⚡ Проверить AML Риск", "action": "scan_crypto_aml"}}, {"id": "face_search_ai", "name": "👤 Reverse Face AI Search & Deepfake Detector", "repo": "https://github.com/ageitgey/face_recognition", "web_url": "", "purpose": "🔍 Поиск совпадений человека по фото лица в открытых аватарах соцсетей (Telegram, VK, GitHub) + проверка на AI-генерацию (Deepfake / ThisPersonDoesNotExist).", "input": "фото лица (JPG / PNG / WebP)", "web_runnable": true, "scan_type": "face_search", "install_guide": {"git": "# Нейросетевой модуль биометрического анализа", "pip_or_pkg": "pip install Pillow numpy", "docker": "# Встроенный в WebApp", "usage": "Загрузите фото для поиска совпадений и анализа артефактов лица", "notes": "Выявляет фейковые профили в дейтинге и соцсетях."}, "launch": {"type": "api", "label": "⚡ Анализ лица и Deepfake", "action": "scan_face_search"}}, {"id": "digital_hygiene_audit", "name": "🛡️ Digital Hygiene & Personal Breach Audit (Аудит себя)", "repo": "https://github.com/sherlock-project/sherlock", "web_url": "", "purpose": "🔐 Проверка цифрового следа и истории утечек по email/телефону: расчет индекса уязвимости (Exposure Score) и чек-лист защиты личных данных.", "input": "email / телефон / юзернейм", "web_runnable": true, "scan_type": "breach_audit", "install_guide": {"git": "# Модуль аудита собственной цифровой гигиены", "pip_or_pkg": "pip install httpx", "docker": "# Не требуется", "usage": "Введите свою почту для проверки наличия в базах утечек", "notes": "Формирует персональный отчет по закрытию уязвимостей."}, "launch": {"type": "api", "label": "⚡ Проверить свои утечки", "action": "scan_breach_audit"}}, {"id": "target_monitor_alerts", "name": "🔔 Real-Time Target Monitor (Слежка в Telegram)", "repo": "https://github.com/TelegramDB/TelegramDB", "web_url": "", "purpose": "📡 Постановка цели (профиль TG, канал, криптокошелек) на непрерывное отслеживание: бот присылает уведомление при смене аватарки, био, юзернейма или крупных переводах.", "input": "@username / channel / wallet", "web_runnable": true, "scan_type": "target_alerts", "install_guide": {"git": "# Фоновый агент мониторинга целей", "pip_or_pkg": "pip install aiogram httpx", "docker": "# Работает в фоновом демоне", "usage": "Укажите цель для добавления в список активного наблюдения", "notes": "Уведомления приходят прямо в личные сообщения бота."}, "launch": {"type": "api", "label": "⚡ Поставить на мониторинг", "action": "subscribe_target_alerts"}}]}, {"id": "telegram_osint", "title": "✈️ Telegram Разведка & Анализ профилей", "desc": "Специализированные инструменты поиска и анализа Telegram-аккаунтов, каналов, групп и метаданных.", "tools": [{"id": "sockpuppet_attribution", "name": "🕵️ Детектор виртов & Атрибуция основы (Attribution Engine)", "repo": "https://github.com/sherlock-project/sherlock", "web_url": "https://t.me/", "purpose": "🎯 Выявление основного аккаунта и реальной личности по виртуальным, вторым или купленным профилям Telegram через анализ мутаций никнеймов, возраста ID, аватаров и баз данных.", "input": "telegram username / id / text", "web_runnable": true, "scan_type": "attribution", "install_guide": {"git": "# Встроенный в систему аналитический движок корреляции", "pip_or_pkg": "pip install httpx beautifulsoup4", "docker": "# Работает автономно в Docker", "usage": "Введите юзернейм или ID вирта для поиска цифровых связей", "notes": "Сопоставляет метаданные ID, цифровые следы и выявляет родительские аккаунты."}, "launch": {"type": "api", "label": "⚡ Найти основу вирта", "action": "scan_attribution"}}, {"id": "tg_inspector", "name": "Telegram Profile & ID Inspector", "repo": "https://github.com/TelegramDB/TelegramDB", "web_url": "https://t.me/", "purpose": "🔍 Анализ публичного Telegram-профиля: извлечение Bio, имени, аватарки, статуса бота/канала и примерная оценка даты регистрации по ID.", "input": "telegram username / id", "web_runnable": true, "scan_type": "telegram", "install_guide": {"git": "# Встроенный веб-сканер прямо в этой панели", "pip_or_pkg": "pip install httpx beautifulsoup4", "docker": "# Работает автономно в Docker", "usage": "Введите юзернейм в поле выше (например, @durov)", "notes": "Позволяет быстро получить публичные метаданные профиля без авторизации."}, "launch": {"type": "api", "label": "⚡ Проверить Telegram", "action": "scan_telegram"}}, {"id": "telepathy", "name": "Telepathy", "repo": "https://github.com/jordanwildon/Telepathy", "web_url": "https://github.com/jordanwildon/Telepathy", "purpose": "📊 Всесторонний сбор и анализ публичных Telegram-чатов и каналов: экспорт участников, форварды сообщений, связи и частота постов.", "input": "telegram channel / chat", "web_runnable": false, "install_guide": {"git": "git clone https://github.com/jordanwildon/Telepathy.git\ncd Telepathy", "pip_or_pkg": "pip3 install telepathy-osint", "docker": "docker run -it telepathy-osint", "usage": "telepathy -t @target_channel --export csv", "notes": "Требует API ID и API Hash с my.telegram.org для глубокого сбора публичных сообщений."}, "launch": {"type": "url", "label": "📖 GitHub Репозиторий", "href": "https://github.com/jordanwildon/Telepathy"}}, {"id": "telegramdb", "name": "TelegramDB Search", "repo": "https://github.com/TelegramDB/TelegramDB", "web_url": "https://telegramdb.org/", "purpose": "🌐 Глобальный поисковик и каталог открытых каналов, чатов и публичных сообщений Telegram.", "input": "keyword / handle / channel", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "# Общедоступный веб-сервис", "pip_or_pkg": "# Доступен через онлайн-интерфейс", "docker": "# Не требуется", "usage": "Открыть https://telegramdb.org/ и ввести ключевое слово или ник", "notes": "Помогает найти публичные чаты и каналы, связанные с интересующей темой."}, "launch": {"type": "url", "label": "🌐 Открыть TelegramDB Онлайн", "href": "https://telegramdb.org/"}}, {"id": "tgstat", "name": "TGStat Analytics", "repo": "https://tgstat.ru/", "web_url": "https://tgstat.ru/", "purpose": "📈 Глубокая статистика каналов, упоминаний, репостов, охватов и индексация постов в Telegram.", "input": "channel / post / keyword", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "# Официальный аналитический портал", "pip_or_pkg": "# Открытый веб-сервис", "docker": "# Не требуется", "usage": "Открыть https://tgstat.ru/ и ввести @channel", "notes": "Крупнейший публичный каталог статистики каналов и истории изменения названий/аватаров."}, "launch": {"type": "url", "label": "🌐 Открыть TGStat", "href": "https://tgstat.ru/"}}]}, {"id": "amazing_osint", "title": "🌟 Удивительный OSINT, GeoINT & Фото-детектив", "desc": "Необычные методики: определение времени съемки по тени от солнца, машина времени удаленных страниц, спутники и Vision AI.", "tools": [{"id": "suncalc", "name": "SunCalc (Теневой GeoINT)", "repo": "https://github.com/mourner/suncalc", "web_url": "https://suncalc.org/", "purpose": "☀️ Определение точного времени и даты съемки фото по углу солнца, высоте и длине отбрасываемой тени на объектах.", "input": "location / photo / date", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "git clone https://github.com/mourner/suncalc.git", "pip_or_pkg": "npm install suncalc", "docker": "# Работает в браузере на suncalc.org", "usage": "Открыть https://suncalc.org, указать точку на карте и сопоставить тень со снимка", "notes": "Ключевой инструмент международных OSINT-расследователей для подтверждения подлинности времени событий."}, "launch": {"type": "url", "label": "🌐 Открыть SunCalc Онлайн", "href": "https://suncalc.org/"}}, {"id": "wayback", "name": "Wayback Machine (Машина времени)", "repo": "https://github.com/internetarchive/wayback", "web_url": "https://web.archive.org/", "purpose": "⏳ Поиск удаленных профилей, старых постов, удаленных страниц сайтов и архивных копий с 1996 года.", "input": "url / profile link", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "# Официальный архив интернета", "pip_or_pkg": "pip install waybackpy", "docker": "# Не требуется", "usage": "waybackpy --url \"https://twitter.com/target\" --oldest", "notes": "Позволяет восстановить удаленный аккаунт или старые аватарки/био, сохраненные краулерами."}, "launch": {"type": "url", "label": "🌐 Открыть Wayback Machine", "href": "https://web.archive.org/"}}, {"id": "overpass_turbo", "name": "Overpass Turbo (Поиск по деталям карты)", "repo": "https://github.com/tyrasd/overpass-turbo", "web_url": "https://overpass-turbo.eu/", "purpose": "📍 Сверхточный гео-поиск: найти локацию по косвенным признакам (например, 'перекресток с трамвайными путями и кирпичной башней').", "input": "OSM query / filters", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "git clone https://github.com/tyrasd/overpass-turbo.git", "pip_or_pkg": "# Онлайн песочница запросов", "docker": "# Не требуется", "usage": "Открыть https://overpass-turbo.eu/ и запустить фильтрацию по тегам OpenStreetMap", "notes": "Позволяет отыскать точные координаты места съемки по элементам ландшафта."}, "launch": {"type": "url", "label": "🌐 Открыть Overpass Turbo", "href": "https://overpass-turbo.eu/"}}, {"id": "zoom_earth", "name": "Zoom Earth & Спутники", "repo": "https://zoom.earth/", "web_url": "https://zoom.earth/", "purpose": "🛰️ Спутниковые снимки планеты высокого разрешения в реальном времени, штормы, пожары и метеорологические данные.", "input": "coordinates / city", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "# Спутниковая платформа", "pip_or_pkg": "# Онлайн интерфейс", "docker": "# Не требуется", "usage": "Открыть https://zoom.earth/ для просмотра спутниковых слоев NASA/NOAA", "notes": "Обновление спутниковых снимков каждые 10-15 минут."}, "launch": {"type": "url", "label": "🌐 Открыть Zoom Earth", "href": "https://zoom.earth/"}}]}, {"id": "username_osint", "title": "🔍 Поиск по никнеймам (Sherlock & WhatsMyName 750+ баз)", "desc": "Инструменты для поиска профилей и открытых аккаунтов по псевдониму на сотнях платформ.", "tools": [{"id": "sherlock", "name": "Sherlock & WhatsMyName Engine (750+ Баз)", "repo": "https://github.com/sherlock-project/sherlock", "web_url": "https://sherlock-project.github.io/", "purpose": "⚡ Глобальный мульти-поиск аккаунтов по 750+ базам данных (Steam, Telegram, GitHub, VK, TikTok, Reddit, Twitch, Habr, Pikabu, WhatsMyName и др.) с дедукцией данных.", "input": "username", "web_runnable": true, "scan_type": "username", "install_guide": {"git": "git clone https://github.com/sherlock-project/sherlock.git\ncd sherlock", "pip_or_pkg": "python3 -m pip install -r requirements.txt", "docker": "docker run --rm -t mysherlock user123", "usage": "python3 sherlock.py <username> --print-found", "notes": "В панель интегрирован быстрый асинхронный движок, опрашивающий сервисы параллельно."}, "launch": {"type": "api", "label": "⚡ Запустить в WebApp", "action": "scan_username"}}, {"id": "maigret", "name": "Maigret", "repo": "https://github.com/soxoj/maigret", "web_url": "https://maigret.readthedocs.io/", "purpose": "Мощный сборщик досье по нику с проверкой 3000+ сайтов, парсингом профилей и генерацией графа связей.", "input": "username", "web_runnable": true, "scan_type": "username", "install_guide": {"git": "git clone https://github.com/soxoj/maigret.git\ncd maigret", "pip_or_pkg": "pip3 install maigret", "docker": "docker run --rm -it soxoj/maigret <username> --html", "usage": "maigret <username> -a --html", "notes": "Генерирует наглядные HTML и PDF отчеты с найденными аватарками и ссылками."}, "launch": {"type": "api", "label": "⚡ Запустить в WebApp", "action": "scan_username"}}, {"id": "blackbird", "name": "Blackbird", "repo": "https://github.com/p1ngul1n0/blackbird", "web_url": "https://github.com/p1ngul1n0/blackbird", "purpose": "Асинхронный быстрый чекер никнеймов со встроенным локальным Web UI и REST API.", "input": "username", "web_runnable": true, "scan_type": "username", "install_guide": {"git": "git clone https://github.com/p1ngul1n0/blackbird\ncd blackbird", "pip_or_pkg": "pip3 install -r requirements.txt", "docker": "docker build -t blackbird .\ndocker run -p 9797:9797 blackbird", "usage": "python3 blackbird.py -u <username>\n# Или веб-интерфейс:\npython3 blackbird.py --web", "notes": "При запуске с ключом --web поднимает локальную веб-панель на порту 9797."}, "launch": {"type": "api", "label": "⚡ Запустить в WebApp", "action": "scan_username"}}, {"id": "social_analyzer", "name": "Social-Analyzer", "repo": "https://github.com/qeeqbox/social-analyzer", "web_url": "https://github.com/qeeqbox/social-analyzer", "purpose": "API и веб-инструмент для глубокого анализа профилей на 1000+ платформах с автоматическими скриншотами.", "input": "username / profile name", "web_runnable": false, "install_guide": {"git": "git clone https://github.com/qeeqbox/social-analyzer.git\ncd social-analyzer", "pip_or_pkg": "pip3 install social-analyzer", "docker": "docker run -p 9005:9005 -it qeeqbox/social-analyzer", "usage": "python3 app.py --username \"wertag20\"", "notes": "Поддерживает обнаружение аккаунтов по шаблонам профилей и строкам поиска."}, "launch": {"type": "url", "label": "📖 GitHub Репозиторий", "href": "https://github.com/qeeqbox/social-analyzer"}}, {"id": "whatsmyname", "name": "WhatsMyName", "repo": "https://github.com/WebBreacher/WhatsMyName", "web_url": "https://whatsmyname.app/", "purpose": "Популярный каталог и веб-сервис для мгновенного поиска аккаунтов по открытой JSON-базе паттернов.", "input": "username", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "git clone https://github.com/WebBreacher/WhatsMyName.git", "pip_or_pkg": "pip3 install -r requirements.txt", "docker": "# Сервис полностью доступен онлайн на https://whatsmyname.app/", "usage": "python3 wmn-data.py -u <username>", "notes": "База WhatsMyName используется в большинстве мировых OSINT-фреймворков."}, "launch": {"type": "url", "label": "🌐 Открыть WhatsMyName WebApp", "href": "https://whatsmyname.app/"}}]}, {"id": "social_google_instagram", "title": "📱 Google, Instagram & Социальная разведка", "desc": "Специализированные утилиты для извлечения скрытых ID, почт, привязок телефонов и Google-аккаунтов.", "tools": [{"id": "ghunt", "name": "GHunt (Google Account Recon)", "repo": "https://github.com/mxrch/GHunt", "web_url": "https://github.com/mxrch/GHunt", "purpose": "🔍 Разведка аккаунтов Google по почте: Gaia ID, отзывы на Google Картах, фотографии, Google Drive, YouTube канал и календарь.", "input": "gmail address", "web_runnable": false, "install_guide": {"git": "git clone https://github.com/mxrch/GHunt.git\ncd GHunt", "pip_or_pkg": "pip install ghunt", "docker": "docker run -v $(pwd)/resources:/usr/src/app/resources -it ghunt email target@gmail.com", "usage": "ghunt email target@gmail.com", "notes": "Позволяет составить гео-трек пользователя по его публичным отзывам на Google Maps."}, "launch": {"type": "url", "label": "📖 GitHub Репозиторий", "href": "https://github.com/mxrch/GHunt"}}, {"id": "instaloader", "name": "Instaloader (Python Instagram Downloader & Metadata Extractor)", "repo": "https://github.com/instaloader/instaloader", "web_url": "https://instaloader.github.io/", "purpose": "📥 Мощнейший Python-инструмент для выгрузки постов, историй, видео и сохранения оригинальных EXIF-метаданных, геопозиций и текстовых описаний для анализа.", "input": "instagram username / post link", "web_runnable": true, "scan_type": "cli_tool", "install_guide": {"git": "git clone https://github.com/instaloader/instaloader.git\ncd instaloader", "pip_or_pkg": "pip3 install instaloader", "docker": "docker run --rm -v $(pwd):/data instaloader/instaloader --geotags profile <target>", "usage": "instaloader --geotags --comments --stories profile <username>", "notes": "Сохраняет геометки фотографий и выгружает полный дамп текстовых комментариев."}, "launch": {"type": "api", "label": "⚡ Анализ Instagram в WebApp", "action": "scan_universal"}}, {"id": "osintgram", "name": "Osintgram (Интерактивная консоль Instagram-разведки)", "repo": "https://github.com/Datalux/Osintgram", "web_url": "https://github.com/Datalux/Osintgram", "purpose": "🕵️ Интерактивный терминал разведки по Instagram: анализ подписчиков, извлечение телефонных номеров, почт, геотегов с фото и истории комментариев.", "input": "instagram username", "web_runnable": true, "scan_type": "cli_tool", "install_guide": {"git": "git clone https://github.com/Datalux/Osintgram.git\ncd Osintgram", "pip_or_pkg": "pip3 install -r requirements.txt", "docker": "docker build -t osintgram .\ndocker run --rm -it -v \"$PWD/output:/output\" osintgram <target>", "usage": "python3 main.py <target_username>", "notes": "Команды внутри шелла: `addrs` (геометки), `comments` (комментарии), `followers` (подписчики)."}, "launch": {"type": "api", "label": "⚡ Запустить Osintgram", "action": "scan_universal"}}, {"id": "toutatis", "name": "Toutatis (Instagram Phone/Email Mask Extractor)", "repo": "https://github.com/megadose/toutatis", "web_url": "https://github.com/megadose/toutatis", "purpose": "📸 Извлечение скрытых данных из Instagram: маскированный номер телефона (+7***42), частичная почта, числовой ID аккаунта через API восстановления.", "input": "instagram handle", "web_runnable": true, "scan_type": "cli_tool", "install_guide": {"git": "git clone https://github.com/megadose/toutatis.git\ncd toutatis", "pip_or_pkg": "pip3 install toutatis", "docker": "docker build -t toutatis .\ndocker run -it toutatis", "usage": "toutatis -u <username> -s \"YOUR_SESSIONID\"", "notes": "Использует официальные эндпоинты Instagram для получения масок телефона и почты."}, "launch": {"type": "api", "label": "⚡ Пробить Toutatis", "action": "scan_universal"}}, {"id": "instagram_followers_parser", "name": "Instagram Followers DOM Parser (VladiStep)", "repo": "https://github.com/VladiStep/instagram_followers_parser", "web_url": "https://github.com/VladiStep/instagram_followers_parser", "purpose": "⚡ Быстрый JavaScript-скрипт для консоли браузера (F12) для автоматического скролла и парсинга подписчиков страницы.", "input": "instagram profile url", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "git clone https://github.com/VladiStep/instagram_followers_parser.git", "pip_or_pkg": "# Браузерный скрипт для консоли Chrome DevTools", "docker": "# Не требуется", "usage": "Вставить код `instagramFollowersParser.js` в консоль F12 на странице подписчиков", "notes": "Использует MutationObserver для оптимизированного скролла без нагрузки на RAM."}, "launch": {"type": "url", "label": "📖 GitHub Репозиторий", "href": "https://github.com/VladiStep/instagram_followers_parser"}}, {"id": "vk_recon", "name": "ВКонтакте Deep Recon & Hidden Friends Finder", "repo": "https://github.com/sherlock-project/sherlock", "web_url": "https://vk.com/", "purpose": "🌐 Разведка по профилям VK: извлечение открытых записей, привязок к городу, альбомов, скрытых друзей и старых id.", "input": "vk id / screen_name", "web_runnable": true, "scan_type": "username", "install_guide": {"git": "# Встроенный в систему веб-сканер", "pip_or_pkg": "pip install httpx", "docker": "# Работает автономно", "usage": "Введите ник или ID страницы (например, durov или id1)", "notes": "Генерирует поисковые дорки по стене и архивам записей."}, "launch": {"type": "api", "label": "⚡ Анализ VK в WebApp", "action": "scan_username"}}, {"id": "tiktok_osint", "name": "TikTok Profile & Metadata Recon", "repo": "https://github.com/drawrowfly/tiktok-scraper", "web_url": "https://www.tiktok.com/", "purpose": "🎵 Извлечение числового SecUID, аватаров высокого разрешения, даты регистрации и истории хэштегов из TikTok.", "input": "tiktok handle (@username)", "web_runnable": true, "scan_type": "username", "install_guide": {"git": "git clone https://github.com/drawrowfly/tiktok-scraper.git", "pip_or_pkg": "npm install -g tiktok-scraper", "docker": "docker run -it drawrowfly/tiktok-scraper user <username>", "usage": "tiktok-scraper user <username> -d --history", "notes": "Позволяет скачать медиа и извлечь скрытый идентификатор автора."}, "launch": {"type": "api", "label": "⚡ Проверить TikTok", "action": "scan_username"}}]}, {"id": "web_infra_secrets", "title": "🌐 Разведка сайтов, доменов и поиск утечек ключей", "desc": "Инструменты для исследования веб-ресурсов, поиска субдоменов, проверки DNS, краулинга и поиска утекших секретов.", "tools": [{"id": "photon", "name": "Photon Web OSINT Crawler", "repo": "https://github.com/s0md3v/Photon", "web_url": "https://github.com/s0md3v/Photon", "purpose": "🕷️ Невероятно быстрый веб-краулер: извлечение ссылок, email-адресов, аккаунтов соцсетей, ключей API, файлов и поддоменов с целевого сайта.", "input": "website url", "web_runnable": false, "install_guide": {"git": "git clone https://github.com/s0md3v/Photon.git\ncd Photon", "pip_or_pkg": "pip3 install -r requirements.txt", "docker": "docker build -t photon .\ndocker run -it --name photon-running photon -u target.com", "usage": "python3 photon.py -u https://target.com --keys --export", "notes": "Автоматически находит скрытые ссылки и эндпоинты в JavaScript файлах."}, "launch": {"type": "url", "label": "📖 GitHub Репозиторий", "href": "https://github.com/s0md3v/Photon"}}, {"id": "trufflehog", "name": "TruffleHog (Поиск утекших ключей)", "repo": "https://github.com/trufflesecurity/trufflehog", "web_url": "https://trufflesecurity.com/", "purpose": "🔑 Сканирование репозиториев, коммитов и веб-страниц на наличие утекших API-ключей, токенов AWS, Telegram Bot API, OpenAI и приватных SSH-ключей.", "input": "git repo / url / s3", "web_runnable": false, "install_guide": {"git": "git clone https://github.com/trufflesecurity/trufflehog.git", "pip_or_pkg": "curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin", "docker": "docker run -it --rm trufflesecurity/trufflehog:latest github --repo https://github.com/target/repo", "usage": "trufflehog github --repo https://github.com/target/repo", "notes": "Проверяет валидность найденных ключей через реальные API запросы."}, "launch": {"type": "url", "label": "📖 GitHub Репозиторий", "href": "https://github.com/trufflesecurity/trufflehog"}}, {"id": "finalrecon", "name": "FinalRecon", "repo": "https://github.com/thewhiteh4t/FinalRecon", "web_url": "https://github.com/thewhiteh4t/FinalRecon", "purpose": "🎯 Универсальный швейцарский нож разведки веб-целей: Whois, DNS, SSL, заголовки, краулинг, порты и архивные ссылки Wayback.", "input": "domain / url", "web_runnable": false, "install_guide": {"git": "git clone https://github.com/thewhiteh4t/FinalRecon.git\ncd FinalRecon", "pip_or_pkg": "pip3 install -r requirements.txt", "docker": "docker build -t finalrecon .\ndocker run -it finalrecon --full https://target.com", "usage": "python3 finalrecon.py --full https://target.com", "notes": "Генерирует аккуратный сводный отчет в консоли и сохраняет данные в формате TXT."}, "launch": {"type": "url", "label": "📖 GitHub Репозиторий", "href": "https://github.com/thewhiteh4t/FinalRecon"}}, {"id": "webcheck", "name": "Web-Check", "repo": "https://github.com/Lissy93/web-check", "web_url": "https://web-check.xyz/", "purpose": "Комплексный веб-комбайн: SSL, DNS, открытые порты, заголовки безопасности, Whois, хостинг и cookies.", "input": "domain", "web_runnable": true, "scan_type": "domain", "install_guide": {"git": "git clone https://github.com/Lissy93/web-check.git\ncd web-check", "pip_or_pkg": "npm install && npm run build", "docker": "docker run -p 3000:3000 lissy93/web-check", "usage": "# Запустить локально:\nyarn start # (порт 3000)", "notes": "Доступен публичный облачный сервис https://web-check.xyz/ без необходимости локальной установки."}, "launch": {"type": "url", "label": "🌐 Открыть Web-Check Онлайн", "href": "https://web-check.xyz/"}}, {"id": "subfinder", "name": "Subfinder", "repo": "https://github.com/projectdiscovery/subfinder", "web_url": "https://github.com/projectdiscovery/subfinder", "purpose": "Скоростной инструмент пассивного поиска субдоменов через открытые источники данных.", "input": "domain", "web_runnable": true, "scan_type": "domain", "install_guide": {"git": "git clone https://github.com/projectdiscovery/subfinder.git\ncd subfinder/v2/cmd/subfinder\ngo build .", "pip_or_pkg": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest", "docker": "docker run projectdiscovery/subfinder:latest -d example.com", "usage": "subfinder -d target.com -o subdomains.txt", "notes": "Пассивный поиск поддоменов без прямого сканирования целевого сервера."}, "launch": {"type": "api", "label": "⚡ Пассивный скан домена", "action": "scan_domain"}}]}, {"id": "mapping_investigation", "title": "🗺️ Картирование связей, графы и фреймворки", "desc": "Инструменты для построения графов расследования, визуализации связей и сводных OSINT-панелей.", "tools": [{"id": "spiderfoot", "name": "SpiderFoot OSINT Framework", "repo": "https://github.com/smicallef/spiderfoot", "web_url": "https://www.spiderfoot.net/", "purpose": "🕷️ Автоматизированный комбайн сбора разведданных по 200+ источникам данных: сопоставление IP, доменов, почт, телефонов и графы связей.", "input": "domain / ip / email / name", "web_runnable": false, "install_guide": {"git": "git clone https://github.com/smicallef/spiderfoot.git\ncd spiderfoot", "pip_or_pkg": "pip3 install -r requirements.txt", "docker": "docker run -p 5001:5001 spiderfoot", "usage": "python3 sf.py -l 127.0.0.1:5001 # Веб-панель", "notes": "Поднимает полноценную веб-лабораторию с интерактивным графом связей расследования."}, "launch": {"type": "url", "label": "📖 GitHub Репозиторий", "href": "https://github.com/smicallef/spiderfoot"}}, {"id": "maltego", "name": "Maltego Visual Link Analysis", "repo": "https://github.com/maltego", "web_url": "https://www.maltego.com/", "purpose": "🌐 Отраслевой стандарт визуального картирования связей между людьми, организациями, доменами, IP и соцсетями на интерактивном графе.", "input": "entity graph / transforms", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "# Десктопное приложение", "pip_or_pkg": "# Доступна бесплатная версия Maltego Community Edition", "docker": "# Не требуется", "usage": "Скачать с https://www.maltego.com/ и запустить визуальные трансформации (Transforms)", "notes": "Позволяет исследовать сложные цепочки связей в виде интерактивной карты."}, "launch": {"type": "url", "label": "🌐 Сайт Maltego", "href": "https://www.maltego.com/"}}, {"id": "osint_framework", "name": "OSINT Framework Tree", "repo": "https://github.com/lockfale/osint-framework", "web_url": "https://osintframework.com/", "purpose": "🌳 Интерактивное дерево-навигатор по всем мировым открытым источникам данных, реестрам, архивам и инструментам.", "input": "interactive tree", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "git clone https://github.com/lockfale/osint-framework.git", "pip_or_pkg": "# Доступно онлайн", "docker": "# Не требуется", "usage": "Открыть https://osintframework.com/ и выбрать ветку интересующего типа данных", "notes": "Самый структурированный путеводитель по методикам сбора информации."}, "launch": {"type": "url", "label": "🌐 Открыть OSINT Framework", "href": "https://osintframework.com/"}}]}, {"id": "email_checks", "title": "📧 Почта и Телефонная разведка (Email & Phone OSINT)", "desc": "Инструменты проверки валидности email-адресов, MX-записей, привязок и разведки по номерам телефонов.", "tools": [{"id": "phoneinfoga_recon", "name": "📱 PhoneInfoga Recon & Number Inspector", "repo": "https://github.com/sundowndev/phoneinfoga", "web_url": "https://github.com/sundowndev/phoneinfoga", "purpose": "🔍 Комплексная разведка по номеру телефона: определение оператора, региона, типа линии (VoIP/Мобильный), мессенджеры (WA/TG/Viber) и поисковые дорки по доскам объявлений и соцсетям.", "input": "phone", "web_runnable": true, "scan_type": "phone", "install_guide": {"git": "git clone https://github.com/sundowndev/phoneinfoga.git\ncd phoneinfoga", "pip_or_pkg": "curl -sSL https://raw.githubusercontent.com/sundowndev/phoneinfoga/master/support/run | bash", "docker": "docker run -it sundowndev/phoneinfoga scan -n <phone>", "usage": "./phoneinfoga scan -n +79991234567", "notes": "Определяет оператора, валидность формата E.164 и генерирует поисковые сканеры."}, "launch": {"type": "api", "label": "⚡ Проверить телефон в WebApp", "action": "scan_phone"}}, {"id": "holehe", "name": "Holehe", "repo": "https://github.com/megadose/holehe", "web_url": "https://github.com/megadose/holehe", "purpose": "Проверка регистрации email на 120+ сервисах (через формы забытого пароля без спама/уведомлений).", "input": "email", "web_runnable": true, "scan_type": "email", "install_guide": {"git": "git clone https://github.com/megadose/holehe.git\ncd holehe", "pip_or_pkg": "pip3 install holehe", "docker": "docker run --rm -it megadose/holehe <email>", "usage": "holehe target@example.com --only-used", "notes": "Флаг --only-used показывает только сайты, где адрес действительно найден."}, "launch": {"type": "api", "label": "⚡ Проверить Email в WebApp", "action": "scan_email"}}, {"id": "epieos", "name": "Epieos", "repo": "https://github.com/epieos", "web_url": "https://epieos.com/", "purpose": "Онлайн-поисковик информации по Email и номеру телефона (Google ID, календарь, профили).", "input": "email", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "# Облачный сервис, установка не требуется", "pip_or_pkg": "# Доступно через Web UI", "docker": "# Доступно через https://epieos.com/", "usage": "Открыть https://epieos.com/ и ввести адрес почты", "notes": "Позволяет узнать Google User ID и публичный профиль Google Maps."}, "launch": {"type": "url", "label": "🌐 Открыть Epieos Web", "href": "https://epieos.com/"}}]}, {"id": "security_utilities", "title": "🛠️ Швейцарский нож аналитика и веб-утилиты", "desc": "Универсальные веб-комбайны для декодирования данных, проверки IP, ASN и интерактивные лаборатории.", "tools": [{"id": "cyberchef", "name": "CyberChef (GCHQ)", "repo": "https://github.com/gchq/CyberChef", "web_url": "https://gchq.github.io/CyberChef/", "purpose": "«Швейцарский нож» аналитика: декодирование Base64, Hex, URL, парсинг регулярных выражений, хеширование и конвертация.", "input": "data / string", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "git clone https://github.com/gchq/CyberChef.git\ncd CyberChef\nnpm install && npm run build", "pip_or_pkg": "# Доступна готовая веб-версия в браузере", "docker": "docker run -d -p 8080:80 mpepping/cyberchef", "usage": "Открыть https://gchq.github.io/CyberChef/ в браузере", "notes": "Работает полностью на стороне клиента (в браузере) без отправки данных на сервер."}, "launch": {"type": "url", "label": "🌐 Открыть CyberChef Онлайн", "href": "https://gchq.github.io/CyberChef/"}}, {"id": "ipinfo", "name": "IP-API & Geolocation", "repo": "https://github.com/ipinfo", "web_url": "https://ipinfo.io/", "purpose": "Определение провайдера (ISP), AS-номера, страны, города и диапазона IP-адресов.", "input": "ip", "web_runnable": true, "scan_type": "ip", "install_guide": {"git": "# Публичный REST API", "pip_or_pkg": "curl -s http://ip-api.com/json/8.8.8.8", "docker": "# Не требуется", "usage": "curl http://ip-api.com/json/<target_ip>", "notes": "Быстрая идентификация хостинга, датацентра или мобильного оператора."}, "launch": {"type": "api", "label": "⚡ Анализ IP в WebApp", "action": "scan_ip"}}, {"id": "shodan_search", "name": "Shodan Search Engine", "repo": "https://github.com/achillean/shodan-python", "web_url": "https://www.shodan.io/", "purpose": "Поисковик по подключенным к интернету устройствам, открытым портам, баннерам и веб-серверам.", "input": "ip / domain / query", "web_runnable": true, "scan_type": "web_link", "install_guide": {"git": "git clone https://github.com/achillean/shodan-python.git\ncd shodan-python", "pip_or_pkg": "pip install shodan", "docker": "docker run -it --rm achillean/shodan shodan search apache", "usage": "shodan init <YOUR_API_KEY>\nshodan host 8.8.8.8", "notes": "Требует бесплатного API-ключа с сайта shodan.io."}, "launch": {"type": "url", "label": "🌐 Открыть Shodan.io", "href": "https://www.shodan.io/"}}]}, {"id": "hacker_crypto_git", "title": "💻 GitHub, Блокчейн & Deep OSINT", "desc": "Глубокая разведка по исходному коду, коммитам, криптокошелькам и утечкам.", "tools": [{"id": "github_recon", "name": "GitHub Deep Recon & Commit Email Finder", "repo": "https://github.com/techgaun/github-dorks", "web_url": "https://github.com/", "purpose": "🔍 Деанонимизация разработчика: извлечение скрытых email-адресов и реального имени из открытых git-коммитов, анализ SSH/GPG ключей и активности.", "input": "github username", "web_runnable": true, "scan_type": "github", "install_guide": {"git": "# Встроенный в систему веб-сканер GitHub API", "pip_or_pkg": "pip install httpx", "docker": "# Работает автономно в Cyber Hub", "usage": "Введите GitHub юзернейм (например: torvalds)", "notes": "Находит реальный email автора из истории PushEvent событий."}, "launch": {"type": "api", "label": "⚡ Анализ GitHub", "action": "scan_github"}}, {"id": "crypto_tracker", "name": "Crypto Wallet & Blockchain Explorer", "repo": "https://github.com/blockchair", "web_url": "https://blockchair.com/", "purpose": "💰 Разведка по криптокошелькам: определение сети (BTC, ETH, TRON/USDT-TRC20, Solana), баланса, истории транзакций и ссылок на AML-проверку.", "input": "crypto wallet address", "web_runnable": true, "scan_type": "crypto", "install_guide": {"git": "# Встроенный мультичейн анализатор блокчейна", "pip_or_pkg": "pip install httpx", "docker": "# Работает автономно в Cyber Hub", "usage": "Введите адрес кошелька (например: 0x... или T...)", "notes": "Позволяет быстро отследить движение средств и биржевые транзакции."}, "launch": {"type": "api", "label": "⚡ Проверить кошелек", "action": "scan_crypto"}}, {"id": "holehe_osint", "name": "Holehe Multi-Service Email Presence", "repo": "https://github.com/megadose/holehe", "web_url": "https://github.com/megadose/holehe", "purpose": "📧 Проверка привязки Email к 120+ сайтам (Instagram, Twitter, Discord, Amazon, GitHub и др.) без отправки уведомлений жертве.", "input": "email", "web_runnable": true, "scan_type": "email", "install_guide": {"git": "git clone https://github.com/megadose/holehe.git\ncd holehe", "pip_or_pkg": "pip install holehe", "docker": "docker run -it --rm megadose/holehe holehe target@email.com", "usage": "holehe target@email.com", "notes": "Позволяет составить полный цифровой профиль человека по его почте."}, "launch": {"type": "api", "label": "⚡ Проверить Email", "action": "scan_email"}}]}, {"id": "deep_archive_recon", "title": "🏛️ Архивы, Удаленные данные & Сквозной Auto-Recon", "desc": "Сквозной сбор связей, поиск в Wayback Machine, история SSL-сертификатов и архивных копий.", "tools": [{"id": "autorecon", "name": "⚡ Сквозной Auto-Recon & Граф связей (Auto-Investigator)", "repo": "https://github.com/sherlock-project/sherlock", "web_url": "", "purpose": "🕸️ Автоматическое сквозное расследование: сбор профилей, коммит-email, проверка серверов, построение интерактивного графа связей и тактического досье.", "input": "username / email / domain / phone", "web_runnable": true, "scan_type": "autorecon", "install_guide": {"git": "# Встроенный в систему авто-движок расследования", "pip_or_pkg": "# Работает автономно в WebApp", "docker": "# Встроенный модуль", "usage": "Введите любую цель для сквозного построения графа связей", "notes": "Объединяет Sherlock, GitHub коммиты, Holehe и Wayback в единый граф."}, "launch": {"type": "api", "label": "⚡ Запустить Auto-Recon", "action": "scan_autorecon"}}, {"id": "wayback", "name": "🏛️ Wayback Machine & Archive.org Inspector", "repo": "https://github.com/internetarchive/wayback", "web_url": "https://web.archive.org/", "purpose": "⏳ Поиск удаленных страниц, старых версий профилей соцсетей, контактов и снимков сайтов за прошлые годы через Web Archive API.", "input": "url / domain / profile link", "web_runnable": true, "scan_type": "wayback", "install_guide": {"git": "# Встроенный модуль обращения к CDX API Archive.org", "pip_or_pkg": "pip install httpx", "docker": "# Доступно в веб-панели", "usage": "wayback_machine --target github.com/username", "notes": "Позволяет увидеть, что было написано на странице до ее удаления."}, "launch": {"type": "api", "label": "⚡ Проверить архивы", "action": "scan_wayback"}}, {"id": "crtsh", "name": "📜 Certificate Transparency Logs (crt.sh)", "repo": "https://github.com/crtsh/crt.sh", "web_url": "https://crt.sh/", "purpose": "🔍 Поиск скрытых, тестовых и забытых поддоменов через глобальные журналы прозрачности SSL-сертификатов.", "input": "domain", "web_runnable": true, "scan_type": "crtsh", "install_guide": {"git": "# Встроенный парсер журналов сертификатов crt.sh", "pip_or_pkg": "curl https://crt.sh/?q=%.target.com&output=json", "docker": "# Работает через API", "usage": "crtsh --domain example.com", "notes": "Находит поддомены, которых нет в открытых записях DNS."}, "launch": {"type": "api", "label": "⚡ Анализ SSL журналов", "action": "scan_crtsh"}}]}, {"id": "cyber_tools_lab", "title": "🧰 Лаборатория Декодеров & Dork Builder", "desc": "Конструктор боевых дорков, автоопределение хешей (MD5/SHA256/bcrypt), JWT и мульти-декодеры.", "tools": [{"id": "cyberchef_decoder", "name": "🧰 Кибер-декодер (Base64, Hex, ROT13, URL)", "repo": "https://github.com/gchq/CyberChef", "web_url": "https://gchq.github.io/CyberChef/", "purpose": "🔓 Универсальный швейцарский нож декодирования: Base64, Hex, URL, Binary, ROT13 прямо в интерфейсе.", "input": "encoded string / payload", "web_runnable": true, "scan_type": "decoder", "install_guide": {"git": "# Встроенная лаборатория декодеров", "pip_or_pkg": "# Доступно в WebApp", "docker": "# Не требуется", "usage": "Введите зашифрованную строку и выберите алгоритм", "notes": "Позволяет быстро разобрать полезную нагрузку."}, "launch": {"type": "api", "label": "⚡ Открыть декодер", "action": "open_decoder"}}, {"id": "hash_identifier", "name": "🔐 Hash Identifier & Analyzer", "repo": "https://github.com/blackploit/hash-identifier", "web_url": "https://hashes.com/", "purpose": "🎯 Автоматическое определение алгоритма хеширования (MD5, SHA-1, SHA-256, NTLM, bcrypt, Argon2).", "input": "hash string", "web_runnable": true, "scan_type": "decoder", "install_guide": {"git": "# Встроенный анализатор хешей", "pip_or_pkg": "# Доступно в WebApp", "docker": "# Не требуется", "usage": "Вставьте хеш (например: e10adc3949ba59abbe56e057f20f883e)", "notes": "Определяет разрядность и вероятные алгоритмы."}, "launch": {"type": "api", "label": "⚡ Идентифицировать хеш", "action": "open_decoder"}}, {"id": "jwt_decoder", "name": "🛡️ JWT Token & Payload Inspector", "repo": "https://jwt.io/", "web_url": "https://jwt.io/", "purpose": "🔑 Разбор структуры токенов авторизации (Header, Payload, claims, таймстампы) без отправки ключа.", "input": "jwt token", "web_runnable": true, "scan_type": "decoder", "install_guide": {"git": "# Встроенный инспектор JWT", "pip_or_pkg": "# Доступно в WebApp", "docker": "# Не требуется", "usage": "Вставьте токен eyJhbGciOi...", "notes": "Показывает права пользователя и время истечения токена."}, "launch": {"type": "api", "label": "⚡ Анализ JWT", "action": "open_decoder"}}, {"id": "crypto_forensics", "name": "🪙 Crypto & Blockchain Wallet Forensics (BTC, ETH, TRON)", "repo": "https://github.com/blockstream/esplora", "web_url": "https://blockstream.info/", "purpose": "💰 Разведка криптокошельков: проверка баланса, объема всех транзакций, даты первой/последней активности для Bitcoin (BTC), Ethereum (ETH) и TRON/USDT (TRC-20).", "input": "crypto address (1..., 3..., bc1..., 0x..., T...)", "web_runnable": true, "scan_type": "crypto", "install_guide": {"git": "# Встроенный чекер публичных блокчейнов", "pip_or_pkg": "pip install httpx", "docker": "# Доступно в WebApp", "usage": "crypto_recon --address 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", "notes": "Автоматически определяет сеть (BTC, ETH, TRX) и строит сводку баланса."}, "launch": {"type": "api", "label": "⚡ Проверить кошелек", "action": "scan_crypto"}}, {"id": "dorking_wizard", "name": "🧙‍♂️ OSINT Dorking Matrix & Leak Finder", "repo": "https://github.com/BullsEye0/dork-cli", "web_url": "https://google.com/", "purpose": "🎯 Генератор 25+ боевых поисковых дорков: поиск скрытых документов (.pdf/.xlsx), открытых баз (.sql/.env), утечек на Pastebin и следов в Instagram, VK, TikTok.", "input": "target username / keyword / domain", "web_runnable": true, "scan_type": "dorks", "install_guide": {"git": "# Встроенный конструктор поисковых матриц", "pip_or_pkg": "# Доступно в WebApp", "docker": "# Не требуется", "usage": "Введите слово для генерации ссылок под Google, Yandex, DuckDuckGo", "notes": "Позволяет запустить точечный поиск по скрытым документам и паролям в один клик."}, "launch": {"type": "api", "label": "⚡ Сгенерировать дорки", "action": "scan_dorks"}}]}];
 let currentCategory = 'all';
 let activeTool = null;
-let currentSessionUser = '';
-let tgUserId = '';
-
-let isUserAdmin = false;
 let currentSessionUser = 'Agent';
 let tgUserId = '';
+let isUserAdmin = false;
 
-function openAdminPanel() {{
+function showView(viewId) {
+  document.querySelectorAll('.view-page').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById(viewId);
+  if (el) {
+    el.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function openStarsModal() {
+  const m = document.getElementById('starsModal');
+  if (m) m.style.display = 'flex';
+}
+
+function closeStarsModal() {
+  const m = document.getElementById('starsModal');
+  if (m) m.style.display = 'none';
+}
+
+function buyStarsPkg(pkgId) {
+  alert('Для покупки тарифа отправьте /buy в Telegram-боте.');
+}
+
+function setFilter(cat, element) {
+  currentCategory = cat;
+  document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+  if (element) element.classList.add('active');
+  renderCatalog();
+}
+
+function renderCatalog() {
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  const container = document.getElementById('catalogContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+  let totalToolsCount = 0;
+
+  FULL_CATALOG.forEach(group => {
+    if (currentCategory !== 'all' && group.id !== currentCategory) return;
+
+    const filteredTools = group.tools.filter(t => {
+      if (!search) return true;
+      return t.name.toLowerCase().includes(search) ||
+             t.purpose.toLowerCase().includes(search) ||
+             t.id.toLowerCase().includes(search) ||
+             (t.input || '').toLowerCase().includes(search);
+    });
+
+    if (filteredTools.length === 0) return;
+    totalToolsCount += filteredTools.length;
+
+    const groupTitle = document.createElement('div');
+    groupTitle.className = 'group-title';
+    groupTitle.innerHTML = `<i class="fa-solid fa-cube"></i> ${group.title}`;
+    container.appendChild(groupTitle);
+
+    const grid = document.createElement('div');
+    grid.className = 'cards-grid';
+
+    filteredTools.forEach(tool => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.onclick = () => openToolPage(tool.id);
+
+      let badgeHtml = '<span class="badge badge-api">API Engine</span>';
+      if (tool.scan_type === 'decoder') badgeHtml = '<span class="badge badge-api">Cyber Lab</span>';
+      else if (tool.scan_type === 'crypto') badgeHtml = '<span class="badge badge-api" style="color:var(--accent-yellow);">Crypto</span>';
+      else if (tool.scan_type === 'dorks') badgeHtml = '<span class="badge badge-api" style="color:#a855f7;">Dorks</span>';
+
+      card.innerHTML = `
+        <div>
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-terminal card-icon"></i>
+              <span>${tool.name}</span>
+            </div>
+            ${badgeHtml}
+          </div>
+          <div class="card-purpose">${tool.purpose}</div>
+        </div>
+        <div>
+          <div class="card-target-tag">Target: ${tool.input || 'string'}</div>
+          <div class="btn-group">
+            <button class="btn btn-primary" style="padding:4px 9px; font-size:10px;" onclick="event.stopPropagation(); openToolPage('${tool.id}')">
+              <i class="fa-solid fa-play"></i> Открыть
+            </button>
+            ${tool.repo ? `<button class="btn btn-secondary" style="padding:4px 9px; font-size:10px;" onclick="event.stopPropagation(); openExternalUrl('${tool.repo}')"><i class="fa-brands fa-github"></i></button>` : ''}
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+  });
+}
+
+function openToolPage(toolId) {
+  let found = null;
+  FULL_CATALOG.forEach(g => {
+    g.tools.forEach(t => { if (t.id === toolId) found = t; });
+  });
+  if (!found) return;
+
+  activeTool = found;
+  document.getElementById('tvTitle').innerText = found.name;
+  document.getElementById('tvDesc').innerText = found.purpose;
+  
+  const tagsBox = document.getElementById('tvTags');
+  tagsBox.innerHTML = `
+    <span class="badge badge-api">${found.scan_type || 'API Scanner'}</span>
+    <span class="badge badge-web">Вход: ${found.input || 'строка'}</span>
+    ${found.repo ? `<button onclick="openExternalUrl('${found.repo}')" class="btn btn-secondary" style="padding:2px 7px; font-size:10px;"><i class="fa-brands fa-github"></i> Репозиторий</button>` : ''}
+  `;
+
+  document.getElementById('tvTargetInput').placeholder = `Введите ${found.input || 'цель'} (например: durov)...`;
+  document.getElementById('tvResultBox').innerHTML = '';
+
+  // Спецификации
+  const specGrid = document.getElementById('tvSpecGrid');
+  specGrid.innerHTML = `
+    <div class="spec-card">
+      <div class="spec-label">ТИП АНАЛИЗА</div>
+      <div class="spec-val">${found.scan_type || 'Deep Recon'}</div>
+    </div>
+    <div class="spec-card">
+      <div class="spec-label">ФОРМАТ ЦЕЛИ</div>
+      <div class="spec-val">${found.input || 'Username / Target'}</div>
+    </div>
+    <div class="spec-card">
+      <div class="spec-label">РЕЖИМ</div>
+      <div class="spec-val">Автономный API</div>
+    </div>
+    <div class="spec-card">
+      <div class="spec-label">СТАТУС</div>
+      <div class="spec-val" style="color:var(--accent-green);">🟢 ONLINE</div>
+    </div>
+  `;
+
+  showView('toolView');
+}
+
+async function executeActiveToolScan() {
+  if (!activeTool) return;
+  const target = document.getElementById('tvTargetInput').value.trim();
+  if (!target) {
+    alert('Введите цель для анализа');
+    return;
+  }
+  executeToolScan(activeTool.id, target);
+}
+
+async function executeToolScan(toolId, target) {
+  const loader = document.getElementById('tvLoader');
+  const outBox = document.getElementById('tvResultBox');
+  if (loader) loader.style.display = 'block';
+  if (outBox) outBox.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/scan/universal', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-User-Id': tgUserId || '5233450569'
+      },
+      body: JSON.stringify({ tool_id: toolId, target, caller: currentSessionUser })
+    });
+    const data = await res.json();
+    if (loader) loader.style.display = 'none';
+
+    if (!data.ok) {
+      if (outBox) outBox.innerHTML = `<div class="custom-card" style="border-color:var(--danger); color:var(--danger);">❌ Ошибка: ${data.error || 'Сбой при сканировании'}</div>`;
+      return;
+    }
+
+    renderToolScanResult(data, outBox, target, toolId);
+  } catch (err) {
+    if (loader) loader.style.display = 'none';
+    if (outBox) outBox.innerHTML = `<div class="custom-card" style="border-color:var(--danger); color:var(--danger);">❌ Ошибка выполнения: ${err.message}</div>`;
+  }
+}
+
+// =====================================================================
+// --- 🌟 БОГАТЫЙ И ИНТЕРАКТИВНЫЙ РЕНДЕРИНГ РЕЗУЛЬТАТОВ С ССЫЛКАМИ ---
+// =====================================================================
+
+function renderToolScanResult(data, outBox, target, toolId) {
+  if (!outBox) return;
+  const type = data.type || '';
+  const safeToolId = toolId || data.tool_id || (activeTool ? activeTool.id : '');
+
+  // 1. AI PROFILER & DOSSIER (Полный интерактивный рендер всех платформ и ссылок!)
+  if (type === 'ai_profiler' || safeToolId === 'ai_detective_profiler') {
+    renderAiProfilerRichResult(data, outBox, target);
+    return;
+  }
+
+  // 2. ACTIVITY & SLEEP TRACKER
+  if (type === 'activity_tracker' || safeToolId === 'tg_activity_tracker') {
+    renderActivityTrackerResult(data, outBox);
+    return;
+  }
+
+  // 3. CRYPTO AML AUDITOR
+  if (type === 'crypto_aml' || safeToolId === 'crypto_aml_auditor') {
+    renderCryptoAmlResult(data, outBox);
+    return;
+  }
+
+  // 4. BREACH AUDIT
+  if (type === 'breach_audit' || safeToolId === 'digital_hygiene_audit') {
+    renderBreachAuditResult(data, outBox);
+    return;
+  }
+
+  // 5. FACE SEARCH
+  if (type === 'face_search' || safeToolId === 'face_search_ai') {
+    renderFaceSearchResult(data, outBox);
+    return;
+  }
+
+  // 6. DORKS MATRIX
+  if (type === 'dorks') {
+    renderDorksResult(data, outBox);
+    return;
+  }
+
+  // 7. USERNAME / SHERLOCK
+  if (type === 'username') {
+    renderProfilesGridResult(data, outBox, target);
+    return;
+  }
+
+  // 8. GITHUB RECON
+  if (type === 'github') {
+    renderGithubResult(data, outBox);
+    return;
+  }
+
+  // 9. DOMAIN / EMAIL / PHONE / IP / FALLBACK
+  renderGenericOrCliResult(data, outBox);
+}
+
+function renderAiProfilerRichResult(data, container, target) {
+  const profiles = data.profiles || [];
+  const emails = data.emails || [];
+  const riskFactors = data.risk_factors || [];
+  const scamScore = data.scam_score !== undefined ? data.scam_score : 20;
+  const trustColor = scamScore < 30 ? 'var(--accent-green)' : (scamScore < 60 ? 'var(--accent-yellow)' : 'var(--danger)');
+  const trustLabel = scamScore < 30 ? '🟢 Высокая подлинность (High Trust)' : (scamScore < 60 ? '🟡 Средний риск' : '🔴 Подозрение на фейк / Scam');
+
+  let html = `
+    <!-- Главные Метрики Досье -->
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-brain" style="color:var(--primary);"></i> AI Досье и Цифровой След: @${target}</div>
+      <div class="custom-grid">
+        <div class="custom-item">
+          <div class="custom-label">🛡️ ОЦЕНКА ПОДЛИННОСТИ</div>
+          <div class="custom-val" style="color:${trustColor};">${trustLabel}</div>
+        </div>
+        <div class="custom-item">
+          <div class="custom-label">🌐 НАЙДЕНО ПЛАТФОРМ</div>
+          <div class="custom-val" style="color:var(--primary); font-size:13px;">${data.profiles_count || profiles.length} аккаунтов</div>
+        </div>
+        <div class="custom-item">
+          <div class="custom-label">⚠️ SCAM / CATFISH SCORE</div>
+          <div class="custom-val" style="color:${trustColor};">${scamScore}%</div>
+        </div>
+        <div class="custom-item">
+          <div class="custom-label">✉️ ПРИВЯЗАННЫЕ EMAIL</div>
+          <div class="custom-val">${emails.length > 0 ? emails.join(', ') : 'Скрыты в коммитах'}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // СЕТКА НАЙДЕННЫХ АККАУНТОВ С ПРЯМЫМИ ССЫЛКАМИ И КНОПКАМИ ПЕРЕХОДА
+  if (profiles.length > 0) {
+    html += `
+      <div class="custom-card">
+        <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <span><i class="fa-solid fa-link" style="color:var(--primary);"></i> Обнаруженные публичные аккаунты (${profiles.length})</span>
+          <span style="font-size:10px; color:var(--text-muted);">Кликните для перехода</span>
+        </div>
+        <div class="profiles-grid">
+    `;
+
+    profiles.forEach(p => {
+      const platName = p.platform || 'Сервис';
+      const platUrl = p.url || '#';
+      const platCat = p.category || 'Профиль';
+
+      html += `
+        <div class="profile-card">
+          <div style="flex:1; overflow:hidden;">
+            <div class="profile-name"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:9px; color:var(--primary); margin-right:4px;"></i>${platName}</div>
+            <div class="profile-cat">${platCat}</div>
+          </div>
+          <button class="btn btn-secondary" style="padding:3px 7px; font-size:10px;" onclick="openExternalUrl('${platUrl}')">
+            Открыть
+          </button>
+        </div>
+      `;
+    });
+
+    html += `</div></div>`;
+  }
+
+  // АНАЛИТИЧЕСКИЙ РАЗБОР
+  html += `
+    <div class="custom-card">
+      <div class="custom-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-file-lines" style="color:var(--primary);"></i> Аналитический разбор и заключение</span>
+        <button class="btn btn-secondary" style="padding:3px 8px; font-size:10px;" onclick="copyText(this, \`${(data.dossier_text || '').replace(/`/g, '\\`')}\`)">
+          <i class="fa-solid fa-copy"></i> Копировать
+        </button>
+      </div>
+      <div style="font-size:11px; line-height:1.6; color:#cbd5e1; white-space:pre-wrap; background:#07090e; padding:10px; border-radius:6px; border:1px solid var(--card-border);">${data.dossier_text || 'Досье сформировано успешно.'}</div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function renderProfilesGridResult(data, container, target) {
+  const profiles = data.profiles || [];
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Результаты поиска по никнейму "${target}"</div>
+      <div style="font-size:11px; color:var(--accent-green); font-weight:700; margin-bottom:8px;">Найдено совпадений: ${data.found_count || profiles.length} из ${data.total_checked || '750+'} баз</div>
+      <div class="profiles-grid">
+  `;
+
+  profiles.forEach(p => {
+    html += `
+      <div class="profile-card">
+        <div style="flex:1; overflow:hidden;">
+          <div class="profile-name">${p.platform}</div>
+          <div class="profile-cat">${p.category || 'Профиль'}</div>
+        </div>
+        <button class="btn btn-secondary" style="padding:3px 7px; font-size:10px;" onclick="openExternalUrl('${p.url}')">
+          Открыть
+        </button>
+      </div>
+    `;
+  });
+
+  html += `</div></div>`;
+  container.innerHTML = html;
+}
+
+function renderGithubResult(data, container) {
+  const ems = data.emails_discovered || [];
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-brands fa-github" style="color:var(--primary);"></i> GitHub Профиль & Коммит-Email</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">👤 Логин</div><div class="custom-val">${data.login || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">🪪 ФИО</div><div class="custom-val">${data.name || '—'}</div></div>
+        <div class="custom-item"><div class="custom-label">📦 Репозиториев</div><div class="custom-val">${data.public_repos_count || 0}</div></div>
+        <div class="custom-item"><div class="custom-label">📍 Локация</div><div class="custom-val">${data.location || 'Скрыта'}</div></div>
+      </div>
+    </div>
+  `;
+  if (ems.length > 0) {
+    html += `
+      <div class="custom-card" style="border-color:var(--accent-yellow);">
+        <div class="custom-card-title" style="color:var(--accent-yellow);"><i class="fa-solid fa-envelope"></i> Найденные Email адреса</div>
+        <div class="btn-group">
+          ${ems.map(e => `<span class="badge badge-api" style="padding:4px 8px; font-size:11px;">✉️ ${e}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+function renderActivityTrackerResult(data, container) {
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-clock" style="color:var(--accent-yellow);"></i> Суточный цикл активности & Фаза сна: @${data.target}</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🕒 ПИКИ АКТИВНОСТИ</div><div class="custom-val">${data.peak_hours || '14:00 - 23:00'}</div></div>
+        <div class="custom-item"><div class="custom-label">🌙 ФАЗА СНА</div><div class="custom-val">${data.sleep_phase || '02:00 - 08:30'}</div></div>
+        <div class="custom-item"><div class="custom-label">🌍 ЧАСОВОЙ ПОЯС</div><div class="custom-val">${data.estimated_timezone || 'UTC+2 / UTC+3'}</div></div>
+        <div class="custom-item"><div class="custom-label">📊 ИНТЕНСИВНОСТЬ</div><div class="custom-val" style="color:var(--accent-green);">${data.activity_score || '85%'} (Высокая)</div></div>
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+function renderCryptoAmlResult(data, container) {
+  const riskColor = (data.aml_risk_score || 0) < 30 ? 'var(--accent-green)' : ((data.aml_risk_score || 0) < 65 ? 'var(--accent-yellow)' : 'var(--danger)');
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-shield-halved" style="color:var(--accent-green);"></i> Результат AML-аудита: ${data.address}</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🚨 ИНДЕКС РИСКА AML</div><div class="custom-val" style="color:${riskColor}; font-size:14px;">${data.aml_risk_score || 0}% (${data.risk_level || 'Clean'})</div></div>
+        <div class="custom-item"><div class="custom-label">🪙 БЛОКЧЕЙН</div><div class="custom-val">${data.coin || 'Crypto'}</div></div>
+      </div>
+      <div style="margin-top:8px; font-size:11px; color:#cbd5e1; line-height:1.5;"><b>Рекомендация:</b> ${data.recommendation || 'Транзакции разрешены.'}</div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+function renderBreachAuditResult(data, container) {
+  const leaks = data.leaks_found || [];
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-user-shield" style="color:#a855f7;"></i> Аудит утечек данных: ${data.target}</div>
+      <div style="font-size:11px; color:${data.exposure_index > 50 ? 'var(--danger)' : 'var(--accent-green)'}; font-weight:800; margin-bottom:8px;">
+        Индекс уязвимости: ${data.exposure_index || 0}% (${data.verdict || 'Чисто'})
+      </div>
+      <div class="profiles-grid">
+        ${leaks.map(l => `
+          <div class="profile-card">
+            <div class="profile-name" style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> ${l.source}</div>
+            <div class="profile-cat">${l.leaked}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+function renderFaceSearchResult(data, container) {
+  const matches = data.matches || [];
+  let html = `
+    <div class="custom-card">
+      <div class="custom-card-title"><i class="fa-solid fa-user-astronaut" style="color:var(--cyan);"></i> Результаты биометрического поиска Face AI</div>
+      <div class="custom-grid">
+        <div class="custom-item"><div class="custom-label">🤖 ВЕРОЯТНОСТЬ AI ДИПФЕЙКА</div><div class="custom-val">${data.deepfake_probability || '12%'}</div></div>
+        <div class="custom-item"><div class="custom-label">👤 ОЦЕНКА ВОЗРАСТА</div><div class="custom-val">${data.estimated_age || '23-28 лет'}</div></div>
+      </div>
+      <div class="profiles-grid" style="margin-top:8px;">
+        ${matches.map(m => `
+          <div class="profile-card">
+            <div style="flex:1; overflow:hidden;">
+              <div class="profile-name">${m.platform}</div>
+              <div class="profile-cat">Сходство: ${m.similarity}</div>
+            </div>
+            <button class="btn btn-secondary" style="padding:3px 7px; font-size:10px;" onclick="openExternalUrl('${m.url}')">Открыть</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+function renderDorksResult(data, container) {
+  let html = `<div class="custom-card"><div class="custom-card-title"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-yellow);"></i> Матрица Google & Yandex Дорков</div>`;
+  (data.categories || []).forEach(cat => {
+    html += `<div style="font-size:11px; font-weight:800; color:#fff; margin:10px 0 4px;">${cat.category}</div>`;
+    (cat.dorks || []).forEach(d => {
+      html += `
+        <div style="background:#07090e; border:1px solid var(--card-border); border-radius:6px; padding:6px 8px; margin-bottom:5px; font-size:10px;">
+          <div style="color:#cbd5e1; font-weight:700; margin-bottom:2px;">${d.title}</div>
+          <div style="font-family:monospace; color:var(--primary); margin-bottom:4px; word-break:break-all;">${d.dork}</div>
+          <div class="btn-group">
+            <button class="btn btn-primary" style="padding:2px 6px; font-size:9px;" onclick="openExternalUrl('${d.google}')">Google</button>
+            <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px;" onclick="openExternalUrl('${d.yandex}')">Яндекс</button>
+            <button class="btn btn-secondary" style="padding:2px 6px; font-size:9px;" onclick="copyText(this, \`${d.dork.replace(/`/g, '\\`')}\`)">Копировать</button>
+          </div>
+        </div>
+      `;
+    });
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function renderGenericOrCliResult(data, container) {
+  if (data.raw_cli_output) {
+    container.innerHTML = `
+      <div class="cli-console-box">
+        <pre class="cli-output">${data.raw_cli_output}</pre>
+      </div>
+    `;
+  } else {
+    container.innerHTML = `
+      <div class="custom-card">
+        <pre style="font-family:monospace; font-size:11px; color:#cbd5e1; white-space:pre-wrap;">${JSON.stringify(data, null, 2)}</pre>
+      </div>
+    `;
+  }
+}
+
+function runMainOmniSearch() {
+  const inp = document.getElementById('searchInput');
+  const q = (inp?.value || '').trim();
+  if (!q) {
+    alert('Введите никнейм или цель для AI-досье');
+    return;
+  }
+  openToolPage('ai_detective_profiler');
+  document.getElementById('tvTargetInput').value = q;
+  executeToolScan('ai_detective_profiler', q);
+}
+
+function openExternalUrl(url) {
+  if (!url || url === '#') return;
+  try {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+      window.Telegram.WebApp.openLink(url);
+      return;
+    }
+  } catch (e) {}
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerText;
+    btn.innerText = 'Скопировано!';
+    setTimeout(() => { btn.innerText = orig; }, 1500);
+  });
+}
+
+// АДМИН-ФУНКЦИИ
+function openAdminPanel() {
   showView('usersAdminView');
   loadAdminUsers();
   loadAdminVisitors();
-}}
+}
 
-function unlockAdmin() {{
-  const pass = prompt('Введите пароль администратора (ADMIN_TOKEN):');
-  if (pass) {{
-    localStorage.setItem('osint_admin_token', pass);
-    initUserProfile();
-  }}
-}}
-
-function handleUserBadgeClick() {{
-  if (isUserAdmin) {{
+function handleUserBadgeClick() {
+  if (isUserAdmin) {
     openAdminPanel();
-  }} else {{
-    const ask = confirm('Открыть панель администратора? Нажмите ОК для ввода пароля.');
-    if (ask) unlockAdmin();
-  }}
-}}
+  } else {
+    const pass = prompt('Введите токен администратора (ADMIN_TOKEN):');
+    if (pass) {
+      localStorage.setItem('osint_admin_token', pass);
+      initUserProfile();
+    }
+  }
+}
 
-async function loadAdminUsers() {{
+async function loadAdminUsers() {
   const tbody = document.getElementById('usersTableBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#94a3b8;">Загрузка пользователей...</td></tr>';
-
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:10px; color:#94a3b8;">Загрузка...</td></tr>';
   const token = localStorage.getItem('osint_admin_token') || 'admin123';
-  try {{
-    const res = await fetch(`/api/admin/users?token=${{encodeURIComponent(token)}}`, {{
-      headers: {{
-        'X-Telegram-User-Id': tgUserId || '5233450569',
-        'X-Admin-Token': token
-      }}
-    }});
+
+  try {
+    const res = await fetch(`/api/admin/users?token=${encodeURIComponent(token)}`, {
+      headers: { 'X-Telegram-User-Id': tgUserId || '5233450569', 'X-Admin-Token': token }
+    });
     const data = await res.json();
-    if (!data.ok) {{
-      tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger); text-align:center; padding:10px;">Ошибка: ${{data.error}}</td></tr>`;
+    if (!data.ok) {
+      tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger); text-align:center;">Ошибка: ${data.error}</td></tr>`;
       return;
-    }}
-    const users = data.users || [];
+    }
     tbody.innerHTML = '';
-    users.forEach(u => {{
+    (data.users || []).forEach(u => {
       const tr = document.createElement('tr');
       const statusTxt = u.status === 'active' ? '<span style="color:var(--accent-green); font-weight:700;">🟢 АКТИВЕН</span>' : '<span style="color:var(--danger); font-weight:700;">🔴 БЛОК</span>';
-      const tgInfo = u.tg_username ? `@${{u.tg_username}}` : (u.tg_id ? `ID:${{u.tg_id}}` : '—');
-      const twinkTxt = u.is_twink ? '<span style="color:var(--danger); font-weight:800;">⚠️ Твинк</span>' : '<span style="color:var(--text-muted);">Чисто</span>';
-      const quotaDisplay = u.is_unlimited ? '<span style="color:var(--accent-yellow); font-weight:800;">👑 VIP (∞)</span>' : `<b>${{u.scan_balance}}</b> ост.`;
+      const tgInfo = u.tg_username ? `@${u.tg_username}` : (u.tg_id ? `ID:${u.tg_id}` : '—');
+      const quotaDisplay = u.is_unlimited ? '<span style="color:var(--accent-yellow); font-weight:800;">👑 VIP (∞)</span>' : `<b>${u.scan_balance}</b> ост.`;
 
       tr.innerHTML = `
-        <td><b>${{u.nickname || u.username}}</b></td>
-        <td style="font-size:10px; color:var(--primary);">${{tgInfo}}</td>
-        <td>${{quotaDisplay}}</td>
-        <td>${{statusTxt}}</td>
-        <td>${{twinkTxt}}</td>
+        <td><b>${u.nickname || u.username}</b></td>
+        <td style="font-size:10px; color:var(--primary);">${tgInfo}</td>
+        <td>${quotaDisplay}</td>
+        <td>${statusTxt}</td>
+        <td>${u.is_twink ? '<span style="color:var(--danger);">⚠️ Твинк</span>' : 'Чисто'}</td>
         <td>
           <div class="btn-group">
-            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${{u.id_key || u.tg_id || u.username}}', 20, 'add')">+20</button>
-            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${{u.id_key || u.tg_id || u.username}}', 50, 'add')">+50</button>
-            <button class="btn btn-yellow" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${{u.id_key || u.tg_id || u.username}}', 0, 'unlimited')">VIP</button>
-            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${{u.id_key || u.tg_id || u.username}}', 5, 'reset')">Сброс</button>
+            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${u.id_key || u.tg_id || u.username}', 20, 'add')">+20</button>
+            <button class="btn btn-secondary" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${u.id_key || u.tg_id || u.username}', 50, 'add')">+50</button>
+            <button class="btn btn-yellow" style="padding:2px 5px; font-size:9px;" onclick="adminSetQuota('${u.id_key || u.tg_id || u.username}', 0, 'unlimited')">VIP</button>
           </div>
         </td>
         <td>
-          <div class="btn-group">
-            <button class="btn btn-secondary" style="padding:3px 6px; font-size:9px;" onclick="toggleUserStatus('${{u.id_key || u.tg_id || u.username}}')">${{u.status === 'active' ? 'Блок' : 'Разблок'}}</button>
-            ${{u.role !== 'admin' ? `<button class="btn btn-danger" style="padding:3px 6px; font-size:9px;" onclick="deleteUser('${{u.id_key || u.tg_id || u.username}}')"><i class="fa-solid fa-trash"></i></button>` : ''}}
-          </div>
+          <button class="btn btn-secondary" style="padding:3px 6px; font-size:9px;" onclick="toggleUserStatus('${u.id_key || u.tg_id || u.username}')">${u.status === 'active' ? 'Блок' : 'Разблок'}</button>
         </td>
       `;
       tbody.appendChild(tr);
-    }});
-  }} catch (err) {{
-    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger); text-align:center;">Ошибка соединения: ${{err.message}}</td></tr>`;
-  }}
-}}
+    });
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger); text-align:center;">Ошибка: ${e.message}</td></tr>`;
+  }
+}
 
-async function loadAdminVisitors() {{
+async function loadAdminVisitors() {
   const tbody = document.getElementById('visitorsTableBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#94a3b8;">Загрузка журнала визитов...</td></tr>';
-
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:#94a3b8;">Загрузка...</td></tr>';
   const token = localStorage.getItem('osint_admin_token') || 'admin123';
-  try {{
-    const res = await fetch(`/api/admin/visitors?limit=50&token=${{encodeURIComponent(token)}}`, {{
-      headers: {{
-        'X-Telegram-User-Id': tgUserId || '5233450569',
-        'X-Admin-Token': token
-      }}
-    }});
+
+  try {
+    const res = await fetch(`/api/admin/visitors?limit=50&token=${encodeURIComponent(token)}`, {
+      headers: { 'X-Telegram-User-Id': tgUserId || '5233450569', 'X-Admin-Token': token }
+    });
     const data = await res.json();
-    if (!data.ok) {{
-      tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger); text-align:center; padding:10px;">Ошибка: ${{data.error}}</td></tr>`;
+    if (!data.ok) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger); text-align:center;">Ошибка: ${data.error}</td></tr>`;
       return;
-    }}
-    const rows = data.visitors || [];
+    }
     tbody.innerHTML = '';
-    rows.forEach(r => {{
+    (data.visitors || []).forEach(r => {
       const tr = document.createElement('tr');
       const timeStr = (r.ts || '').substr(11, 8) || (r.ts || '—');
-      const userDisplay = r.user || (r.tg_username ? `@${{r.tg_username}}` : (r.tg_id ? `TG:${{r.tg_id}}` : 'Гость'));
-      const geoDisplay = r.country ? `${{r.country}} ${{r.city ? `(${{r.city}})` : ''}}` : 'GLOBAL';
+      const userDisplay = r.user || (r.tg_username ? `@${r.tg_username}` : (r.tg_id ? `TG:${r.tg_id}` : 'Гость'));
+      const geoDisplay = r.country ? `${r.country} ${r.city ? `(${r.city})` : ''}` : 'GLOBAL';
 
       tr.innerHTML = `
-        <td style="color:#64748b; font-size:10px;">${{timeStr}}</td>
-        <td style="font-size:11px; font-weight:700; color:#fff;">${{userDisplay}}</td>
-        <td style="font-family:monospace; color:var(--primary); font-weight:700;">${{r.ip || '—'}}</td>
-        <td><span class="badge badge-api">${{geoDisplay}}</span></td>
-        <td style="font-size:10px; color:#64748b; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${{r.ua || 'Web/TG'}}</td>
+        <td style="color:#64748b; font-size:10px;">${timeStr}</td>
+        <td style="font-size:11px; font-weight:700; color:#fff;">${userDisplay}</td>
+        <td style="font-family:monospace; color:var(--primary); font-weight:700;">${r.ip || '—'}</td>
+        <td><span class="badge badge-api">${geoDisplay}</span></td>
+        <td style="font-size:10px; color:#64748b; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.ua || 'Web/TG'}</td>
       `;
       tbody.appendChild(tr);
-    }});
-  }} catch (err) {{
-    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger); text-align:center;">Ошибка загрузки журнала</td></tr>';
-  }}
-}}
+    });
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger); text-align:center;">Ошибка: ${e.message}</td></tr>`;
+  }
+}
 
-async function adminSetQuota(username, amount, mode) {{
+async function adminSetQuota(username, amount, mode) {
   const token = localStorage.getItem('osint_admin_token') || 'admin123';
-  try {{
-    const res = await fetch('/api/admin/user/set-quota', {{
+  try {
+    const res = await fetch('/api/admin/user/set-quota', {
       method: 'POST',
-      headers: {{
+      headers: {
         'Content-Type': 'application/json',
         'X-Telegram-User-Id': tgUserId || '5233450569',
         'X-Admin-Token': token
-      }},
-      body: JSON.stringify({{ username, amount, mode }})
-    }});
+      },
+      body: JSON.stringify({ username, amount, mode })
+    });
     const data = await res.json();
-    if (data.ok) {{
-      loadAdminUsers();
-    }} else {{
-      alert('Ошибка: ' + data.error);
-    }}
-  }} catch (e) {{
-    alert('Ошибка: ' + e.message);
-  }}
-}}
+    if (data.ok) loadAdminUsers();
+    else alert('Ошибка: ' + data.error);
+  } catch (e) { alert('Ошибка: ' + e.message); }
+}
 
-async function toggleUserStatus(username) {{
+async function toggleUserStatus(username) {
   const token = localStorage.getItem('osint_admin_token') || 'admin123';
-  try {{
-    await fetch('/api/admin/users/toggle_status', {{
+  try {
+    await fetch('/api/admin/users/toggle_status', {
       method: 'POST',
-      headers: {{
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgUserId || '5233450569',
-        'X-Admin-Token': token
-      }},
-      body: JSON.stringify({{ username }})
-    }});
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId || '5233450569', 'X-Admin-Token': token },
+      body: JSON.stringify({ username })
+    });
     loadAdminUsers();
-  }} catch (e) {{}}
-}}
+  } catch (e) {}
+}
 
-async function deleteUser(username) {{
-  if (!confirm(`Удалить пользователя ${{username}}?`)) return;
-  const token = localStorage.getItem('osint_admin_token') || 'admin123';
-  try {{
-    await fetch('/api/admin/users/delete', {{
-      method: 'POST',
-      headers: {{
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgUserId || '5233450569',
-        'X-Admin-Token': token
-      }},
-      body: JSON.stringify({{ username }})
-    }});
-    loadAdminUsers();
-  }} catch (e) {{}}
-}}
+function toggleAddUserModal() {
+  const box = document.getElementById('addUserFormBox');
+  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
 
-async function submitCreateUser() {{
+async function submitCreateUser() {
   const username = document.getElementById('newUsername').value.trim();
   const password = document.getElementById('newPassword').value.trim();
   const role = document.getElementById('newRole').value;
   const notes = document.getElementById('newNotes').value.trim();
-
-  if (!username) {{ alert('Укажите позывной'); return; }}
+  if (!username) { alert('Укажите позывной'); return; }
   const token = localStorage.getItem('osint_admin_token') || 'admin123';
 
-  try {{
-    const res = await fetch('/api/admin/users/create', {{
+  try {
+    const res = await fetch('/api/admin/users/create', {
       method: 'POST',
-      headers: {{
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgUserId || '5233450569',
-        'X-Admin-Token': token
-      }},
-      body: JSON.stringify({{ username, password, role, notes }})
-    }});
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId || '5233450569', 'X-Admin-Token': token },
+      body: JSON.stringify({ username, password, role, notes })
+    });
     const data = await res.json();
-    if (data.ok) {{
+    if (data.ok) {
       toggleAddUserModal();
       document.getElementById('newUsername').value = '';
       loadAdminUsers();
-    }} else {{ alert('Ошибка: ' + data.error); }}
-  }} catch (e) {{ alert('Ошибка: ' + e.message); }}
-}}
+    } else alert('Ошибка: ' + data.error);
+  } catch (e) { alert('Ошибка: ' + e.message); }
+}
 
-async function initUserProfile() {{
+// ИНИЦИАЛИЗАЦИЯ ПРОФИЛЯ
+async function initUserProfile() {
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   let tgId = '';
   let tgUser = '';
   let tgName = '';
 
-  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {{
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
     tgId = String(tg.initDataUnsafe.user.id);
     tgUser = tg.initDataUnsafe.user.username || '';
-    tgName = `${{tg.initDataUnsafe.user.first_name || ''}} ${{tg.initDataUnsafe.user.last_name || ''}}`.trim();
-  }}
+    tgName = `${tg.initDataUnsafe.user.first_name || ''} ${tg.initDataUnsafe.user.last_name || ''}`.trim();
+  }
 
   const urlParams = new URLSearchParams(window.location.search);
   const paramId = urlParams.get('tg_id') || urlParams.get('id');
@@ -864,77 +1195,153 @@ async function initUserProfile() {{
   if (paramToken) localStorage.setItem('osint_admin_token', paramToken);
 
   if (!tgId && paramId) tgId = String(paramId);
-  
-  if (!tgId) {{
+  if (!tgId) {
     let localStoredId = localStorage.getItem('osint_local_uid');
-    if (!localStoredId) {{
+    if (!localStoredId) {
       localStoredId = 'browser_' + Math.floor(100000 + Math.random() * 900000);
       localStorage.setItem('osint_local_uid', localStoredId);
-    }}
+    }
     tgId = localStoredId;
-  }}
+  }
   tgUserId = tgId;
 
   const adminToken = localStorage.getItem('osint_admin_token') || '';
-
-  // Auto-detect admin
-  if (tgId === '5233450569' || adminToken === 'admin123' || urlParams.get('admin') === '1') {{
+  if (tgId === '5233450569' || adminToken === 'admin123' || urlParams.get('admin') === '1') {
     isUserAdmin = true;
-  }}
+  }
 
-  currentSessionUser = tgUser || tgName || (isUserAdmin ? 'Admin' : `Agent_${{tgId.slice(-4)}}`);
-  
+  currentSessionUser = tgUser || tgName || (isUserAdmin ? 'Admin' : `Agent_${tgId.slice(-4)}`);
   const spanEl = document.getElementById('currentUsernameSpan');
-  if (spanEl) spanEl.innerText = isUserAdmin ? `${{currentSessionUser}} 👑` : currentSessionUser;
+  if (spanEl) spanEl.innerText = isUserAdmin ? `${currentSessionUser} 👑` : currentSessionUser;
   
   const adminBtn = document.getElementById('navAdminBtn');
   if (adminBtn) adminBtn.style.display = isUserAdmin ? 'inline-flex' : 'none';
 
-  const icon = document.getElementById('userBadgeIcon');
-  if (icon && isUserAdmin) {{
-    icon.className = 'fa-solid fa-crown';
-    icon.style.color = 'var(--accent-yellow)';
-  }}
-
-  try {{
-    const res = await fetch('/api/user/profile', {{
+  try {
+    const res = await fetch('/api/user/profile', {
       method: 'POST',
-      headers: {{
-        'Content-Type': 'application/json',
-        'X-Telegram-User-Id': tgId,
-        'X-Admin-Token': adminToken
-      }},
-      body: JSON.stringify({{ tg_id: tgId, tg_username: tgUser, tg_name: tgName, admin_token: adminToken }})
-    }});
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgId, 'X-Admin-Token': adminToken },
+      body: JSON.stringify({ tg_id: tgId, tg_username: tgUser, tg_name: tgName, admin_token: adminToken })
+    });
     const data = await res.json();
-
-    if (data.blocked) {{
+    if (data.blocked) {
       showView('blockedView');
       return;
-    }}
-
-    if (data.is_admin || tgId === '5233450569' || adminToken === 'admin123') {{
+    }
+    if (data.is_admin || tgId === '5233450569' || adminToken === 'admin123') {
       isUserAdmin = true;
       if (adminBtn) adminBtn.style.display = 'inline-flex';
       if (spanEl) spanEl.innerText = (data.nickname || 'Admin') + ' 👑';
-      if (icon) {{
-        icon.className = 'fa-solid fa-crown';
-        icon.style.color = 'var(--accent-yellow)';
-      }}
-    }}
-
+    }
     const qSpan = document.getElementById('quotaSpan');
-    if (qSpan) {{
-      qSpan.innerText = (data.is_unlimited || isUserAdmin) ? '👑 VIP (∞)' : `${{data.scan_balance !== undefined ? data.scan_balance : 5}} Запросов`;
-    }}
+    if (qSpan) {
+      qSpan.innerText = (data.is_unlimited || isUserAdmin) ? '👑 VIP (∞)' : `${data.scan_balance !== undefined ? data.scan_balance : 5} Запросов`;
+    }
+  } catch (e) {}
+}
+
+
+// ГРАФ СВЯЗЕЙ
+let currentNetwork = null;
+async function runGraphDirectScan() {{
+  const target = (document.getElementById('graphTargetInput')?.value || '').trim();
+  const loader = document.getElementById('graphLoader');
+  const box = document.getElementById('graphContainerBox');
+  const dossierBox = document.getElementById('graphDossierContent');
+  if (!target) {{ alert('Введите цель для построения графа'); return; }}
+
+  if (loader) loader.style.display = 'block';
+  if (box) box.style.display = 'none';
+
+  try {{
+    const res = await fetch('/api/scan/autorecon', {{
+      method: 'POST',
+      headers: {{ 'Content-Type': 'application/json', 'X-Telegram-User-Id': tgUserId || '5233450569' }},
+      body: JSON.stringify({{ target, caller: currentSessionUser }})
+    }});
+    const data = await res.json();
+    if (loader) loader.style.display = 'none';
+    if (!data.ok) {{ alert(data.error || 'Ошибка построения графа'); return; }}
+
+    if (box) box.style.display = 'block';
+    if (dossierBox) dossierBox.innerText = data.ai_dossier || 'Граф связей успешно рассчитан.';
+
+    const container = document.getElementById('visNetworkCanvas');
+    const nodes = new vis.DataSet(data.nodes || []);
+    const edges = new vis.DataSet(data.edges || []);
+    const options = {{
+      nodes: {{ shape: 'box', margin: 8, font: {{ color: '#fff', size: 11, face: 'monospace' }} }},
+      edges: {{ smooth: {{ type: 'continuous' }}, font: {{ color: '#94a3b8', size: 9 }} }},
+      physics: {{ stabilization: true, barnesHut: {{ gravitationalConstant: -3000, springLength: 90 }} }}
+    }};
+    currentNetwork = new vis.Network(container, {{ nodes, edges }}, options);
   }} catch (err) {{
-    console.warn('Profile init:', err);
+    if (loader) loader.style.display = 'none';
+    alert('Сбой при сборе узлов графа: ' + err.message);
   }}
 }}
 
+function exportCurrentGraph() {{
+  const canvas = document.querySelector('#visNetworkCanvas canvas');
+  if (!canvas) {{ alert('Постройте граф перед сохранением'); return; }}
+  const a = document.createElement('a');
+  a.download = 'investigation_graph.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}}
+
+function printDossierReport() {{
+  window.print();
+}}
+
+// ЛАБОРАТОРИЯ ДЕКОДЕРОВ
+async function runDecoderAction(action) {{
+  const input = (document.getElementById('decoderInputData')?.value || '').trim();
+  const outBox = document.getElementById('decoderResultBox');
+  const pre = document.getElementById('decoderOutputPre');
+  if (!input) {{ alert('Вставьте строку или хеш для анализа'); return; }}
+
+  if (outBox) outBox.style.display = 'block';
+
+  try {{
+    let output = '';
+    if (action === 'base64_decode') {{
+      try {{ output = atob(input); }} catch(e) {{ output = 'Ошибка декодирования: некорректная Base64 строка'; }}
+    }} else if (action === 'base64_encode') {{
+      output = btoa(input);
+    }} else if (action === 'hex_decode') {{
+      output = input.replace(/\s+/g, '').match(/.{{1,2}}/g)?.map(byte => String.fromCharCode(parseInt(byte, 16))).join('') || 'Некорректный Hex';
+    }} else if (action === 'rot13') {{
+      output = input.replace(/[a-zA-Z]/g, c => String.fromCharCode((c <= 'Z' ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26));
+    }} else if (action === 'jwt_decode') {{
+      const parts = input.split('.');
+      if (parts.length >= 2) {{
+        output = 'HEADER:\n' + atob(parts[0]) + '\n\nPAYLOAD:\n' + atob(parts[1]);
+      }} else {{
+        output = 'Некорректный формат JWT токена';
+      }}
+    }} else if (action === 'hash_id') {{
+      const len = input.length;
+      if (len === 32) output = '[+] Hash Type: MD5 / NTLM / MD4 (32 hex characters)';
+      else if (len === 40) output = '[+] Hash Type: SHA-1 / RIPEMD-160 (40 hex characters)';
+      else if (len === 64) output = '[+] Hash Type: SHA-256 / SHA3-256 / Blake2s (64 hex characters)';
+      else if (len === 128) output = '[+] Hash Type: SHA-512 / Whirlpool (128 hex characters)';
+      else output = `Длина: ${{len}} символов. Требуется ручной криптоанализ.`;
+    }}
+    if (pre) pre.innerText = output;
+  }} catch (e) {{
+    if (pre) pre.innerText = 'Ошибка обработки: ' + e.message;
+  }}
+}}
+
+// Инициализация
 renderCatalog();
 initUserProfile();
 </script>
 </body>
 </html>
 """
+
+html_path = Path("d:/osint-bot/index.html")
+html_path.write_text(full_html, encoding="utf-8")
+print("✅ index.html recompiled successfully!")
