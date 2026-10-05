@@ -4110,8 +4110,15 @@ async def scan_universal_endpoint(request: Request):
 
 
 
-from multitool import MediaDownloader, TempMailService, DevSecurityTools, AIProductivity
-from fastapi.responses import Response
+from multitool import (
+    MediaDownloader,
+    TempMailService,
+    DevSecurityTools,
+    AIProductivity,
+    create_download_ticket,
+    resolve_download_ticket,
+)
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 
@@ -4142,7 +4149,43 @@ class QRReq(BaseModel):
 @app.post("/api/multitool/download")
 async def api_multitool_download(req: MediaDownloadReq):
     res = await MediaDownloader.download_media(req.url, req.extract_audio)
-    return res
+    if not res.get("ok"):
+        return res
+
+    try:
+        filepath = str(res.get("filepath") or "")
+        download_id = create_download_ticket(filepath)
+    except (OSError, ValueError):
+        return JSONResponse(
+            {"ok": False, "error": "Не удалось подготовить файл для скачивания."},
+            status_code=500,
+        )
+
+    return {
+        "ok": True,
+        "title": res.get("title") or "Медиафайл",
+        "duration": res.get("duration") or 0,
+        "uploader": res.get("uploader") or "Unknown",
+        "filesize": res.get("filesize") or 0,
+        "is_audio": bool(res.get("is_audio")),
+        "filename": Path(filepath).name,
+        "download_url": f"/api/multitool/file/{download_id}",
+    }
+
+
+@app.get("/api/multitool/file/{download_id}")
+async def api_multitool_download_file(download_id: str):
+    filepath = resolve_download_ticket(download_id)
+    if filepath is None:
+        return JSONResponse(
+            {"ok": False, "error": "Файл не найден или ссылка на скачивание истекла."},
+            status_code=404,
+        )
+    return FileResponse(
+        path=filepath,
+        filename=filepath.name,
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 @app.get("/api/multitool/tempmail/new")
