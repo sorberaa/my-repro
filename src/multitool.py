@@ -17,6 +17,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from urllib.parse import urlsplit
 
 import httpx
 from bs4 import BeautifulSoup
@@ -30,28 +31,103 @@ logger = logging.getLogger("multitool")
 
 DOWNLOAD_CACHE_DIR = Path(tempfile.gettempdir()) / "multitool_media"
 DOWNLOAD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+MAX_DOWNLOAD_BYTES = 45 * 1024 * 1024
+DOWNLOAD_LINK_TTL_SECONDS = 30 * 60
+_ALLOWED_MEDIA_DOMAINS = (
+    "tiktok.com",
+    "instagram.com",
+    "youtube.com",
+    "youtu.be",
+    "pin.it",
+    "pinterest.com",
+    "twitter.com",
+    "x.com",
+    "reddit.com",
+    "vk.com",
+)
+_download_links: dict[str, tuple[Path, float]] = {}
+
+
+def _is_allowed_public_media_url(url: str) -> bool:
+    try:
+        parsed = urlsplit(url.strip())
+        hostname = parsed.hostname
+        port = parsed.port
+    except (AttributeError, ValueError):
+        return False
+
+    if (
+        parsed.scheme.lower() != "https"
+        or not hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or port not in (None, 443)
+    ):
+        return False
+
+    hostname = hostname.rstrip(".").lower()
+    return any(
+        hostname == domain or hostname.endswith(f".{domain}")
+        for domain in _ALLOWED_MEDIA_DOMAINS
+    )
+
+
+def create_download_ticket(filepath: str) -> str:
+    """Create a short-lived opaque URL token for a file in the media cache."""
+    path = Path(filepath).resolve(strict=True)
+    cache_dir = DOWNLOAD_CACHE_DIR.resolve()
+    if path.parent != cache_dir or not path.is_file():
+        raise ValueError("Download file is outside the media cache")
+
+    now = time.time()
+    for ticket, (old_path, expires_at) in list(_download_links.items()):
+        if expires_at <= now:
+            _download_links.pop(ticket, None)
+            try:
+                old_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    ticket = secrets.token_urlsafe(24)
+    _download_links[ticket] = (path, now + DOWNLOAD_LINK_TTL_SECONDS)
+    return ticket
+
+
+def resolve_download_ticket(ticket: str) -> Optional[Path]:
+    """Resolve a short-lived download token without accepting filesystem paths."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]{32}", ticket):
+        return None
+
+    entry = _download_links.get(ticket)
+    if entry is None:
+        return None
+
+    path, expires_at = entry
+    if expires_at <= time.time():
+        _download_links.pop(ticket, None)
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return None
+
+    try:
+        resolved = path.resolve(strict=True)
+    except OSError:
+        _download_links.pop(ticket, None)
+        return None
+
+    if resolved.parent != DOWNLOAD_CACHE_DIR.resolve() or not resolved.is_file():
+        _download_links.pop(ticket, None)
+        return None
+    return resolved
 
 
 class MediaDownloader:
     @staticmethod
     def is_media_url(url: str) -> bool:
         """Проверяет, является ли ссылка поддерживаемым медиа-ресурсом."""
-        if not url:
-            return False
-        patterns = [
-            r"tiktok\.com",
-            r"instagram\.com",
-            r"youtube\.com",
-            r"youtu\.be",
-            r"pin\.it",
-            r"pinterest\.com",
-            r"twitter\.com",
-            r"x\.com",
-            r"reddit\.com",
-            r"vk\.com/clip",
-            r"vk\.com/video"
-        ]
-        return any(re.search(p, url, re.IGNORECASE) for p in patterns)
+        return _is_allowed_public_media_url(url)
 
     @staticmethod
     async def download_media(url: str, extract_audio: bool = False) -> Dict[str, Any]:
@@ -59,6 +135,12 @@ class MediaDownloader:
         Скачивает медиа по ссылке без водяных знаков с помощью yt-dlp.
         Возвращает метаданные и путь к скачанному файлу.
         """
+        if not MediaDownloader.is_media_url(url):
+            return {
+                "ok": False,
+                "error": "Используйте общедоступную HTTPS-ссылку с поддерживаемой платформы.",
+            }
+
         import yt_dlp
 
         # Очистка старых временных файлов (старше 2 часов)
@@ -78,7 +160,10 @@ class MediaDownloader:
             "quiet": True,
             "no_warnings": True,
             "noplaylist": True,
-            "max_filesize": 50 * 1024 * 1024,  # лимит 50MB для Telegram Bot API
+            "max_filesize": MAX_DOWNLOAD_BYTES,
+            "socket_timeout": 20,
+            "retries": 1,
+            "fragment_retries": 1,
         }
 
         if extract_audio:
@@ -118,21 +203,32 @@ class MediaDownloader:
                 if matching:
                     p = matching[0]
 
+            p = p.resolve(strict=True)
+            if p.parent != DOWNLOAD_CACHE_DIR.resolve() or not p.is_file():
+                return {"ok": False, "error": "Скачанный файл не найден в кэше."}
+
+            filesize = p.stat().st_size
+            if filesize > MAX_DOWNLOAD_BYTES:
+                p.unlink(missing_ok=True)
+                return {
+                    "ok": False,
+                    "error": "Файл превышает допустимый размер 45 МБ.",
+                }
+
             return {
                 "ok": True,
                 "title": info.get("title") or "Медиафайл",
                 "duration": info.get("duration") or 0,
                 "uploader": info.get("uploader") or info.get("channel") or "Unknown",
-                "filesize": p.stat().st_size if p.exists() else 0,
+                "filesize": filesize,
                 "filepath": str(p),
                 "is_audio": extract_audio,
-                "url": url
             }
         except Exception as e:
-            logger.error(f"Download failed for {url}: {e}")
+            logger.warning("Media download failed (%s)", type(e).__name__)
             return {
                 "ok": False,
-                "error": f"Не удалось скачать: {str(e)[:150]}"
+                "error": "Не удалось скачать файл. Проверьте доступность ссылки и попробуйте ещё раз."
             }
 
 
