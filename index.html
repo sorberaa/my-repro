@@ -3004,8 +3004,12 @@ async function executeMediaDownload(isAudio) {
     const data = await res.json();
     statusBox.style.display = 'none';
 
-    if (!data.ok) {
+    if (!res.ok || !data.ok) {
       alert('Ошибка: ' + (data.error || 'Не удалось скачать медиа'));
+      return;
+    }
+    if (typeof data.download_url !== 'string' || !data.download_url.startsWith('/api/multitool/file/')) {
+      alert('Ссылка на готовый файл не получена. Попробуйте ещё раз.');
       return;
     }
 
@@ -3016,7 +3020,8 @@ async function executeMediaDownload(isAudio) {
     
     currentLastDlUrl = url;
     const dlLink = document.getElementById('dlDownloadLink');
-    dlLink.href = data.filepath ? (API_BASE + '/api/multitool/file?p=' + encodeURIComponent(data.filepath)) : url;
+    dlLink.href = API_BASE + data.download_url;
+    dlLink.download = data.filename || 'multitool-media';
     showToast('Медиа успешно обработано!');
   } catch (e) {
     statusBox.style.display = 'none';
