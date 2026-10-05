@@ -609,6 +609,7 @@ async def handle_photo_message(message: types.Message):
 
 async def handle_media_download(message: types.Message, url: str):
     status_msg = await message.answer("⏳ <i>Подключаюсь к медиасерверу и скачиваю без водяных знаков...</i>", parse_mode="HTML")
+    filepath = None
     try:
         res = await MediaDownloader.download_media(url)
         if not res.get("ok"):
@@ -622,20 +623,31 @@ async def handle_media_download(message: types.Message, url: str):
 
         title = res.get("title", "Медиафайл")
         uploader = res.get("uploader", "Неизвестный автор")
-        caption = f"🎬 <b>{html.escape(title[:70])}</b>\n👤 <i>{html.escape(uploader)}</i>\n⚡ <i>Скачано через Cyber Multitool</i>"
+        caption = f"🎬 <b>{html.escape(str(title)[:70])}</b>\n👤 <i>{html.escape(str(uploader)[:100])}</i>\n⚡ <i>Скачано через Cyber Multitool</i>"
 
         video_file = FSInputFile(filepath)
-        await status_msg.delete()
-        await message.answer_video(video=video_file, caption=caption, parse_mode="HTML")
-
-        # Удаление временного файла после успешной отправки
         try:
-            os.remove(filepath)
+            await message.answer_video(video=video_file, caption=caption, parse_mode="HTML")
+        except Exception:
+            await status_msg.edit_text("❌ Не удалось отправить файл в Telegram. Проверьте его размер и формат.")
+            return
+
+        try:
+            await status_msg.delete()
         except Exception:
             pass
 
-    except Exception as e:
-        await status_msg.edit_text(f"❌ <b>Сбой загрузки:</b> {html.escape(str(e))}", parse_mode="HTML")
+    except Exception:
+        try:
+            await status_msg.edit_text("❌ Сбой при скачивании. Проверьте общедоступность ссылки и попробуйте ещё раз.")
+        except Exception:
+            pass
+    finally:
+        if filepath and os.path.isfile(filepath):
+            try:
+                os.remove(filepath)
+            except OSError:
+                pass
 
 
 @dp.message(Command("dl"))
